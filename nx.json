@@ -41,7 +41,8 @@
       "e2eTestRunner": "none",
       "linter": "eslint",
       "style": "scss",
-      "unitTestRunner": "none"
+      "unitTestRunner": "none",
+      "inlineTemplate": "true"
     }
   },
   "neverConnectToCloud": true
