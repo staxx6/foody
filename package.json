@@ -4,6 +4,9 @@
   "license": "MIT",
   "scripts": {},
   "private": true,
+  "scripts": {
+    "serve": "nx run-many --target=serve --projects=foody,pocketbase --parallel"
+  },
   "dependencies": {
     "@angular/common": "~21.2.0",
     "@angular/compiler": "~21.2.0",

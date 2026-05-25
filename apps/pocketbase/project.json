@@ -1,0 +1,21 @@
+{
+  "name": "pocketbase",
+  "root": "apps/pocketbase",
+  "projectType": "application",
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/pocketbase",
+        "command": "./pocketbase serve --http=127.0.0.1:8090"
+      }
+    },
+    "migrate-collections": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/pocketbase",
+        "command": "./pocketbase migrate collections"
+      }
+    }
+  }
+}

@@ -44,3 +44,10 @@ Thumbs.db
 .claude/settings.local.json
 
 .angular
+
+# pocketbase
+
+apps/pocketbase/pocketbase
+apps/pocketbase/pb_data/
+apps/pocketbase/CHANGELOG.md
+apps/pocketbase/LICENSE.md
