@@ -7,7 +7,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "apps/pocketbase",
-        "command": "./pocketbase serve --http=127.0.0.1:8090"
+        "command": "pocketbase serve --http=127.0.0.1:8090"
       }
     },
     "migrate-collections": {
