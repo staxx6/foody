@@ -6,7 +6,8 @@ type FoodItem = {
   id: string;
   name: string;
   description?: string;
-  images: string[];
+  imageNames: string[];
+  imageUrl?: string;
   created: string;
   updated: string;
 };
@@ -36,16 +37,22 @@ export const IngredientStore = signalStore(
         const foodItems = await dataAccess.list<FoodItem>({
           collectionName: 'foodItems',
           options: { sort: 'name' },
-          map: (record) => ({
-            id: record.id,
-            name: String(record['name'] ?? ''),
-            description: String(record['description'] ?? ''),
-            images: Array.isArray(record['images'])
-              ? (record['images'] as string[])
-              : [],
-            created: record.created,
-            updated: record.updated,
-          }),
+          map: (record) => {
+            const images = record['images'] as string[]
+
+            return {
+              id: record.id,
+              name: String(record['name'] ?? ''),
+              description: String(record['description'] ?? ''),
+              imageNames: images,
+              imageUrl:
+                images.length > 0
+                  ? dataAccess.getFileUrl(record, images[0])
+                  : undefined,
+              created: record.created,
+              updated: record.updated,
+            };
+          },
         });
         patchState(store, { foodItems, isLoading: false });
       } catch (error) {

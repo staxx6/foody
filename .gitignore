@@ -53,3 +53,6 @@ apps/pocketbase/CHANGELOG.md
 apps/pocketbase/LICENSE.md
 pocketbase.exe
 vitest.config.*.timestamp*
+
+# model-img
+*.af~lock~

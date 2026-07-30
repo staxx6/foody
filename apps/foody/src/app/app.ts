@@ -17,12 +17,24 @@ import { IngredientStore } from './ingredient/ingredient-store';
     } @else {
       <ul>
         @for (foodItem of ingredientStore.foodItems(); track foodItem.id) {
-          <li>{{ foodItem.name }}</li>
+          <li>
+            {{ foodItem.name }}
+            @if (foodItem.imageUrl) {
+              <img [src]="foodItem.imageUrl" [alt]="foodItem.name" />
+              {{ foodItem.imageNames }}
+            }
+          </li>
         }
       </ul>
     }
   `,
-  styleUrl: './app.scss',
+  styles: `
+    img {
+      max-width: 256px;
+      max-height: 256px;
+      object-fit: contain;
+    }
+  `,
 })
 export class App {
   readonly ingredientStore = inject(IngredientStore);
