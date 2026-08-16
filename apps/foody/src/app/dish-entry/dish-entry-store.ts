@@ -37,14 +37,14 @@ export const DishEntryStore = signalStore(
           collectionName: 'dishEntries',
           options: {
             filter: `date >= "${today} 00:00:00" && date < "${today} 23:59:59"`,
-            expand: 'foodItem,dish,amountUnit',
+            expand: 'to_foodItem,to_dish,to_amountUnit',
             sort: 'date',
           },
           map: (record) => {
             const expand = record['expand'] as Record<string, Record<string, unknown>> | undefined;
 
-            const foodItem = expand?.['foodItem'] as (Record<string, unknown> & DataRecord) | undefined;
-            const dish = expand?.['dish'] as (Record<string, unknown> & DataRecord) | undefined;
+            const foodItem = expand?.['to_foodItem'] as (Record<string, unknown> & DataRecord) | undefined;
+            const dish = expand?.['to_dish'] as (Record<string, unknown> & DataRecord) | undefined;
             const source = foodItem ?? dish;
 
             const name = String(source?.['name'] ?? '–');
@@ -57,8 +57,8 @@ export const DishEntryStore = signalStore(
               id: record.id,
               name,
               amount: record['amount'] ? String(record['amount']) : null,
-              amountUnit: expand?.['amountUnit']?.['code']
-                ? String(expand['amountUnit']['code'])
+              amountUnit: expand?.['to_amountUnit']?.['code']
+                ? String(expand['to_amountUnit']['code'])
                 : null,
               imageUrl,
               date: record['date'] ? String(record['date']) : record.created,
