@@ -14,7 +14,7 @@ export class PocketbaseAccessService implements DataAccess {
     // The receive from the db
     const records = await this.pb
       .collection(collectionName)
-      .getFullList({ sort: options?.sort });
+      .getFullList({ sort: options?.sort, filter: options?.filter, expand: options?.expand });
 
     // Transform to our generic type
     return records.map((record) =>

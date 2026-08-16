@@ -18,6 +18,8 @@ export type DataRecord = {
  */
 export type ListOptions = {
   sort?: string;
+  filter?: string;
+  expand?: string;
 };
 
 export type ListQuery<T> = {
