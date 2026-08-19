@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { DishEntryListComponent } from '../dish-entry/dish-entry-list.component';
 import { SymptomEntryListComponent } from '../symptom-entry/symptom-entry-list.component';
-import { FooterNavComponent } from '../shared/footer-nav.component';
+import { FooterNavComponent } from '../shared/footer/footer-nav.component';
 import { UiStore } from '../shared/ui-store';
 import { NewFoodItemFormComponent } from '../ingredient/new-food-item-form.component';
 import { NewDishFormComponent } from '../dish/new-dish-form.component';
@@ -44,7 +44,7 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
         }
         @default {
           <section>
-            <h2>Day</h2>
+            <h2>Meals</h2>
             <app-dish-entry-list />
           </section>
 

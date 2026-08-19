@@ -1,8 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
-import { ActiveForm, UiStore } from './ui-store';
+import { ActiveSite, UiStore } from '../ui-store';
+import { FooterButtonComponent } from './footer-button.component';
 
 @Component({
   selector: 'app-footer-nav',
+  imports: [FooterButtonComponent],
   template: `
     @if (showMenu()) {
       <button
@@ -11,21 +13,21 @@ import { ActiveForm, UiStore } from './ui-store';
         aria-label="Close menu"
       ></button>
       <div class="menu-popup">
-        <button (click)="selectForm('new-food-item')">New Food Item</button>
-        <button (click)="selectForm('new-dish')">New Dish</button>
-        <button (click)="selectForm('new-meal')">New Meal</button>
+        <button (click)="selectForm('new-food-item')">Food Item</button>
+        <button (click)="selectForm('new-dish')">Dish</button>
+        <button (click)="selectForm('new-meal')">Meal</button>
         <button (click)="selectForm('new-health-entry')">
-          New Health Entry
+          Health Entry
         </button>
         <button (click)="selectForm('new-symptom')">New Symptom</button>
       </div>
     }
     <nav>
-      <button>Today</button>
-      <button>Month</button>
+      <app-footer-button label='Today' [active]="uiStore.isActive('today')" />
+      <app-footer-button label='Month' [active]="false" />
       <button class="add-btn" (click)="toggleMenu()">+</button>
-      <button>Report</button>
-      <button>Settings</button>
+      <app-footer-button label='Report' [active]='false' />
+      <app-footer-button label='Settings' [active]='false' />
     </nav>
   `,
   styles: [
@@ -90,41 +92,39 @@ import { ActiveForm, UiStore } from './ui-store';
         z-index: 10;
       }
 
+      nav .add-btn {
+        font-size: 1.8rem;
+        color: #fff;
+        font-weight: bold;
+        background-color: #4caf50;
+        border-radius: 50%;
+        width: 3rem;
+        height: 3rem;
+      }
+
       nav button {
-        flex: 1;
         background: none;
         border: none;
         cursor: pointer;
-        font-size: 0.75rem;
         color: #666;
-        padding: 6px 4px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        // padding: 6px 4px;
       }
 
       nav button:hover {
         color: #333;
       }
-
-      .add-btn {
-        font-size: 1.8rem;
-        line-height: 1;
-        color: #4caf50;
-        font-weight: bold;
-      }
     `,
   ],
 })
 export class FooterNavComponent {
-  private readonly uiStore = inject(UiStore);
-  readonly showMenu = signal(false);
+  protected readonly uiStore = inject(UiStore);
+  protected readonly showMenu = signal(false);
 
   toggleMenu(): void {
     this.showMenu.update((v) => !v);
   }
 
-  selectForm(form: ActiveForm): void {
+  selectForm(form: ActiveSite): void {
     this.uiStore.showForm(form);
     this.showMenu.set(false);
   }

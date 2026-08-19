@@ -22,7 +22,7 @@ import { DishEntryStore } from './dish-entry-store';
             {{ entry.name }}
             @if (entry.amount !== null) {
               – {{ entry.amount
-              }}{{ entry.amountUnit ? ' ' + entry.amountUnit : '' }}
+              }}{{ entry.amountUnitName ? ' ' + entry.amountUnitName : '' }}
             }
             <span>({{ entry.date | date: 'HH:mm' }})</span>
           </li>

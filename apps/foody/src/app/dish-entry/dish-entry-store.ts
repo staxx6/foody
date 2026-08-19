@@ -6,7 +6,8 @@ export type DishEntry = {
   id: string;
   name: string;
   amount: string | null;
-  amountUnit: string | null;
+  amountUnitCode: string | null;
+  amountUnitName: string | null;
   imageUrl: string | null;
   date: string;
 };
@@ -64,8 +65,11 @@ export const DishEntryStore = signalStore(
               id: record.id,
               name,
               amount: record['amount'] ? String(record['amount']) : null,
-              amountUnit: expand?.['to_amountUnit']?.['code']
+              amountUnitCode: expand?.['to_amountUnit']?.['code']
                 ? String(expand['to_amountUnit']['code'])
+                : null,
+              amountUnitName: expand?.['to_amountUnit']?.['name']
+                ? String(expand['to_amountUnit']['name'])
                 : null,
               imageUrl,
               date: record['date'] ? String(record['date']) : record.created,
@@ -102,7 +106,8 @@ export const DishEntryStore = signalStore(
           id: record.id,
           name: '',
           amount: record['amount'] ? String(record['amount']) : null,
-          amountUnit: null,
+          amountUnitCode: null,
+          amountUnitName: null,
           imageUrl: null,
           date: record['date'] ? String(record['date']) : record.created,
         }),

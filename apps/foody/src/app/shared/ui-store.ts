@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
-export type ActiveForm =
-  | 'home'
+export type ActiveSite =
+  | 'today'
   | 'new-food-item'
   | 'new-dish'
   | 'new-meal'
@@ -10,13 +10,17 @@ export type ActiveForm =
 
 @Injectable({ providedIn: 'root' })
 export class UiStore {
-  readonly activeForm = signal<ActiveForm>('home');
+  readonly activeForm = signal<ActiveSite>('today');
 
-  showForm(form: ActiveForm): void {
+  showForm(form: ActiveSite): void {
     this.activeForm.set(form);
   }
 
   goHome(): void {
-    this.activeForm.set('home');
+    this.activeForm.set('today');
   }
+
+	isActive(activeForm: ActiveSite): boolean {
+		return this.activeForm() === activeForm;
+	}
 }
