@@ -16,7 +16,7 @@ import { SymptomEntryStore } from './symptom-entry-store';
       <ul>
         @for (entry of symptomEntryStore.entries(); track entry.id) {
           <li>
-						@if (entry.locationImageUrls.length > 0) {
+            @if (entry.locationImageUrls.length > 0) {
               <span class="locations">
                 @for (url of entry.locationImageUrls; track url) {
                   <img [src]="url" alt="Symptom-Location" />
@@ -28,7 +28,6 @@ import { SymptomEntryStore } from './symptom-entry-store';
               – {{ entry.discomfortLevel }}/100
             }
             <span>({{ entry.date | date: 'HH:mm' }})</span>
-            
           </li>
         }
       </ul>

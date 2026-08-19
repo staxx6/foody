@@ -39,17 +39,19 @@ export type ListQuery<T> = {
   map: (record: DataRecord) => T;
 };
 
-/**
- * Generic interface to access the backend.
- * This should not return signals as this access should
- * not hold the state. It should only get/set the data
- */
+export type CreateQuery<T> = {
+  collectionName: string;
+  data: Record<string, unknown>;
+  map: (record: DataRecord) => T;
+};
+
 export interface DataAccess {
   /**
    *
    * @param query
    */
   list<T>(query: ListQuery<T>): Promise<T[]>;
+  create<T>(query: CreateQuery<T>): Promise<T>;
   getFileUrl(record: DataRecord, fileName: string): string;
 }
 

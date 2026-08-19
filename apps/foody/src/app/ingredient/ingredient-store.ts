@@ -30,7 +30,8 @@ export const IngredientStore = signalStore(
   { providedIn: 'root' },
   withState(initialIngredientState),
   withMethods((store, dataAccess = inject(DATA_ACCESS)) => ({
-    async loadFoodItems() { // add a function to the store
+    async loadFoodItems() {
+      // add a function to the store
       patchState(store, { isLoading: true, error: null }); // change the state
 
       try {
@@ -38,7 +39,7 @@ export const IngredientStore = signalStore(
           collectionName: 'foodItems',
           options: { sort: 'name' },
           map: (record) => {
-            const images = record['images'] as string[]
+            const images = record['images'] as string[];
 
             return {
               id: record.id,
@@ -56,9 +57,28 @@ export const IngredientStore = signalStore(
         });
         patchState(store, { foodItems, isLoading: false });
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
         patchState(store, { isLoading: false, error: message });
       }
+    },
+
+    async createFoodItem(name: string, description: string): Promise<FoodItem> {
+      const item = await dataAccess.create<FoodItem>({
+        collectionName: 'foodItems',
+        data: { name, description },
+        map: (record) => ({
+          id: record.id,
+          name: String(record['name'] ?? ''),
+          description: String(record['description'] ?? ''),
+          imageNames: [],
+          imageUrl: undefined,
+          created: record.created,
+          updated: record.updated,
+        }),
+      });
+      patchState(store, { foodItems: [...store.foodItems(), item] });
+      return item;
     },
   })),
 );

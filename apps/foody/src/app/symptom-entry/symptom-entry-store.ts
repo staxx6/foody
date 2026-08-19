@@ -78,5 +78,35 @@ export const SymptomEntryStore = signalStore(
         patchState(store, { isLoading: false, error: message });
       }
     },
+
+    async createSymptomEntry(payload: {
+      date: string;
+      symptomId: string;
+      discomfortLevel?: number | null;
+      comment?: string;
+    }): Promise<void> {
+      const data: Record<string, unknown> = {
+        date: payload.date,
+        to_symptom: payload.symptomId,
+      };
+      if (payload.discomfortLevel != null)
+        data['discomfortLevel'] = payload.discomfortLevel;
+      if (payload.comment) data['comment'] = payload.comment;
+
+      await dataAccess.create<SymptomEntry>({
+        collectionName: 'symptomEntries',
+        data,
+        map: (record) => ({
+          id: record.id,
+          symptomName: '',
+          discomfortLevel:
+            record['discomfortLevel'] != null
+              ? Number(record['discomfortLevel'])
+              : null,
+          locationImageUrls: [],
+          date: record['date'] ? String(record['date']) : record.created,
+        }),
+      });
+    },
   })),
 );

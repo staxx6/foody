@@ -41,17 +41,24 @@ export const DishEntryStore = signalStore(
             sort: 'date',
           },
           map: (record) => {
-            const expand = record['expand'] as Record<string, Record<string, unknown>> | undefined;
+            const expand = record['expand'] as
+              | Record<string, Record<string, unknown>>
+              | undefined;
 
-            const foodItem = expand?.['to_foodItem'] as (Record<string, unknown> & DataRecord) | undefined;
-            const dish = expand?.['to_dish'] as (Record<string, unknown> & DataRecord) | undefined;
+            const foodItem = expand?.['to_foodItem'] as
+              | (Record<string, unknown> & DataRecord)
+              | undefined;
+            const dish = expand?.['to_dish'] as
+              | (Record<string, unknown> & DataRecord)
+              | undefined;
             const source = foodItem ?? dish;
 
             const name = String(source?.['name'] ?? '–');
             const images = (source?.['images'] as string[] | undefined) ?? [];
-            const imageUrl = images.length > 0 && source
-              ? dataAccess.getFileUrl(source, images[0])
-              : null;
+            const imageUrl =
+              images.length > 0 && source
+                ? dataAccess.getFileUrl(source, images[0])
+                : null;
 
             return {
               id: record.id,
@@ -67,9 +74,39 @@ export const DishEntryStore = signalStore(
         });
         patchState(store, { entries, isLoading: false });
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
         patchState(store, { isLoading: false, error: message });
       }
+    },
+
+    async createDishEntry(payload: {
+      date: string;
+      amount: string;
+      amountUnitId: string;
+      foodItemId?: string;
+      dishId?: string;
+    }): Promise<void> {
+      const data: Record<string, unknown> = {
+        date: payload.date,
+        amount: payload.amount,
+        to_amountUnit: payload.amountUnitId,
+      };
+      if (payload.foodItemId) data['to_foodItem'] = payload.foodItemId;
+      if (payload.dishId) data['to_dish'] = payload.dishId;
+
+      await dataAccess.create<DishEntry>({
+        collectionName: 'dishEntries',
+        data,
+        map: (record) => ({
+          id: record.id,
+          name: '',
+          amount: record['amount'] ? String(record['amount']) : null,
+          amountUnit: null,
+          imageUrl: null,
+          date: record['date'] ? String(record['date']) : record.created,
+        }),
+      });
     },
   })),
 );
