@@ -5,13 +5,14 @@ import { IngredientStore } from '../ingredient/ingredient-store';
 import { DishStore } from '../dish/dish-store';
 import { AmountUnitStore } from '../shared/amount-unit-store';
 import { UiStore } from '../shared/ui-store';
+import { QuickAddComponent } from '../shared/quick-add.component';
 import { toDateTimeLocalValue, toPocketBaseDate } from '../shared/date-utils';
 
 type SourceType = 'food-item' | 'dish';
 
 @Component({
   selector: 'app-new-meal-form',
-  imports: [FormsModule],
+  imports: [FormsModule, QuickAddComponent],
   template: `
     <div class="form-header">
       <button class="back-btn" (click)="cancel()">← Back</button>
@@ -60,6 +61,19 @@ type SourceType = 'food-item' | 'dish';
             }
           }
         </select>
+        @if (sourceType === 'food-item') {
+          <app-quick-add
+            label="food item"
+            placeholder="e.g. apple"
+            [create]="addFoodItem"
+          />
+        } @else {
+          <app-quick-add
+            label="dish"
+            placeholder="e.g. lasagne"
+            [create]="addDish"
+          />
+        }
       </div>
 
       <div class="field row">
@@ -77,6 +91,12 @@ type SourceType = 'food-item' | 'dish';
           </select>
         </div>
       </div>
+      <app-quick-add
+        class="unit-add"
+        label="unit"
+        placeholder="e.g. ml"
+        [create]="addUnit"
+      />
 
       <div class="field">
         <label for="date">Date *</label>
@@ -141,6 +161,11 @@ type SourceType = 'food-item' | 'dish';
         flex-direction: row;
         gap: 12px;
         align-items: flex-end;
+        margin-bottom: 4px;
+      }
+
+      .unit-add {
+        margin-bottom: 16px;
       }
 
       .field-inner {
@@ -270,6 +295,21 @@ export class NewMealFormComponent implements OnInit {
       !!this.date
     );
   }
+
+  readonly addFoodItem = async (name: string): Promise<void> => {
+    const item = await this.ingredientStore.createFoodItem(name, '');
+    this.selectedSourceId = item.id;
+  };
+
+  readonly addDish = async (name: string): Promise<void> => {
+    const dish = await this.dishStore.createDish(name, '');
+    this.selectedSourceId = dish.id;
+  };
+
+  readonly addUnit = async (name: string): Promise<void> => {
+    const unit = await this.amountUnitStore.createUnit(name);
+    this.amountUnitId = unit.id;
+  };
 
   cancel(): void {
     this.uiStore.goHome();

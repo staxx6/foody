@@ -3,11 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { SymptomEntryStore } from './symptom-entry-store';
 import { SymptomStore } from './symptom-store';
 import { UiStore } from '../shared/ui-store';
+import { QuickAddComponent } from '../shared/quick-add.component';
 import { toDateTimeLocalValue, toPocketBaseDate } from '../shared/date-utils';
 
 @Component({
   selector: 'app-new-health-entry-form',
-  imports: [FormsModule],
+  imports: [FormsModule, QuickAddComponent],
   template: `
     <div class="form-header">
       <button class="back-btn" (click)="cancel()">← Back</button>
@@ -23,6 +24,11 @@ import { toDateTimeLocalValue, toPocketBaseDate } from '../shared/date-utils';
             <option [value]="s.id">{{ s.name }}</option>
           }
         </select>
+        <app-quick-add
+          label="symptom type"
+          placeholder="e.g. headache"
+          [create]="addSymptom"
+        />
       </div>
 
       <div class="field">
@@ -150,6 +156,13 @@ export class NewHealthEntryFormComponent implements OnInit {
   ngOnInit(): void {
     this.symptomStore.loadSymptoms();
   }
+
+  readonly addSymptom = async (name: string): Promise<void> => {
+    const symptom = await this.symptomStore.createSymptom(name, '');
+    // No-op if the list is loaded; otherwise fetches it including the new one
+    await this.symptomStore.loadSymptoms();
+    this.symptomId = symptom.id;
+  };
 
   cancel(): void {
     this.uiStore.goHome();

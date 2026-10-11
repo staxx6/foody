@@ -10,11 +10,13 @@ export type AmountUnit = {
 type AmountUnitState = {
   units: AmountUnit[];
   isLoading: boolean;
+  isLoaded: boolean;
 };
 
 const initialState: AmountUnitState = {
   units: [],
   isLoading: false,
+  isLoaded: false,
 };
 
 export const AmountUnitStore = signalStore(
@@ -22,7 +24,7 @@ export const AmountUnitStore = signalStore(
   withState(initialState),
   withMethods((store, dataAccess = inject(DATA_ACCESS)) => ({
     async loadUnits() {
-      if (store.units().length > 0) return;
+      if (store.isLoaded()) return;
       patchState(store, { isLoading: true });
       try {
         const units = await dataAccess.list<AmountUnit>({
@@ -33,10 +35,29 @@ export const AmountUnitStore = signalStore(
             code: String(record['code'] ?? ''),
           }),
         });
-        patchState(store, { units, isLoading: false });
+        patchState(store, { units, isLoading: false, isLoaded: true });
       } catch {
         patchState(store, { isLoading: false });
       }
+    },
+
+    async createUnit(code: string): Promise<AmountUnit> {
+      const unit = await dataAccess.create<AmountUnit>({
+        collectionName: 'amountUnitET',
+        data: { code, name: code },
+        map: (record) => ({
+          id: record.id,
+          code: String(record['code'] ?? ''),
+        }),
+      });
+      // Not loaded yet: the next load fetches the new record anyway
+      if (!store.isLoaded()) return unit;
+      patchState(store, {
+        units: [...store.units(), unit].sort((a, b) =>
+          a.code.localeCompare(b.code),
+        ),
+      });
+      return unit;
     },
   })),
 );
