@@ -35,7 +35,11 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
   ],
   template: `
     <header>
-      <h1>foody</h1>
+      <h1>
+        <button type="button" (click)="uiStore.goHome()" [title]="t().today">
+          foody
+        </button>
+      </h1>
       <app-sync-status />
     </header>
 
@@ -127,10 +131,19 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
 
       h1 {
         margin: 0;
+      }
+
+      /* The logo leads back to today */
+      h1 button {
+        padding: 0;
+        border: none;
+        background: none;
+        font: inherit;
         font-size: 1.35rem;
         font-weight: 800;
         letter-spacing: -0.02em;
         color: var(--primary);
+        cursor: pointer;
       }
 
       main {
