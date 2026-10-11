@@ -6,6 +6,7 @@
   "scripts": {
     "serve": "nx run-many --target=serve --projects=foody,pocketbase --parallel",
     "cert": "node tools/create-cert.mjs",
+    "backup": "node tools/backup.mjs",
     "serve:https": "nx run foody:serve-https"
   },
   "dependencies": {

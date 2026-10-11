@@ -93,6 +93,21 @@ One-time setup on the phone, in the same network:
 
 The ports can be changed with the environment variables `FOODY_HTTPS_PORT` and `FOODY_HTTP_PORT`.
 
+## Backup
+
+`pnpm run backup` saves the database and the uploaded files to `backups/foody-<date>_<time>`. It
+works while PocketBase is running and checks that the saved database can be read.
+
+- Another folder: `pnpm run backup D:\some\folder` or the environment variable `FOODY_BACKUP_DIR`.
+  Use a folder on another disk or in a cloud folder; `backups/` is on the same disk as the data.
+- The newest 14 backups are kept, older ones are removed (`FOODY_BACKUP_KEEP`, `0` keeps all).
+- Entries that a phone has not synchronized yet are not on the server and so not in the backup.
+
+To restore, stop PocketBase and replace `data.db` and `storage` in `apps/pocketbase/pb_data` with
+the ones of the backup (delete `data.db-shm` and `data.db-wal` there if they exist).
+
+PocketBase can also create backups itself: dashboard > Settings > Backups.
+
 ## Languages
 
 The user interface is available in English and German. The language is chosen in the settings of
