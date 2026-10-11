@@ -159,8 +159,6 @@ export class NewHealthEntryFormComponent implements OnInit {
 
   readonly addSymptom = async (name: string): Promise<void> => {
     const symptom = await this.symptomStore.createSymptom(name, '');
-    // No-op if the list is loaded; otherwise fetches it including the new one
-    await this.symptomStore.loadSymptoms();
     this.symptomId = symptom.id;
   };
 

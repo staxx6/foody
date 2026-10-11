@@ -1,4 +1,5 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, effect, inject, untracked } from '@angular/core';
+import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { DatePipe } from '@angular/common';
 import { SymptomEntryStore } from './symptom-entry-store';
 
@@ -46,10 +47,15 @@ import { SymptomEntryStore } from './symptom-entry-store';
     `,
   ],
 })
-export class SymptomEntryListComponent implements OnInit {
+export class SymptomEntryListComponent {
   readonly symptomEntryStore = inject(SymptomEntryStore);
+  private readonly sync = inject(OfflineDataAccessService);
 
-  ngOnInit() {
-    void this.symptomEntryStore.loadTodayEntries();
+  constructor() {
+    // Loads initially and whenever a synchronization changed the data
+    effect(() => {
+      this.sync.revision();
+      untracked(() => void this.symptomEntryStore.loadTodayEntries());
+    });
   }
 }

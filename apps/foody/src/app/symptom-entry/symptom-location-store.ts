@@ -19,7 +19,6 @@ export const SymptomLocationStore = signalStore(
   }),
   withMethods((store, dataAccess = inject(DATA_ACCESS)) => ({
     async loadLocations() {
-      if (store.isLoaded()) return;
       patchState(store, { isLoading: true });
       try {
         const locations = await dataAccess.list<SymptomLocation>({

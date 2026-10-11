@@ -62,6 +62,14 @@
     "lint": {
       "executor": "@nx/eslint:lint"
     },
+    "serve-https": {
+      "continuous": true,
+      "executor": "nx:run-commands",
+      "dependsOn": ["build", { "projects": ["pocketbase"], "target": "serve" }],
+      "options": {
+        "command": "node tools/serve-https.mjs"
+      }
+    },
     "serve-static": {
       "continuous": true,
       "executor": "@nx/web:file-server",

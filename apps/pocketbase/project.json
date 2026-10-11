@@ -4,6 +4,7 @@
   "projectType": "application",
   "targets": {
     "serve": {
+      "continuous": true,
       "executor": "nx:run-commands",
       "options": {
         "cwd": "apps/pocketbase",

@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { DATA_ACCESS, DataRecord } from '@foody/pocketbase-access';
-import { dayFilter } from '../shared/date-utils';
+import { dayRange } from '../shared/date-utils';
 
 export type SymptomEntry = {
   id: string;
@@ -34,7 +34,7 @@ export const SymptomEntryStore = signalStore(
         const entries = await dataAccess.list<SymptomEntry>({
           collectionName: 'symptomEntries',
           options: {
-            filter: dayFilter('date'),
+            dateRange: dayRange('date'),
             expand: 'to_symptom,to_symptom.to_locations',
             sort: 'date',
           },

@@ -1,4 +1,5 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, effect, inject, untracked } from '@angular/core';
+import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { DatePipe } from '@angular/common';
 import { DishEntryStore } from './dish-entry-store';
 
@@ -42,10 +43,15 @@ import { DishEntryStore } from './dish-entry-store';
     `,
   ],
 })
-export class DishEntryListComponent implements OnInit {
+export class DishEntryListComponent {
   readonly dishEntryStore = inject(DishEntryStore);
+  private readonly sync = inject(OfflineDataAccessService);
 
-  ngOnInit() {
-    void this.dishEntryStore.loadTodayEntries();
+  constructor() {
+    // Loads initially and whenever a synchronization changed the data
+    effect(() => {
+      this.sync.revision();
+      untracked(() => void this.dishEntryStore.loadTodayEntries());
+    });
   }
 }

@@ -15,7 +15,6 @@ export const SymptomTypeStore = signalStore(
   withState<SymptomTypeState>({ types: [], isLoading: false, isLoaded: false }),
   withMethods((store, dataAccess = inject(DATA_ACCESS)) => ({
     async loadTypes() {
-      if (store.isLoaded()) return;
       patchState(store, { isLoading: true });
       try {
         const types = await dataAccess.list<SymptomType>({

@@ -24,7 +24,6 @@ export const SymptomStore = signalStore(
   withState(initialState),
   withMethods((store, dataAccess = inject(DATA_ACCESS)) => ({
     async loadSymptoms() {
-      if (store.isLoaded()) return;
       patchState(store, { isLoading: true });
       try {
         const symptoms = await dataAccess.list<Symptom>({

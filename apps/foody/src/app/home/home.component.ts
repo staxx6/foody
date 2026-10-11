@@ -3,6 +3,7 @@ import { DishEntryListComponent } from '../dish-entry/dish-entry-list.component'
 import { SymptomEntryListComponent } from '../symptom-entry/symptom-entry-list.component';
 import { FooterNavComponent } from '../shared/footer/footer-nav.component';
 import { UiStore } from '../shared/ui-store';
+import { SyncStatusComponent } from '../shared/sync-status.component';
 import { NewFoodItemFormComponent } from '../ingredient/new-food-item-form.component';
 import { NewDishFormComponent } from '../dish/new-dish-form.component';
 import { NewMealFormComponent } from '../dish-entry/new-meal-form.component';
@@ -14,6 +15,7 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
     DishEntryListComponent,
     SymptomEntryListComponent,
     FooterNavComponent,
+    SyncStatusComponent,
     NewFoodItemFormComponent,
     NewDishFormComponent,
     NewMealFormComponent,
@@ -23,6 +25,7 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
   template: `
     <header>
       <h1>foody</h1>
+      <app-sync-status />
     </header>
 
     <main>
@@ -67,6 +70,9 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
       }
 
       header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         position: sticky;
         top: 0;
         background: #fff;

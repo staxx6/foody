@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { DATA_ACCESS, DataRecord } from '@foody/pocketbase-access';
-import { dayFilter } from '../shared/date-utils';
+import { dayRange } from '../shared/date-utils';
 
 export type DishEntry = {
   id: string;
@@ -36,7 +36,7 @@ export const DishEntryStore = signalStore(
         const entries = await dataAccess.list<DishEntry>({
           collectionName: 'dishEntries',
           options: {
-            filter: dayFilter('date'),
+            dateRange: dayRange('date'),
             expand: 'to_foodItem,to_dish,to_amountUnit',
             sort: 'date',
           },

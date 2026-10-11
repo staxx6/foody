@@ -1,0 +1,350 @@
+import { inject, Injectable, signal } from '@angular/core';
+import {
+  CreateQuery,
+  DataAccess,
+  DataRecord,
+  DateRange,
+  ListQuery,
+} from '../data-access.model';
+import { DATA_ACCESS_CONFIG } from '../data-access.token';
+import { PocketbaseAccessService } from '../pocketbase-access/pocketbase-access';
+import { OFFLINE_STORAGE, OutboxItem } from './offline-storage';
+
+const AUTO_SYNC_INTERVAL_MS = 60_000;
+const ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
+const ID_LENGTH = 15;
+
+/**
+ * Id in the format PocketBase generates itself. Creating it on the device
+ * makes sending a record repeatable without creating it twice.
+ */
+function generateId(): string {
+  const random = crypto.getRandomValues(new Uint8Array(ID_LENGTH));
+  return Array.from(random, (n) => ID_ALPHABET[n % ID_ALPHABET.length]).join(
+    '',
+  );
+}
+
+function toDate(value: unknown): Date {
+  // PocketBase separates date and time with a space
+  return new Date(String(value).replace(' ', 'T'));
+}
+
+type RequestError = {
+  status?: number;
+  response?: { data?: Record<string, { code?: string }> };
+};
+
+/**
+ * The server was not reached (offline, timeout, other network) or the proxy
+ * in front of it reports that it is not running
+ */
+function isNetworkError(error: unknown): boolean {
+  const status = (error as RequestError)?.status;
+  return !status || (status >= 502 && status <= 504);
+}
+
+/** The record was already created by an earlier attempt */
+function isAlreadyCreated(error: unknown): boolean {
+  const { status, response } = (error ?? {}) as RequestError;
+  return (
+    status === 400 && response?.data?.['id']?.code === 'validation_not_unique'
+  );
+}
+
+/**
+ * Works on a local copy of the data, so the app can be used without the
+ * server. New records are queued and sent when the server is reachable;
+ * records of other devices are fetched at the same time.
+ *
+ * Only creating is supported: there are no conflicts to resolve.
+ */
+@Injectable({ providedIn: 'root' })
+export class OfflineDataAccessService implements DataAccess {
+  private readonly remote = inject(PocketbaseAccessService);
+  private readonly storage = inject(OFFLINE_STORAGE);
+  private readonly collections = inject(DATA_ACCESS_CONFIG).collections ?? [];
+
+  private readonly records = new Map<string, DataRecord>();
+  private outbox: OutboxItem[] = [];
+  private running: Promise<void> | null = null;
+  private rerun = false;
+
+  /** Records created on this device that are not on the server yet */
+  readonly pendingCount = signal(0);
+  readonly isSyncing = signal(false);
+  /** Whether the server was reached by the last synchronization */
+  readonly isOnline = signal(true);
+  readonly lastSyncedAt = signal<Date | null>(null);
+  /** The server rejected a record, e.g. because of invalid data */
+  readonly syncError = signal<string | null>(null);
+  /** Increases whenever a synchronization changed the local copy */
+  readonly revision = signal(0);
+
+  private readonly ready = this.init();
+
+  private async init(): Promise<void> {
+    const snapshot = await this.storage.load();
+    snapshot.records.forEach((record) => this.records.set(record.id, record));
+    this.outbox = snapshot.outbox.sort((a, b) => a.seq - b.seq);
+    this.pendingCount.set(this.outbox.length);
+    if (snapshot.lastSyncedAt) {
+      this.lastSyncedAt.set(new Date(snapshot.lastSyncedAt));
+    }
+
+    const firstSync = this.startSync();
+    // Without a local copy there is nothing to show yet
+    if (!snapshot.lastSyncedAt) await firstSync;
+  }
+
+  /**
+   * Synchronizes when the device comes back online, the app is opened
+   * again and regularly in between
+   */
+  startAutoSync(): void {
+    window.addEventListener('online', () => void this.sync());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') void this.sync();
+    });
+    setInterval(() => {
+      if (document.visibilityState === 'visible') void this.sync();
+    }, AUTO_SYNC_INTERVAL_MS);
+  }
+
+  async list<T>({ collectionName, options, map }: ListQuery<T>): Promise<T[]> {
+    await this.ready;
+
+    let records = [...this.records.values()].filter(
+      (record) => record['collectionName'] === collectionName,
+    );
+    if (records.length === 0 && !this.lastSyncedAt()) {
+      throw new Error(
+        'No data on this device yet. Connect to the server once to load it.',
+      );
+    }
+
+    if (options?.dateRange) {
+      records = records.filter((record) =>
+        this.isInRange(record, options.dateRange as DateRange),
+      );
+    }
+    if (options?.sort) records.sort(this.comparator(options.sort));
+
+    const paths = options?.expand?.split(',').map((path) => path.trim()) ?? [];
+    return records.map((record) => map(this.expand(record, paths)));
+  }
+
+  async create<T>({ collectionName, data, map }: CreateQuery<T>): Promise<T> {
+    await this.ready;
+
+    const id = generateId();
+    const now = new Date().toISOString().replace('T', ' ');
+    const record: DataRecord = {
+      ...data,
+      id,
+      collectionName,
+      created: now,
+      updated: now,
+    };
+    const item = await this.storage.addLocal(record, {
+      collectionName,
+      data: { ...data, id },
+    });
+    this.records.set(id, record);
+    this.outbox.push(item);
+    this.pendingCount.set(this.outbox.length);
+
+    void this.sync();
+    return map(record);
+  }
+
+  getFileUrl(record: DataRecord, fileName: string): string {
+    return this.remote.getFileUrl(record, fileName);
+  }
+
+  /**
+   * Sends the queued records and fetches the current data. Never rejects:
+   * the result is reflected in `isOnline` and `syncError`.
+   */
+  async sync(): Promise<void> {
+    await this.ready;
+    await this.startSync();
+  }
+
+  private startSync(): Promise<void> {
+    if (this.running) {
+      // Records may have been queued after the running sync sent its queue
+      this.rerun = true;
+      return this.running;
+    }
+
+    this.running = this.runSync().finally(() => {
+      this.running = null;
+      if (this.rerun) {
+        this.rerun = false;
+        void this.startSync();
+      }
+    });
+    return this.running;
+  }
+
+  private async runSync(): Promise<void> {
+    this.isSyncing.set(true);
+    try {
+      const allSent = await this.push();
+      const changed = await this.pull();
+
+      const now = new Date();
+      await this.storage.setLastSyncedAt(now.toISOString());
+      this.lastSyncedAt.set(now);
+      this.isOnline.set(true);
+      if (allSent) this.syncError.set(null);
+      if (changed) this.revision.update((revision) => revision + 1);
+    } catch (error) {
+      if (isNetworkError(error)) {
+        this.isOnline.set(false);
+      } else {
+        this.syncError.set(
+          error instanceof Error ? error.message : 'Synchronization failed',
+        );
+      }
+    } finally {
+      this.isSyncing.set(false);
+    }
+  }
+
+  /**
+   * Sends the queue in the order of creation, as records can refer to
+   * records created before them.
+   * @returns false if the server rejected a record; it stays in the queue
+   */
+  private async push(): Promise<boolean> {
+    while (this.outbox.length > 0) {
+      const item = this.outbox[0];
+      try {
+        await this.remote.create({
+          collectionName: item.collectionName,
+          data: item.data,
+          map: (record) => record,
+        });
+      } catch (error) {
+        if (isNetworkError(error)) throw error;
+        if (!isAlreadyCreated(error)) {
+          const reason = error instanceof Error ? error.message : 'rejected';
+          this.syncError.set(
+            `Could not send a record of "${item.collectionName}": ${reason}`,
+          );
+          return false;
+        }
+      }
+
+      await this.storage.removeFromOutbox(item.seq);
+      this.outbox.shift();
+      this.pendingCount.set(this.outbox.length);
+    }
+    return true;
+  }
+
+  /**
+   * Replaces the local copy by the data of the server, except for records
+   * that are still queued.
+   * @returns whether the local copy changed
+   */
+  private async pull(): Promise<boolean> {
+    let changed = false;
+
+    for (const collectionName of this.collections) {
+      const fetched = await this.remote.list<DataRecord>({
+        collectionName,
+        map: (record) => ({ ...record, collectionName }),
+      });
+
+      const pendingIds = new Set(this.outbox.map((item) => item.data.id));
+      const fetchedIds = new Set(fetched.map((record) => record.id));
+
+      const put = fetched.filter(
+        (record) =>
+          !pendingIds.has(record.id) &&
+          this.records.get(record.id)?.updated !== record.updated,
+      );
+      const deleteIds = [...this.records.values()]
+        .filter(
+          (record) =>
+            record['collectionName'] === collectionName &&
+            !fetchedIds.has(record.id) &&
+            !pendingIds.has(record.id),
+        )
+        .map((record) => record.id);
+
+      if (put.length === 0 && deleteIds.length === 0) continue;
+
+      await this.storage.applyChanges(put, deleteIds);
+      put.forEach((record) => this.records.set(record.id, record));
+      deleteIds.forEach((id) => this.records.delete(id));
+      changed = true;
+    }
+
+    return changed;
+  }
+
+  private isInRange(record: DataRecord, { field, from, to }: DateRange) {
+    const time = toDate(record[field]).getTime();
+    return time >= from.getTime() && time < to.getTime();
+  }
+
+  /** Supports the PocketBase notation, e.g. "name" or "-date,name" */
+  private comparator(sort: string): (a: DataRecord, b: DataRecord) => number {
+    const fields = sort.split(',').map((part) => {
+      const name = part.trim();
+      return name.startsWith('-')
+        ? { name: name.slice(1), direction: -1 }
+        : { name: name.replace(/^\+/, ''), direction: 1 };
+    });
+
+    return (a, b) => {
+      for (const { name, direction } of fields) {
+        const left = a[name];
+        const right = b[name];
+        const order =
+          typeof left === 'number' && typeof right === 'number'
+            ? left - right
+            : String(left ?? '').localeCompare(String(right ?? ''));
+        if (order !== 0) return order * direction;
+      }
+      return 0;
+    };
+  }
+
+  /**
+   * Adds the related records like PocketBase does for its `expand` option,
+   * e.g. "to_symptom.to_locations"
+   */
+  private expand(record: DataRecord, paths: string[]): DataRecord {
+    if (paths.length === 0) return record;
+
+    const nestedByField = new Map<string, string[]>();
+    for (const path of paths) {
+      const [field, ...rest] = path.split('.');
+      const nested = nestedByField.get(field) ?? [];
+      if (rest.length > 0) nested.push(rest.join('.'));
+      nestedByField.set(field, nested);
+    }
+
+    const expand: Record<string, DataRecord | DataRecord[]> = {};
+    for (const [field, nested] of nestedByField) {
+      const value = record[field];
+      const resolve = (id: unknown) => {
+        const related = this.records.get(String(id));
+        return related ? [this.expand(related, nested)] : [];
+      };
+
+      if (Array.isArray(value)) {
+        expand[field] = value.flatMap(resolve);
+      } else if (value) {
+        const [related] = resolve(value);
+        if (related) expand[field] = related;
+      }
+    }
+    return { ...record, expand };
+  }
+}

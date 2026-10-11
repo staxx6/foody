@@ -24,7 +24,6 @@ export const AmountUnitStore = signalStore(
   withState(initialState),
   withMethods((store, dataAccess = inject(DATA_ACCESS)) => ({
     async loadUnits() {
-      if (store.isLoaded()) return;
       patchState(store, { isLoading: true });
       try {
         const units = await dataAccess.list<AmountUnit>({

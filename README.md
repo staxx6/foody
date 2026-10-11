@@ -40,6 +40,59 @@ The collections are created automatically from `apps/pocketbase/pb_migrations` w
 
 The PocketBase URL and port used by the app are configured in `apps/foody/src/app/app.config.ts`.
 
+## Offline use and synchronization
+
+The app works on a local copy of the data in the browser (IndexedDB), see
+`libs/pocketbase-access/src/lib/offline`.
+
+- New records are stored on the device first and queued. They are sent to PocketBase as soon as it
+  is reachable; records of other devices are fetched at the same time.
+- Synchronization runs on start, after creating a record, when the device comes back online, when
+  the app becomes visible again and once a minute. The status in the header shows the state and
+  triggers it manually.
+- Only creating records is supported, so there are no conflicts to resolve. The same name created
+  on two devices results in two records.
+- The collections that are copied to the device are listed in `apps/foody/src/app/app.config.ts`.
+- A device has to reach the server once before it can be used offline.
+- A service worker (`apps/foody/public/sw.js`) keeps the built app on the device, so it starts
+  without the server. It is not active with the dev server.
+
+## Use on the phone (HTTPS in the home network)
+
+Browsers only allow the service worker over HTTPS, so the built app is served by
+`tools/serve-https.mjs` with a certificate of a local authority created by
+[mkcert](https://github.com/FiloSottile/mkcert). The script also forwards `/api/` and `/_/` to
+PocketBase, which itself stays reachable from this machine only.
+
+One-time setup on the PC:
+
+1. Install mkcert, e.g. `winget install FiloSottile.mkcert`.
+2. `pnpm run cert` creates the certificate in `certs/` (not part of the repository). Run it again
+   when the address of the PC in the network changes.
+3. Optional: `mkcert -install` makes the browsers of the PC trust the certificate.
+4. Allow incoming connections for the ports 8443 and 8880 in the firewall, e.g. on Windows in a
+   terminal with administrator rights:
+   `New-NetFirewallRule -DisplayName foody -Direction Inbound -Protocol TCP -LocalPort 8443,8880 -Action Allow`
+
+`pnpm run serve:https` builds the app and starts PocketBase and the HTTPS server. It prints the
+addresses:
+
+| What                      | URL                                            |
+| ------------------------- | ---------------------------------------------- |
+| App                       | `https://<address of the PC>:8443`             |
+| PocketBase dashboard      | `https://<address of the PC>:8443/_/`          |
+| Certificate for the phone | `http://<address of the PC>:8880/foody-ca.crt` |
+
+One-time setup on the phone, in the same network:
+
+1. Open the certificate URL and download the file.
+2. Android: Settings > Security > Encryption & credentials > Install a certificate > CA
+   certificate. iPhone: install the downloaded profile in Settings, then enable it under General >
+   About > Certificate Trust Settings.
+3. Open the app URL and add it to the home screen.
+
+The ports can be changed with the environment variables `FOODY_HTTPS_PORT` and `FOODY_HTTP_PORT`.
+
 ## Single commands
 
 | Command                                      | Description                                            |

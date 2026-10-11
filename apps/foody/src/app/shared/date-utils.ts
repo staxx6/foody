@@ -1,3 +1,5 @@
+import { DateRange } from '@foody/pocketbase-access';
+
 /**
  * Value for an `<input type="datetime-local">`, which works with local time
  */
@@ -14,11 +16,12 @@ export function toPocketBaseDate(date: Date): string {
 }
 
 /**
- * PocketBase filter for all records whose `field` lies on the local day of `day`
+ * The local day of `day` as date range of `field`
  */
-export function dayFilter(field: string, day = new Date()): string {
-  const start = new Date(day.getFullYear(), day.getMonth(), day.getDate());
-  const end = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
-
-  return `${field} >= "${toPocketBaseDate(start)}" && ${field} < "${toPocketBaseDate(end)}"`;
+export function dayRange(field: string, day = new Date()): DateRange {
+  return {
+    field,
+    from: new Date(day.getFullYear(), day.getMonth(), day.getDate()),
+    to: new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1),
+  };
 }

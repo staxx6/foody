@@ -4,7 +4,9 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "serve": "nx run-many --target=serve --projects=foody,pocketbase --parallel"
+    "serve": "nx run-many --target=serve --projects=foody,pocketbase --parallel",
+    "cert": "node tools/create-cert.mjs",
+    "serve:https": "nx run foody:serve-https"
   },
   "dependencies": {
     "@angular/common": "~21.2.0",

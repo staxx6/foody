@@ -14,11 +14,20 @@ export type DataRecord = {
 };
 
 /**
+ * Records whose date `field` is at or after `from` and before `to`
+ */
+export type DateRange = {
+  field: string;
+  from: Date;
+  to: Date;
+};
+
+/**
  * Options for the list function
  */
 export type ListOptions = {
   sort?: string;
-  filter?: string;
+  dateRange?: DateRange;
   expand?: string;
 };
 
@@ -57,5 +66,9 @@ export interface DataAccess {
 
 export interface DataAccessConfig {
   url: string;
-  port: number;
+  port?: number;
+  /**
+   * Collections that are copied to the device for offline use
+   */
+  collections?: string[];
 }

@@ -56,3 +56,6 @@ vitest.config.*.timestamp*
 
 # model-img
 *.af~lock~
+
+# https certificate of the home network (pnpm run cert)
+certs/
