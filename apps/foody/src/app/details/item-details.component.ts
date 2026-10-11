@@ -8,6 +8,7 @@ import {
 import { fromPocketBaseDate } from '../shared/date-utils';
 import { I18n, toLocalizedName } from '../shared/i18n/i18n';
 import { IconComponent, IconName } from '../shared/icon.component';
+import { Keyboard } from '../shared/keyboard/keyboard';
 import { ActiveSite, UiStore } from '../shared/ui-store';
 
 export type ItemKind = 'food' | 'dish' | 'symptom' | 'medication';
@@ -157,6 +158,7 @@ type Details = {
                   <button
                     type="button"
                     class="history"
+                    data-row
                     (click)="uiStore.showDay(date)"
                   >
                     <span>{{ i18n.formatFullDate(date) }}</span>
@@ -350,6 +352,10 @@ export class ItemDetailsComponent {
   protected readonly details = signal<Details | null>(null);
 
   constructor() {
+    inject(Keyboard).bind({
+      e: () => this.uiStore.edit(this.config().editForm, this.id()),
+    });
+
     // Loads initially, in another language and after a synchronization
     effect(() => {
       this.sync.revision();

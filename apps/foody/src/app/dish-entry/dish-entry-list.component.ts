@@ -4,19 +4,26 @@ import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { DatePipe } from '@angular/common';
 import { ConfirmService } from '../shared/confirm/confirm.service';
 import { IconComponent } from '../shared/icon.component';
+import { RowDirective } from '../shared/keyboard/row.directive';
 import { UiStore } from '../shared/ui-store';
 import { DishEntry, DishEntryStore } from './dish-entry-store';
 
 @Component({
   selector: 'app-dish-entry-list',
-  imports: [DatePipe, IconComponent],
+  imports: [DatePipe, IconComponent, RowDirective],
   template: `
     @if (dishEntryStore.error()) {
       <p class="list-message error">{{ dishEntryStore.error() }}</p>
     } @else if (dishEntryStore.entries().length > 0) {
       <ul class="entry-list">
         @for (entry of dishEntryStore.entries(); track entry.id) {
-          <li class="entry">
+          <li
+            class="entry"
+            appRow
+            (rowOpen)="showDetails(entry)"
+            (rowEdit)="uiStore.edit('new-meal', entry.id)"
+            (rowDelete)="remove(entry)"
+          >
             <span class="time">{{ entry.date | date: 'HH:mm' }}</span>
             @if (entry.imageUrl) {
               <img [src]="entry.imageUrl" alt="" />
@@ -26,12 +33,7 @@ import { DishEntry, DishEntryStore } from './dish-entry-store';
                 type="button"
                 class="name"
                 [disabled]="!entry.dishId && !entry.foodItemId"
-                (click)="
-                  uiStore.edit(
-                    entry.dishId ? 'view-dish' : 'view-food',
-                    entry.dishId || entry.foodItemId
-                  )
-                "
+                (click)="showDetails(entry)"
                 [title]="t().showDetails"
               >
                 {{ entry.name }}
@@ -83,6 +85,11 @@ export class DishEntryListComponent {
       const day = this.uiStore.selectedDay();
       untracked(() => void this.dishEntryStore.loadEntries(day));
     });
+  }
+
+  protected showDetails(entry: DishEntry): void {
+    const id = entry.dishId || entry.foodItemId;
+    if (id) this.uiStore.edit(entry.dishId ? 'view-dish' : 'view-food', id);
   }
 
   protected remove(entry: DishEntry): Promise<void> {

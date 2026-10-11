@@ -1,5 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, inject, signal } from '@angular/core';
 import { I18n } from '../i18n/i18n';
+import { Keyboard } from '../keyboard/keyboard';
 import { ActiveSite, UiStore } from '../ui-store';
 import { FooterButtonComponent } from './footer-button.component';
 import { IconComponent } from '../icon.component';
@@ -25,17 +26,20 @@ import { SyncStatusComponent } from '../sync-status.component';
                 t().logMeal
               }}</span
               ><small>{{ t().logMealHint }}</small>
+              <kbd class="kbd">M</kbd>
             </button>
             <button class="tile" (click)="selectForm('new-health-entry')">
               <app-icon class="icon" name="symptom" /><span class="title">{{
                 t().logSymptom
               }}</span
               ><small>{{ t().logSymptomHint }}</small>
+              <kbd class="kbd">S</kbd>
             </button>
             <button class="tile" (click)="selectForm('new-medication-entry')">
               <app-icon class="icon" name="pill" />
               <span class="title">{{ t().logMedication }}</span>
               <small>{{ t().logMedicationHint }}</small>
+              <kbd class="kbd">P</kbd>
             </button>
           </div>
         </section>
@@ -49,6 +53,7 @@ import { SyncStatusComponent } from '../sync-status.component';
               ><span class="title">{{ t().newFood }}</span
               ><small>{{ t().newFoodHint }}</small></span
             >
+            <kbd class="kbd">F</kbd>
           </button>
           <button class="row" (click)="selectForm('new-dish')">
             <app-icon class="icon" name="dish" />
@@ -56,6 +61,7 @@ import { SyncStatusComponent } from '../sync-status.component';
               ><span class="title">{{ t().newDish }}</span
               ><small>{{ t().newDishHint }}</small></span
             >
+            <kbd class="kbd">D</kbd>
           </button>
           <button class="row" (click)="selectForm('new-symptom')">
             <app-icon class="icon" name="tag" />
@@ -63,6 +69,7 @@ import { SyncStatusComponent } from '../sync-status.component';
               ><span class="title">{{ t().newSymptom }}</span
               ><small>{{ t().newSymptomHint }}</small></span
             >
+            <kbd class="kbd">Y</kbd>
           </button>
           <button class="row" (click)="selectForm('new-medication')">
             <app-icon class="icon" name="pill" />
@@ -70,6 +77,7 @@ import { SyncStatusComponent } from '../sync-status.component';
               <span class="title">{{ t().newMedication }}</span>
               <small>{{ t().newMedicationHint }}</small>
             </span>
+            <kbd class="kbd">K</kbd>
           </button>
           <button class="row" (click)="selectForm('lists')">
             <app-icon class="icon" name="list" />
@@ -77,6 +85,7 @@ import { SyncStatusComponent } from '../sync-status.component';
               <span class="title">{{ t().manageLists }}</span>
               <small>{{ t().manageListsHint }}</small>
             </span>
+            <kbd class="kbd">L</kbd>
           </button>
         </section>
       </div>
@@ -94,12 +103,14 @@ import { SyncStatusComponent } from '../sync-status.component';
         [label]="t().today"
         icon="today"
         [active]="uiStore.isActive('today')"
+        shortcut="1"
         (clicked)="uiStore.goHome()"
       />
       <app-footer-button
         [label]="t().month"
         icon="month"
         [active]="uiStore.isActive('month')"
+        shortcut="2"
         (clicked)="selectForm('month')"
       />
       <button
@@ -110,11 +121,13 @@ import { SyncStatusComponent } from '../sync-status.component';
       >
         <app-icon [name]="showMenu() ? 'close' : 'plus'" />
         <span class="add-label wide-only">{{ t().addEntry }}</span>
+        <kbd class="kbd">N</kbd>
       </button>
       <app-footer-button
         [label]="t().report"
         icon="report"
         [active]="uiStore.isActive('report')"
+        shortcut="3"
         (clicked)="selectForm('report')"
       />
       <app-footer-button
@@ -122,6 +135,7 @@ import { SyncStatusComponent } from '../sync-status.component';
         [label]="t().lists"
         icon="list"
         [active]="uiStore.isActive('lists')"
+        shortcut="4"
         (clicked)="selectForm('lists')"
       />
       <app-footer-button
@@ -129,8 +143,16 @@ import { SyncStatusComponent } from '../sync-status.component';
         [label]="t().settings"
         icon="settings"
         [active]="uiStore.isActive('settings')"
+        shortcut="5"
         (clicked)="selectForm('settings')"
       />
+      <button
+        type="button"
+        class="help wide-only"
+        (click)="keyboard.isHelpOpen.set(true)"
+      >
+        <kbd class="kbd">?</kbd> {{ t().keyboardShortcuts }}
+      </button>
       <app-sync-status class="status wide-only" />
     </nav>
   `,
@@ -364,11 +386,55 @@ import { SyncStatusComponent } from '../sync-status.component';
           order: 3;
         }
 
-        .status {
-          display: block;
+        .add-btn .kbd {
+          margin-left: 4px;
+          border-color: currentColor;
+          background: none;
+          color: inherit;
+          opacity: 0.75;
+        }
+
+        .help {
+          display: flex;
+          align-items: center;
+          gap: 8px;
           order: 4;
           margin-top: auto;
+          padding: 8px 12px;
+          border: none;
+          border-radius: 12px;
+          background: none;
+          color: var(--text-muted);
+          font-size: 0.85rem;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .help:hover {
+          color: var(--text);
+        }
+
+        .status {
+          display: block;
+          order: 5;
+          margin: 8px 0 0 12px;
           align-self: flex-start;
+        }
+
+        /* The keys of the menu, in the corner of a tile and at the end of
+           a row */
+        .tile {
+          position: relative;
+        }
+
+        .tile .kbd {
+          position: absolute;
+          top: 6px;
+          right: 6px;
+        }
+
+        .row .kbd {
+          margin-left: auto;
         }
 
         /* The menu opens next to the button instead of above the bar */
@@ -386,10 +452,72 @@ import { SyncStatusComponent } from '../sync-status.component';
 export class FooterNavComponent {
   protected readonly t = inject(I18n).t;
   protected readonly uiStore = inject(UiStore);
+  protected readonly keyboard = inject(Keyboard);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly showMenu = signal(false);
+
+  constructor() {
+    // Not while a form is open, whose input would be lost
+    this.keyboard.bind(
+      {
+        '1': () => this.uiStore.goHome(),
+        '2': () => this.selectForm('month'),
+        '3': () => this.selectForm('report'),
+        '4': () => this.selectForm('lists'),
+        '5': () => this.selectForm('settings'),
+        n: () => this.openMenuByKey(),
+        m: () => this.selectForm('new-meal'),
+        s: () => this.selectForm('new-health-entry'),
+        p: () => this.selectForm('new-medication-entry'),
+      },
+      { when: () => !this.uiStore.isEditing() },
+    );
+
+    this.keyboard.bind(
+      {
+        Escape: () => this.showMenu.set(false),
+        n: () => this.showMenu.set(false),
+        m: () => this.selectForm('new-meal'),
+        s: () => this.selectForm('new-health-entry'),
+        p: () => this.selectForm('new-medication-entry'),
+        f: () => this.selectForm('new-food-item'),
+        d: () => this.selectForm('new-dish'),
+        y: () => this.selectForm('new-symptom'),
+        k: () => this.selectForm('new-medication'),
+        l: () => this.selectForm('lists'),
+        ArrowDown: () => this.moveInMenu(1),
+        ArrowUp: () => this.moveInMenu(-1),
+        ArrowRight: () => this.moveInMenu(1),
+        ArrowLeft: () => this.moveInMenu(-1),
+      },
+      { when: () => this.showMenu(), exclusive: true },
+    );
+  }
 
   toggleMenu(): void {
     this.showMenu.update((v) => !v);
+  }
+
+  /** Opened with the keyboard, the menu is also walked through with it */
+  private openMenuByKey(): void {
+    this.showMenu.set(true);
+    // After the menu has been rendered
+    setTimeout(() => this.moveInMenu(1));
+  }
+
+  /** Moves the focus to the next or previous entry of the menu */
+  private moveInMenu(step: number): void {
+    const entries = Array.from(
+      this.host.nativeElement.querySelectorAll<HTMLElement>(
+        '.menu-popup button',
+      ),
+    );
+    const current = entries.indexOf(document.activeElement as HTMLElement);
+    const next =
+      current < 0
+        ? 0
+        : (current + step + entries.length) % Math.max(entries.length, 1);
+    entries[next]?.focus();
   }
 
   selectForm(form: ActiveSite): void {

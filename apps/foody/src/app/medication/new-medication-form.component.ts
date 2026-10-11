@@ -11,6 +11,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { AmountUnitStore } from '../shared/amount-unit-store';
 import { I18n } from '../shared/i18n/i18n';
+import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import { IconComponent } from '../shared/icon.component';
 import {
   ExistingImage,
@@ -28,6 +29,7 @@ const DEFAULT_UNIT_CODE = 'tablet';
   selector: 'app-new-medication-form',
   imports: [
     FormsModule,
+    AutofocusDirective,
     IconComponent,
     ImagePickerComponent,
     SearchSelectComponent,
@@ -50,6 +52,7 @@ const DEFAULT_UNIT_CODE = 'tablet';
         <label for="medication-name">{{ t().name }} *</label>
         <input
           id="medication-name"
+          appAutofocus
           name="name"
           [(ngModel)]="name"
           [placeholder]="t().medicationPlaceholder"

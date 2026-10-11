@@ -17,6 +17,7 @@ import {
   toTimeInputValue,
 } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
+import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import { IconComponent } from '../shared/icon.component';
 import { SearchSelectComponent } from '../shared/search/search-select.component';
 import { UiStore } from '../shared/ui-store';
@@ -31,6 +32,7 @@ import { NewMedicationFormComponent } from './new-medication-form.component';
   selector: 'app-log-medication-form',
   imports: [
     FormsModule,
+    AutofocusDirective,
     IconComponent,
     SearchSelectComponent,
     NewMedicationFormComponent,
@@ -62,6 +64,7 @@ import { NewMedicationFormComponent } from './new-medication-form.component';
           <label for="medication">{{ t().medication }} *</label>
           <app-search-select
             inputId="medication"
+            [appAutofocus]="!editId()"
             [options]="medicationOptions()"
             [value]="medicationId()"
             (valueChange)="select($event)"

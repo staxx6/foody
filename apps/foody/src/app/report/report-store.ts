@@ -7,6 +7,10 @@ import {
   toDateInputValue,
 } from '../shared/date-utils';
 import { LocalizedName, toLocalizedName } from '../shared/i18n/i18n';
+import {
+  FOLLOW_UP_COLLECTION,
+  FollowUpCourse,
+} from '../symptom-entry/symptom-entry-store';
 
 export type ReportMeal = {
   id: string;
@@ -29,6 +33,16 @@ export type ReportSymptom = {
   comment: string;
 };
 
+/** How a symptom was some time after it was logged */
+export type ReportFollowUp = {
+  time: Date;
+  /** The name of the symptom */
+  name: string;
+  course: FollowUpCourse;
+  level: number | null;
+  comment: string;
+};
+
 export type ReportMedication = {
   time: Date;
   name: string;
@@ -41,6 +55,8 @@ export type ReportMedication = {
 export type ReportData = {
   meals: ReportMeal[];
   symptoms: ReportSymptom[];
+  /** Only exported: a follow-up is not a new complaint */
+  followUps: ReportFollowUp[];
   medications: ReportMedication[];
 };
 
@@ -81,7 +97,7 @@ export class ReportStore {
   async load(from: Date, to: Date): Promise<ReportData> {
     const dateRange: DateRange = { field: 'date', from, to };
 
-    const [meals, symptoms, medications] = await Promise.all([
+    const [meals, symptoms, followUps, medications] = await Promise.all([
       this.dataAccess.list<ReportMeal | null>({
         collectionName: 'dishEntries',
         options: {
@@ -132,6 +148,25 @@ export class ReportStore {
           };
         },
       }),
+      this.dataAccess.list<ReportFollowUp>({
+        collectionName: FOLLOW_UP_COLLECTION,
+        options: {
+          dateRange,
+          sort: 'date',
+          expand: 'to_symptomEntry.to_symptom',
+        },
+        map: (record) => {
+          const [entry] = expanded(record, 'to_symptomEntry');
+          const [symptom] = entry ? expanded(entry, 'to_symptom') : [];
+          return {
+            time: timeOf(record),
+            name: String(symptom?.['name'] ?? '–'),
+            course: String(record['course'] ?? 'same') as FollowUpCourse,
+            level: Number(record['discomfortLevel']) || null,
+            comment: String(record['comment'] ?? ''),
+          };
+        },
+      }),
       this.dataAccess.list<ReportMedication>({
         collectionName: 'medicationEntries',
         options: {
@@ -157,6 +192,7 @@ export class ReportStore {
     return {
       meals: meals.filter((meal): meal is ReportMeal => meal !== null),
       symptoms,
+      followUps,
       medications,
     };
   }

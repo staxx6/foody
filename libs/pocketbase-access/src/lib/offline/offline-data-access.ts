@@ -327,16 +327,20 @@ export class OfflineDataAccessService implements DataAccess {
   /**
    * How many records of the local copy refer to the record, e.g. the
    * entries of a food. Deleting it would leave them without it.
+   * @param ignoreCollections their records do not count, as they are
+   *   deleted together with the record
    */
-  async usages(id: string): Promise<number> {
+  async usages(id: string, ignoreCollections: string[] = []): Promise<number> {
     await this.ready;
 
-    return [...this.records.values()].filter((record) =>
-      Object.entries(record).some(
-        ([field, value]) =>
-          field !== 'id' &&
-          (value === id || (Array.isArray(value) && value.includes(id))),
-      ),
+    return [...this.records.values()].filter(
+      (record) =>
+        !ignoreCollections.includes(String(record['collectionName'])) &&
+        Object.entries(record).some(
+          ([field, value]) =>
+            field !== 'id' &&
+            (value === id || (Array.isArray(value) && value.includes(id))),
+        ),
     ).length;
   }
 

@@ -8,6 +8,7 @@ import {
   input,
 } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
+import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import { FormsModule } from '@angular/forms';
 import { DishEntryStore } from './dish-entry-store';
 import { IngredientStore } from '../ingredient/ingredient-store';
@@ -37,6 +38,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
   selector: 'app-new-meal-form',
   imports: [
     FormsModule,
+    AutofocusDirective,
     SearchSelectComponent,
     IconComponent,
     QuickAddComponent,
@@ -93,6 +95,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
             </button>
           </div>
           <app-search-select
+            [appAutofocus]="!editId()"
             [options]="
               sourceType === 'food-item'
                 ? ingredientStore.foodItems()

@@ -7,6 +7,7 @@ import {
   input,
 } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
+import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import { FormsModule } from '@angular/forms';
 import { SymptomEntryStore } from './symptom-entry-store';
 import { SymptomStore } from './symptom-store';
@@ -26,6 +27,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
   selector: 'app-new-health-entry-form',
   imports: [
     FormsModule,
+    AutofocusDirective,
     SearchSelectComponent,
     IconComponent,
     NewSymptomFormComponent,
@@ -57,6 +59,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
           <label for="symptom">{{ t().symptom }} *</label
           ><app-search-select
             inputId="symptom"
+            [appAutofocus]="!editId()"
             [options]="symptomStore.symptoms()"
             [(value)]="symptomId"
             [placeholder]="t().selectSymptom"

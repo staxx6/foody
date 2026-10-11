@@ -11,6 +11,7 @@ import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { addDays, dayKey, toDateInputValue } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
 import { IconComponent } from '../shared/icon.component';
+import { Keyboard } from '../shared/keyboard/keyboard';
 import { SearchSelectComponent } from '../shared/search/search-select.component';
 import { UiStore } from '../shared/ui-store';
 import { SymptomStore } from '../symptom-entry/symptom-store';
@@ -189,6 +190,7 @@ const TIME_SPANS = [6, 12, 24, 48];
         <p>{{ t().exportHint }}</p>
         <button type="button" (click)="exportExcel()" [disabled]="!data()">
           <app-icon name="download" /> {{ t().exportExcel }}
+          <kbd class="kbd">X</kbd>
         </button>
       </div>
     </section>
@@ -473,6 +475,13 @@ const TIME_SPANS = [6, 12, 24, 48];
         cursor: pointer;
       }
 
+      .export .kbd {
+        border-color: currentColor;
+        background: none;
+        color: inherit;
+        opacity: 0.75;
+      }
+
       .export button:disabled {
         opacity: 0.45;
         cursor: not-allowed;
@@ -590,6 +599,8 @@ export class ReportComponent implements OnInit {
   });
 
   constructor() {
+    inject(Keyboard).bind({ x: () => this.exportExcel() });
+
     // Loads initially, for another period and after a synchronization
     effect(() => {
       const from = this.from();
@@ -680,15 +691,27 @@ export class ReportComponent implements OnInit {
         entry.comment,
       ] as Cell[],
     }));
-    const symptoms = data.symptoms.map((entry) => ({
-      time: entry.time,
-      cells: [
-        time(entry.time),
-        entry.name,
-        entry.level,
-        entry.comment,
-      ] as Cell[],
-    }));
+    const symptoms = [
+      ...data.symptoms.map((entry) => ({
+        time: entry.time,
+        cells: [
+          time(entry.time),
+          entry.name,
+          entry.level,
+          entry.comment,
+        ] as Cell[],
+      })),
+      // The follow-ups stand between the symptoms, at their own time
+      ...data.followUps.map((followUp) => ({
+        time: followUp.time,
+        cells: [
+          time(followUp.time),
+          `↳ ${followUp.name}: ${t.courses[followUp.course]}`,
+          followUp.level,
+          followUp.comment,
+        ] as Cell[],
+      })),
+    ].sort((a, b) => a.time.getTime() - b.time.getTime());
     const groups = [
       { title: t.meals, width: 3, entries: meals },
       { title: t.symptoms, width: 4, entries: symptoms },

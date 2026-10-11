@@ -275,6 +275,49 @@ const en = {
   symptoms: 'Symptoms',
   units: 'Units',
   emptyList: 'Nothing here yet.',
+
+  // Follow-up of a symptom entry
+  followUp: 'Follow-up',
+  addFollowUp: 'Add follow-up',
+  addFollowUpFor: (name: string) => `Add follow-up for ${name}`,
+  editFollowUp: 'Edit follow-up',
+  followUpQuestion: 'How is it now?',
+  courses: {
+    better: 'Better',
+    same: 'Unchanged',
+    worse: 'Worse',
+    gone: 'Gone',
+  },
+  levelAtStart: (level: number) => `At the start: ${level}`,
+  afterDuration: (hours: number, minutes: number) =>
+    `after ${[hours ? `${hours} h` : '', minutes || !hours ? `${minutes} min` : ''].filter(Boolean).join(' ')}`,
+  followUpTooEarly: 'A follow-up cannot be before the symptom itself.',
+
+  // Keyboard
+  keyboardShortcuts: 'Keyboard shortcuts',
+  allShortcuts: 'All shortcuts',
+  close: 'Close',
+  then: 'then',
+  keyDelete: 'Del',
+  keyCtrl: 'Ctrl',
+  shortcuts: {
+    general: 'General',
+    forms: 'Forms',
+    help: 'Show this help',
+    pages: 'Today, month, report, lists, settings',
+    escape: 'Back; in a field: leave the field',
+    addMenu: 'Open the menu with everything that can be added',
+    changeDay: 'Previous / next day',
+    changeMonth: 'Previous / next month',
+    selectEntry: 'Select an entry',
+    followUp:
+      'Add a follow-up to the selected symptom; without a selection: go to the symptoms',
+    calendar: 'Move through the days',
+    openDay: 'Show the day',
+    search: 'Search',
+    cancelForm: 'Cancel',
+    pickOption: 'Choose in a search field',
+  },
 };
 
 export type Translations = typeof en;
@@ -527,6 +570,47 @@ const de: Translations = {
   symptoms: 'Symptome',
   units: 'Einheiten',
   emptyList: 'Noch nichts vorhanden.',
+
+  followUp: 'Verlauf',
+  addFollowUp: 'Verlauf eintragen',
+  addFollowUpFor: (name) => `Verlauf für ${name} eintragen`,
+  editFollowUp: 'Verlauf bearbeiten',
+  followUpQuestion: 'Wie ist es jetzt?',
+  courses: {
+    better: 'Besser',
+    same: 'Unverändert',
+    worse: 'Schlechter',
+    gone: 'Weg',
+  },
+  levelAtStart: (level) => `Zu Beginn: ${level}`,
+  afterDuration: (hours, minutes) =>
+    `nach ${[hours ? `${hours} Std.` : '', minutes || !hours ? `${minutes} Min.` : ''].filter(Boolean).join(' ')}`,
+  followUpTooEarly: 'Ein Verlauf kann nicht vor dem Symptom selbst liegen.',
+
+  keyboardShortcuts: 'Tastenkürzel',
+  allShortcuts: 'Alle Tastenkürzel',
+  close: 'Schließen',
+  then: 'dann',
+  keyDelete: 'Entf',
+  keyCtrl: 'Strg',
+  shortcuts: {
+    general: 'Allgemein',
+    forms: 'Formulare',
+    help: 'Diese Hilfe anzeigen',
+    pages: 'Heute, Monat, Auswertung, Listen, Einstellungen',
+    escape: 'Zurück; in einem Feld: das Feld verlassen',
+    addMenu: 'Menü mit allem öffnen, was sich hinzufügen lässt',
+    changeDay: 'Vorheriger / nächster Tag',
+    changeMonth: 'Vorheriger / nächster Monat',
+    selectEntry: 'Eintrag auswählen',
+    followUp:
+      'Verlauf zum ausgewählten Symptom eintragen; ohne Auswahl: zu den Symptomen springen',
+    calendar: 'Durch die Tage bewegen',
+    openDay: 'Tag anzeigen',
+    search: 'Suchen',
+    cancelForm: 'Abbrechen',
+    pickOption: 'In einem Suchfeld auswählen',
+  },
 };
 
 export const TRANSLATIONS = { en, de };

@@ -20,6 +20,9 @@ import { IconComponent, IconName } from '../icon.component';
     >
       <app-icon class="icon" [name]="icon()" />
       {{ label() }}
+      @if (shortcut()) {
+        <kbd class="kbd">{{ shortcut() }}</kbd>
+      }
     </button>
   `,
   styles: [
@@ -67,6 +70,10 @@ import { IconComponent, IconName } from '../icon.component';
           padding: 11px 12px;
           font-size: 0.95rem;
         }
+
+        .kbd {
+          margin-left: auto;
+        }
       }
     `,
   ],
@@ -76,6 +83,8 @@ export class FooterButtonComponent {
   readonly label = input.required<string>();
   readonly icon = input.required<IconName>();
   readonly active = input.required<boolean>();
+  /** The key that leads to the page, shown as a hint on wide screens */
+  readonly shortcut = input('');
   /** For pages that do not exist yet */
   readonly disabled = input(false, { transform: booleanAttribute });
 

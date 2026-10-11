@@ -14,7 +14,7 @@ import { I18n } from './i18n/i18n';
           [value]="name()"
           (input)="name.set(nameInput.value)"
           (keydown.enter)="$event.preventDefault(); add()"
-          (keydown.escape)="close()"
+          (keydown.escape)="$event.stopPropagation(); close()"
           [placeholder]="placeholder()"
           [attr.aria-label]="label()"
         />

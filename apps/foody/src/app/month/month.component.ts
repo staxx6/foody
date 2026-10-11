@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   OnInit,
   signal,
@@ -16,6 +17,7 @@ import {
 } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
 import { IconComponent } from '../shared/icon.component';
+import { Keyboard } from '../shared/keyboard/keyboard';
 import { SearchSelectComponent } from '../shared/search/search-select.component';
 import { UiStore } from '../shared/ui-store';
 import { SymptomStore } from '../symptom-entry/symptom-store';
@@ -50,6 +52,7 @@ type DayCell = {
 @Component({
   selector: 'app-month',
   imports: [IconComponent, SearchSelectComponent],
+  host: { '(keydown)': 'onGridKey($event)' },
   template: `
     <div class="month">
       <button
@@ -144,6 +147,7 @@ type DayCell = {
             <button
               type="button"
               class="cell"
+              [attr.data-day]="cell.date.getDate()"
               [class.today]="cell.isToday"
               [class.selected]="cell.isSelected"
               (click)="uiStore.showDay(cell.date)"
@@ -688,6 +692,7 @@ export class MonthComponent implements OnInit {
   protected readonly symptomStore = inject(SymptomStore);
   private readonly monthStore = inject(MonthStore);
   private readonly sync = inject(OfflineDataAccessService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** The first day of the shown month; starts with the month of the day view */
   protected readonly month = signal(startOfMonth(this.uiStore.selectedDay()));
@@ -810,6 +815,15 @@ export class MonthComponent implements OnInit {
   });
 
   constructor() {
+    inject(Keyboard).bind({
+      ArrowLeft: () => this.shift(-1),
+      ArrowRight: () => this.shift(1),
+      t: () => this.showCurrent(),
+      // Into the calendar, where the arrow keys move from day to day
+      ArrowDown: () => this.focusDay(this.startDay()),
+      ArrowUp: () => this.focusDay(this.startDay()),
+    });
+
     // Loads the month initially, when it changes and after a synchronization
     effect(() => {
       const month = this.month();
@@ -855,6 +869,44 @@ export class MonthComponent implements OnInit {
 
   protected shift(months: number): void {
     this.month.update((month) => addMonths(month, months));
+  }
+
+  /** In the calendar the arrow keys move by a day or a week */
+  protected onGridKey(event: KeyboardEvent): void {
+    const days = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[
+      event.key
+    ];
+    const day = Number(
+      (event.target as HTMLElement).closest<HTMLElement>('[data-day]')?.dataset[
+        'day'
+      ],
+    );
+    if (!days || !day || event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    event.preventDefault();
+    const month = this.month();
+    // Beyond the month, it leads into the next or previous one
+    this.focusDay(new Date(month.getFullYear(), month.getMonth(), day + days));
+  }
+
+  /** Where the keyboard enters the calendar */
+  private startDay(): Date {
+    const selected = this.uiStore.selectedDay();
+    const today = new Date();
+    if (this.isShownMonth(selected)) return selected;
+    return this.isShownMonth(today) ? today : this.month();
+  }
+
+  private focusDay(date: Date): void {
+    if (!this.isShownMonth(date)) this.month.set(startOfMonth(date));
+    // After the month has been rendered
+    setTimeout(() =>
+      this.host.nativeElement
+        .querySelector<HTMLElement>(`[data-day="${date.getDate()}"]`)
+        ?.focus(),
+    );
   }
 
   protected toggleFilter(symptomId: string): void {

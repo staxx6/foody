@@ -9,6 +9,7 @@ import {
   input,
 } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
+import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import { FormsModule } from '@angular/forms';
 import { DishStore, NewIngredient } from './dish-store';
 import { IngredientStore } from '../ingredient/ingredient-store';
@@ -26,6 +27,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
   selector: 'app-new-dish-form',
   imports: [
     FormsModule,
+    AutofocusDirective,
     SearchSelectComponent,
     IconComponent,
     ImagePickerComponent,
@@ -58,6 +60,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
           <label for="dish-name">{{ t().name }} *</label
           ><input
             id="dish-name"
+            appAutofocus
             name="name"
             [(ngModel)]="name"
             [placeholder]="t().dishPlaceholder"

@@ -463,3 +463,68 @@ form .warning {
 .icon-btn + .icon-btn {
   margin-left: 4px;
 }
+
+/* Keyboard */
+
+@mixin key {
+  min-width: 1.6em;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/* Names the key that does what the element it is in or next to does. Only
+   on wide screens, as small ones are used by touch. */
+.kbd {
+  @include key;
+  display: none;
+}
+
+/* A row that was reached with the arrow keys (see row.directive) */
+[data-row]:focus-visible {
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+@media (min-width: 1024px) {
+  .kbd {
+    display: inline-block;
+  }
+
+  /* Every form is left with Escape and saved with Ctrl+Enter (see
+     home.component), so its buttons say that */
+  form .actions .secondary::after,
+  form .actions button[type='submit']::after {
+    @include key;
+    display: inline-block;
+    margin-left: 10px;
+    vertical-align: 1px;
+  }
+
+  form .actions .secondary::after {
+    content: 'Esc';
+  }
+
+  form .actions button[type='submit']::after {
+    content: 'Ctrl ↵';
+    border-color: currentColor;
+    background: none;
+    color: inherit;
+    opacity: 0.75;
+  }
+
+  :lang(de) form .actions button[type='submit']::after {
+    content: 'Strg ↵';
+  }
+}

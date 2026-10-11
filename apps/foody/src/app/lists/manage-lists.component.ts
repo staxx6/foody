@@ -1,4 +1,14 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  OnInit,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { Keyboard } from '../shared/keyboard/keyboard';
+import { RowDirective } from '../shared/keyboard/row.directive';
 import { DishStore } from '../dish/dish-store';
 import { IngredientStore } from '../ingredient/ingredient-store';
 import { MedicationStore } from '../medication/medication-store';
@@ -25,7 +35,7 @@ type List = {
  */
 @Component({
   selector: 'app-manage-lists',
-  imports: [IconComponent],
+  imports: [IconComponent, RowDirective],
   template: `
     <h2 class="page-title">{{ t().manageLists }}</h2>
 
@@ -39,6 +49,7 @@ type List = {
         [placeholder]="t().search"
         [attr.aria-label]="t().search"
       />
+      <kbd class="kbd">/</kbd>
     </label>
 
     @if (visibleLists().length === 0) {
@@ -51,7 +62,13 @@ type List = {
           @if (list.items.length > 0) {
             <ul class="entry-list">
               @for (item of list.items; track item.id) {
-                <li class="entry">
+                <li
+                  class="entry"
+                  appRow
+                  (rowOpen)="uiStore.edit(list.editForm, item.id)"
+                  (rowEdit)="uiStore.edit(list.editForm, item.id)"
+                  (rowDelete)="confirm.delete(item, bind(list, item))"
+                >
                   <span class="name">{{ item.name }}</span>
                   <button
                     type="button"
@@ -236,6 +253,15 @@ export class ManageListsComponent implements OnInit {
       .map((list) => ({ ...list, items: fuzzyFilter(list.items, query) }))
       .filter((list) => !query.trim() || list.items.length > 0);
   });
+
+  private readonly searchField =
+    viewChild.required<ElementRef<HTMLInputElement>>('search');
+
+  constructor() {
+    inject(Keyboard).bind({
+      '/': () => this.searchField().nativeElement.focus(),
+    });
+  }
 
   ngOnInit(): void {
     this.foodStore.loadFoodItems();

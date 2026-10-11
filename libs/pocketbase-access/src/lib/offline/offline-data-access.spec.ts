@@ -444,6 +444,8 @@ describe('OfflineDataAccessService', () => {
 
     expect(await service.usages('food')).toBe(2);
     expect(await service.usages('e1')).toBe(0);
+    // Records that are deleted together with the record do not count
+    expect(await service.usages('food', ['dishEntries'])).toBe(0);
   });
 
   it('should send queued records in the order of creation', async () => {

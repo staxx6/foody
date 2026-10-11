@@ -8,6 +8,7 @@ import {
 import { DishEntryListComponent } from '../dish-entry/dish-entry-list.component';
 import { addDays, isSameDay, toDateInputValue } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
+import { Keyboard } from '../shared/keyboard/keyboard';
 import { MedicationEntryListComponent } from '../medication/medication-entry-list.component';
 import { IconComponent } from '../shared/icon.component';
 import { UiStore } from '../shared/ui-store';
@@ -78,17 +79,50 @@ const SWIPE_MAX_DRIFT = 50;
     }
 
     <section>
-      <h2><app-icon name="meal" /> {{ t().meals }}</h2>
+      <h2>
+        <app-icon name="meal" /> {{ t().meals }}
+        <button
+          type="button"
+          class="add"
+          (click)="uiStore.showForm('new-meal')"
+          [title]="t().logMeal"
+          [attr.aria-label]="t().logMeal"
+        >
+          <app-icon name="plus" /><kbd class="kbd">M</kbd>
+        </button>
+      </h2>
       <app-dish-entry-list class="card" />
     </section>
 
     <section>
-      <h2><app-icon name="symptom" /> {{ t().health }}</h2>
+      <h2>
+        <app-icon name="symptom" /> {{ t().health }}
+        <button
+          type="button"
+          class="add"
+          (click)="uiStore.showForm('new-health-entry')"
+          [title]="t().logSymptom"
+          [attr.aria-label]="t().logSymptom"
+        >
+          <app-icon name="plus" /><kbd class="kbd">S</kbd>
+        </button>
+      </h2>
       <app-symptom-entry-list class="card" />
     </section>
 
     <section>
-      <h2><app-icon name="pill" /> {{ t().medications }}</h2>
+      <h2>
+        <app-icon name="pill" /> {{ t().medications }}
+        <button
+          type="button"
+          class="add"
+          (click)="uiStore.showForm('new-medication-entry')"
+          [title]="t().logMedication"
+          [attr.aria-label]="t().logMedication"
+        >
+          <app-icon name="plus" /><kbd class="kbd">P</kbd>
+        </button>
+      </h2>
       <app-medication-entry-list class="card" />
     </section>
   `,
@@ -193,8 +227,32 @@ const SWIPE_MAX_DRIFT = 50;
         overflow: hidden;
       }
 
+      /* Adds an entry to the list; small screens have the menu for it */
+      .add {
+        display: none;
+      }
+
       /* Wide screens: meals, symptoms and medications side by side */
       @media (min-width: 1024px) {
+        .add {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin: -4px 0 -4px auto;
+          padding: 3px 6px 3px 8px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          background: var(--surface);
+          color: var(--text-muted);
+          font-size: 0.85rem;
+          cursor: pointer;
+        }
+
+        .add:hover {
+          border-color: var(--primary);
+          color: var(--primary);
+        }
+
         :host {
           display: grid;
           /* As many columns as fit without squeezing the entries */
@@ -254,6 +312,33 @@ export class DayComponent {
   protected readonly dayValue = computed(() => toDateInputValue(this.day()));
   private readonly picker =
     viewChild.required<ElementRef<HTMLInputElement>>('picker');
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    inject(Keyboard).bind({
+      ArrowLeft: () => this.shift(-1),
+      ArrowRight: () => this.shift(1),
+      t: () => this.uiStore.goHome(),
+      f: () => this.followUp(),
+    });
+  }
+
+  /**
+   * Adds a follow-up to the selected symptom entry. Without one, the
+   * selection moves to the symptoms, so one can be chosen.
+   */
+  private followUp(): boolean {
+    const entry = 'app-symptom-entry-list li.entry';
+    const selected = document.activeElement?.closest<HTMLElement>(entry);
+    if (selected) {
+      selected.querySelector<HTMLElement>('.add-follow-up')?.click();
+      return true;
+    }
+    const first = this.host.nativeElement.querySelector<HTMLElement>(entry);
+    first?.focus();
+    return !!first;
+  }
 
   protected openPicker(): void {
     const picker = this.picker().nativeElement;

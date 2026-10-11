@@ -8,6 +8,7 @@ import {
   input,
 } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
+import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import { FormsModule } from '@angular/forms';
 import { IngredientStore } from './ingredient-store';
 import { IconComponent } from '../shared/icon.component';
@@ -19,7 +20,12 @@ import { findByName } from '../shared/name-utils';
 
 @Component({
   selector: 'app-new-food-item-form',
-  imports: [FormsModule, IconComponent, ImagePickerComponent],
+  imports: [
+    FormsModule,
+    AutofocusDirective,
+    IconComponent,
+    ImagePickerComponent,
+  ],
   template: `
     <div class="form-header">
       <button
@@ -38,6 +44,7 @@ import { findByName } from '../shared/name-utils';
         <label for="food-name">{{ t().name }} *</label
         ><input
           id="food-name"
+          appAutofocus
           name="name"
           [(ngModel)]="name"
           [placeholder]="t().foodPlaceholder"

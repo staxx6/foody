@@ -10,6 +10,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { AmountUnitStore } from './amount-unit-store';
 import { I18n } from './i18n/i18n';
+import { AutofocusDirective } from './keyboard/autofocus.directive';
 import { IconComponent } from './icon.component';
 
 /**
@@ -17,7 +18,7 @@ import { IconComponent } from './icon.component';
  */
 @Component({
   selector: 'app-edit-unit-form',
-  imports: [FormsModule, IconComponent],
+  imports: [FormsModule, AutofocusDirective, IconComponent],
   template: `
     <div class="form-header">
       <button
@@ -34,7 +35,13 @@ import { IconComponent } from './icon.component';
     <form class="card" (ngSubmit)="save()">
       <div class="field">
         <label for="unit-name">{{ t().name }} *</label>
-        <input id="unit-name" name="name" [(ngModel)]="name" required />
+        <input
+          id="unit-name"
+          appAutofocus
+          name="name"
+          [(ngModel)]="name"
+          required
+        />
       </div>
 
       <div class="field">

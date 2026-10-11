@@ -8,6 +8,7 @@ import {
   input,
 } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
+import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import { FormsModule } from '@angular/forms';
 import { SymptomStore } from './symptom-store';
 import { IconComponent } from '../shared/icon.component';
@@ -15,7 +16,7 @@ import { findByName } from '../shared/name-utils';
 
 @Component({
   selector: 'app-new-symptom-form',
-  imports: [FormsModule, IconComponent],
+  imports: [FormsModule, AutofocusDirective, IconComponent],
   template: `
     <div class="form-header">
       <button
@@ -34,6 +35,7 @@ import { findByName } from '../shared/name-utils';
         <label for="symptom-name">{{ t().name }} *</label
         ><input
           id="symptom-name"
+          appAutofocus
           name="name"
           [(ngModel)]="name"
           [placeholder]="t().symptomPlaceholder"

@@ -4,6 +4,7 @@ import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { ConfirmService } from '../shared/confirm/confirm.service';
 import { I18n } from '../shared/i18n/i18n';
 import { IconComponent } from '../shared/icon.component';
+import { RowDirective } from '../shared/keyboard/row.directive';
 import { UiStore } from '../shared/ui-store';
 import {
   MedicationEntry,
@@ -12,14 +13,20 @@ import {
 
 @Component({
   selector: 'app-medication-entry-list',
-  imports: [DatePipe, IconComponent],
+  imports: [DatePipe, IconComponent, RowDirective],
   template: `
     @if (store.error()) {
       <p class="list-message error">{{ store.error() }}</p>
     } @else if (store.entries().length > 0) {
       <ul class="entry-list">
         @for (entry of store.entries(); track entry.id) {
-          <li class="entry">
+          <li
+            class="entry"
+            appRow
+            (rowOpen)="showDetails(entry)"
+            (rowEdit)="uiStore.edit('new-medication-entry', entry.id)"
+            (rowDelete)="remove(entry)"
+          >
             <span class="time">{{ entry.date | date: 'HH:mm' }}</span>
             @if (entry.imageUrl) {
               <img [src]="entry.imageUrl" alt="" />
@@ -29,7 +36,7 @@ import {
                 type="button"
                 class="name"
                 [disabled]="!entry.medicationId"
-                (click)="uiStore.edit('view-medication', entry.medicationId)"
+                (click)="showDetails(entry)"
                 [title]="t().showDetails"
               >
                 {{ entry.name }}
@@ -102,6 +109,12 @@ export class MedicationEntryListComponent {
       const day = this.uiStore.selectedDay();
       untracked(() => void this.store.loadEntries(day));
     });
+  }
+
+  protected showDetails(entry: MedicationEntry): void {
+    if (entry.medicationId) {
+      this.uiStore.edit('view-medication', entry.medicationId);
+    }
   }
 
   protected remove(entry: MedicationEntry): Promise<void> {

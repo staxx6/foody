@@ -33,14 +33,17 @@ export class ConfirmService {
   /**
    * Deletes after the user confirmed it. Records that are still referred to
    * by others are not deleted, as those would be left incomplete.
+   * @param deletedWith collections whose records `remove` deletes together
+   *   with the record, so they do not stand in the way
    */
   async delete(
     record: { id: string; name: string },
     remove: () => Promise<void>,
+    deletedWith: string[] = [],
   ): Promise<void> {
     const t = this.i18n.t();
 
-    const usages = await this.dataAccess.usages(record.id);
+    const usages = await this.dataAccess.usages(record.id, deletedWith);
     if (usages > 0) {
       await this.ask({
         title: t.cannotDeleteTitle,

@@ -51,6 +51,21 @@ The PocketBase URL and port used by the app are configured in `apps/foody/src/ap
 Amounts use the units of `amountUnitET`. The day view shows the entries of a day, the month
 view a calendar of the discomfort and of what was logged.
 
+A symptom entry can get follow-ups (`symptomFollowUps`): how it was some time later, e.g. better
+after three hours but not gone. They are shown below their entry and exported, but do not count
+as new complaints in the month view and the report. They are deleted together with their entry.
+
+## Keyboard
+
+On wide screens the app can be used with the keyboard; the keys are shown next to what they do
+and `?` lists all of them.
+
+- `Keyboard` (`apps/foody/src/app/shared/keyboard`) dispatches the keys. A component binds the
+  keys that make sense while it is shown with `bind()`.
+- Rows of lists are reached with the arrow keys and act on keys through the `appRow` directive.
+- Hints are `<kbd class="kbd">` elements, which the global styles only show on wide screens.
+- While a form is open only `Esc`, `Ctrl+Enter` and `?` work, so no input gets lost by a key.
+
 ## Offline use and synchronization
 
 The app works on a local copy of the data in the browser (IndexedDB), see

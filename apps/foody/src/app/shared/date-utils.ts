@@ -54,6 +54,15 @@ export function addMonths(date: Date, months: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + months, 1);
 }
 
+/** The time from one point in time to another, as hours and minutes */
+export function elapsed(
+  from: Date,
+  to: Date,
+): { hours: number; minutes: number } {
+  const minutes = Math.round((to.getTime() - from.getTime()) / 60_000);
+  return { hours: Math.floor(minutes / 60), minutes: minutes % 60 };
+}
+
 export function isSameDay(a: Date, b: Date): boolean {
   return dayKey(a) === dayKey(b);
 }

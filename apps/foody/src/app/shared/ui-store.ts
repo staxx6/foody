@@ -10,6 +10,8 @@ export type ActiveSite =
   | 'new-symptom'
   | 'new-medication'
   | 'new-medication-entry'
+  | 'new-follow-up'
+  | 'edit-follow-up'
   | 'edit-unit'
   | 'view-food'
   | 'view-dish'
@@ -39,6 +41,9 @@ export class UiStore {
     form: this.activeForm(),
     editId: this.editId(),
   }));
+
+  /** A form is open, which entered data would be lost by leaving */
+  readonly isEditing = computed(() => /^(new|edit)-/.test(this.activeForm()));
 
   /** Where closing the form leads back to */
   private returnTo: { form: ActiveSite; id: string | null } = {

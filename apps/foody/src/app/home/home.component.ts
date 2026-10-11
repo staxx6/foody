@@ -1,11 +1,19 @@
 import {
   Component,
+  computed,
   effect,
   ElementRef,
   inject,
   viewChild,
 } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
+import { isField, Keyboard } from '../shared/keyboard/keyboard';
+import {
+  KeyHint,
+  KeyHintsComponent,
+} from '../shared/keyboard/key-hints.component';
+import { ShortcutHelpComponent } from '../shared/keyboard/shortcut-help.component';
+import { SymptomFollowUpFormComponent } from '../symptom-entry/symptom-follow-up-form.component';
 import { DayComponent } from './day.component';
 import { MonthComponent } from '../month/month.component';
 import { FooterNavComponent } from '../shared/footer/footer-nav.component';
@@ -44,6 +52,9 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
     NewSymptomFormComponent,
     NewMedicationFormComponent,
     LogMedicationFormComponent,
+    SymptomFollowUpFormComponent,
+    KeyHintsComponent,
+    ShortcutHelpComponent,
   ],
   template: `
     <header>
@@ -108,6 +119,12 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
             @case ('view-medication') {
               <app-item-details kind="medication" [id]="page.editId ?? ''" />
             }
+            @case ('new-follow-up') {
+              <app-symptom-follow-up-form [entryId]="page.editId" />
+            }
+            @case ('edit-follow-up') {
+              <app-symptom-follow-up-form [editId]="page.editId" />
+            }
             @case ('edit-unit') {
               <app-edit-unit-form
                 [editId]="page.editId"
@@ -132,11 +149,15 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
             }
           }
         }
+        @if (keyHints().length > 0) {
+          <app-key-hints [hints]="keyHints()" />
+        }
       </main>
     </div>
 
     <app-footer-nav />
     <app-confirm-dialog />
+    <app-shortcut-help />
   `,
   styles: [
     `
@@ -236,6 +257,7 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
         app-new-dish-form,
         app-new-symptom-form,
         app-new-medication-form,
+        app-symptom-follow-up-form,
         app-edit-unit-form {
           max-width: 680px;
         }
@@ -246,9 +268,59 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
 export class HomeComponent {
   protected readonly t = inject(I18n).t;
   readonly uiStore = inject(UiStore);
+  private readonly keyboard = inject(Keyboard);
 
   private readonly scroll =
     viewChild.required<ElementRef<HTMLElement>>('scroll');
+
+  /** The keys of the page that is shown; the forms name theirs themselves */
+  protected readonly keyHints = computed<KeyHint[]>(() => {
+    const t = this.t();
+    const keys = t.shortcuts;
+    const rows: KeyHint[] = [
+      { keys: ['↑', '↓'], label: keys.selectEntry },
+      { keys: ['E'], label: t.edit },
+      { keys: [t.keyDelete], label: t.delete },
+    ];
+    const help: KeyHint = { keys: ['?'], label: t.allShortcuts };
+
+    switch (this.uiStore.activeForm()) {
+      case 'today':
+        return [
+          { keys: ['←', '→'], label: keys.changeDay },
+          { keys: ['T'], label: t.today },
+          ...rows,
+          { keys: ['Enter'], label: t.showDetails },
+          { keys: ['F'], label: t.followUp },
+          help,
+        ];
+      case 'month':
+        return [
+          { keys: ['←', '→'], label: keys.changeMonth },
+          { keys: ['T'], label: t.backToCurrentMonth },
+          { keys: ['↑', '↓'], label: keys.calendar },
+          { keys: ['Enter'], label: keys.openDay },
+          help,
+        ];
+      case 'lists':
+        return [{ keys: ['/'], label: keys.search }, ...rows, help];
+      case 'report':
+        return [{ keys: ['X'], label: t.exportExcel }, help];
+      case 'view-food':
+      case 'view-dish':
+      case 'view-symptom':
+      case 'view-medication':
+        return [
+          { keys: ['E'], label: t.edit },
+          { keys: ['Esc'], label: t.back },
+          help,
+        ];
+      case 'settings':
+        return [help];
+      default:
+        return [];
+    }
+  });
 
   constructor() {
     // Every page starts at its top
@@ -257,5 +329,60 @@ export class HomeComponent {
       this.scroll().nativeElement.scrollTop = 0;
       window.scrollTo(0, 0);
     });
+
+    // The keys that work on every page
+    this.keyboard.bind({
+      '?': () => this.keyboard.isHelpOpen.set(true),
+      Escape: (event) => this.leave(event),
+      'ctrl+enter': () =>
+        this.visible<HTMLFormElement>('form')?.requestSubmit(),
+      ArrowDown: () => this.moveToRow(1),
+      ArrowUp: () => this.moveToRow(-1),
+    });
+  }
+
+  /** Escape leaves the field that is typed into, otherwise the page */
+  private leave(event: KeyboardEvent): boolean {
+    if (isField(event.target)) {
+      (event.target as HTMLElement).blur();
+      return true;
+    }
+    // The button of the form that is shown, which may be one opened from
+    // another form (e.g. a new symptom while logging one)
+    const back = this.visible('.back-btn');
+    back?.click();
+    return !!back;
+  }
+
+  /**
+   * Moves the focus to the next or previous row (see row.directive)
+   * @returns false if the page has no rows, so the arrow keys scroll it
+   */
+  private moveToRow(step: number): boolean {
+    const rows = this.allVisible('[data-row]');
+    if (rows.length === 0) return false;
+
+    // The focus may also be on a button of a row
+    const focused = document.activeElement?.closest('[data-row]');
+    const current = rows.findIndex((row) => row === focused);
+    const next =
+      current < 0
+        ? step > 0
+          ? 0
+          : rows.length - 1
+        : Math.min(Math.max(current + step, 0), rows.length - 1);
+    rows[next].focus();
+    return true;
+  }
+
+  private visible<T extends HTMLElement>(selector: string): T | undefined {
+    return this.allVisible<T>(selector)[0];
+  }
+
+  /** The matching elements of the page that are not hidden */
+  private allVisible<T extends HTMLElement>(selector: string): T[] {
+    return Array.from(
+      this.scroll().nativeElement.querySelectorAll<T>(selector),
+    ).filter((element) => element.offsetParent !== null);
   }
 }
