@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
 import { DishEntryStore } from './dish-entry-store';
 import { IngredientStore } from '../ingredient/ingredient-store';
@@ -54,76 +55,81 @@ const DEFAULT_UNIT_CODE = 'piece';
           type="button"
           class="back-btn"
           (click)="cancel()"
-          aria-label="Back"
+          [attr.aria-label]="t().back"
         >
           <app-icon name="back" />
         </button>
-        <h2>Log Meal</h2>
+        <h2>{{ t().logMeal }}</h2>
       </div>
 
       <form class="card" (ngSubmit)="save()">
         <div class="field">
-          <span class="label">What did you eat or drink? *</span>
+          <span class="label">{{ t().whatDidYouEat }} *</span>
           <div class="toggle" role="group">
             <button
               type="button"
               [class.active]="sourceType === 'food-item'"
               (click)="sourceType = 'food-item'; selectedSourceId.set('')"
             >
-              Single food
+              {{ t().singleFood }}
             </button>
             <button
               type="button"
               [class.active]="sourceType === 'dish'"
               (click)="sourceType = 'dish'; selectedSourceId.set('')"
             >
-              Dish
+              {{ t().dish }}
             </button>
           </div>
           <select
             name="source"
             [(ngModel)]="selectedSourceId"
-            [attr.aria-label]="sourceType === 'food-item' ? 'Food' : 'Dish'"
+            [attr.aria-label]="sourceType === 'food-item' ? t().food : t().dish"
             required
           >
             @if (sourceType === 'food-item') {
-              <option value="">— Select food —</option>
+              <option value="">{{ t().selectFood }}</option>
               @for (item of ingredientStore.foodItems(); track item.id) {
                 <option [value]="item.id">{{ item.name }}</option>
               }
             } @else {
-              <option value="">— Select dish —</option>
+              <option value="">{{ t().selectDish }}</option>
               @for (dish of dishStore.dishes(); track dish.id) {
                 <option [value]="dish.id">{{ dish.name }}</option>
               }
             }
           </select>
           <button type="button" class="link" (click)="creating.set(sourceType)">
-            + Create new {{ sourceType === 'food-item' ? 'food' : 'dish' }}
+            {{
+              sourceType === 'food-item' ? t().createNewFood : t().createNewDish
+            }}
           </button>
         </div>
 
         <div class="field-row">
           <div class="field">
-            <label for="amount">Amount *</label>
-            <input id="amount" name="amount" [(ngModel)]="amount" required />
+            <label for="amount">{{ t().amount }} *</label
+            ><input id="amount" name="amount" [(ngModel)]="amount" required />
           </div>
           <div class="field">
-            <label for="unit">Unit *</label>
-            <select id="unit" name="unit" [(ngModel)]="amountUnitId" required>
+            <label for="unit">{{ t().unit }} *</label
+            ><select id="unit" name="unit" [(ngModel)]="amountUnitId" required>
               <option value="">—</option>
               @for (unit of amountUnitStore.units(); track unit.id) {
-                <option [value]="unit.id">{{ unit.code }}</option>
+                <option [value]="unit.id">{{ i18n.name(unit) }}</option>
               }
             </select>
           </div>
         </div>
-        <app-quick-add label="unit" placeholder="e.g. ml" [create]="addUnit" />
-
+        <app-quick-add
+          [label]="t().createNewUnit"
+          [placeholder]="t().unitPlaceholder"
+          [create]="addUnit"
+        />
         <div class="field-row">
           <div class="field">
-            <label for="date">Day *</label>
-            <input
+            <label for="date">{{ t().day }} *</label
+            ><input
               type="date"
               id="date"
               name="date"
@@ -132,8 +138,8 @@ const DEFAULT_UNIT_CODE = 'piece';
             />
           </div>
           <div class="field">
-            <label for="time">Time *</label>
-            <input
+            <label for="time">{{ t().time }} *</label
+            ><input
               type="time"
               id="time"
               name="time"
@@ -149,10 +155,10 @@ const DEFAULT_UNIT_CODE = 'piece';
 
         <div class="actions">
           <button type="button" class="secondary" (click)="cancel()">
-            Cancel
+            {{ t().cancel }}
           </button>
           <button type="submit" [disabled]="!isValid() || isSaving()">
-            {{ isSaving() ? 'Saving…' : 'Save' }}
+            {{ isSaving() ? t().saving : t().save }}
           </button>
         </div>
       </form>
@@ -160,6 +166,8 @@ const DEFAULT_UNIT_CODE = 'piece';
   `,
 })
 export class NewMealFormComponent implements OnInit {
+  protected readonly i18n = inject(I18n);
+  protected readonly t = this.i18n.t;
   readonly ingredientStore = inject(IngredientStore);
   readonly dishStore = inject(DishStore);
   readonly amountUnitStore = inject(AmountUnitStore);
@@ -239,7 +247,9 @@ export class NewMealFormComponent implements OnInit {
       });
       this.uiStore.goHome();
     } catch (err) {
-      this.error.set(err instanceof Error ? err.message : 'Saving failed');
+      this.error.set(
+        err instanceof Error ? err.message : this.t().savingFailed,
+      );
       this.isSaving.set(false);
     }
   }

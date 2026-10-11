@@ -1,5 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { OfflineDataAccessService } from '@foody/pocketbase-access';
+import { I18n } from './i18n/i18n';
 
 /**
  * Shows whether the entries of this device are on the server
@@ -62,39 +63,45 @@ import { OfflineDataAccessService } from '@foody/pocketbase-access';
 })
 export class SyncStatusComponent {
   protected readonly sync = inject(OfflineDataAccessService);
+  private readonly i18n = inject(I18n);
+  private readonly t = this.i18n.t;
 
   protected readonly status = computed(() => {
     const pending = this.sync.pendingCount();
-    const waiting = pending > 0 ? ` · ${pending} to send` : '';
+    const lastSynced = this.sync.lastSyncedAt();
+    const t = this.t();
+    const waiting = pending > 0 ? ` · ${t.toSend(pending)}` : '';
 
     if (this.sync.isSyncing()) {
-      return { kind: 'syncing', label: 'Syncing…', hint: '' };
+      return { kind: 'syncing', label: t.synchronizing, hint: '' };
     }
     if (this.sync.syncError()) {
       return {
         kind: 'error',
-        label: `Sync problem${waiting}`,
+        label: `${t.syncProblem}${waiting}`,
         hint: this.sync.syncError() ?? '',
       };
     }
     if (!this.sync.isOnline()) {
       return {
         kind: 'offline',
-        label: `Offline${waiting}`,
-        hint: 'Server not reachable. Entries are kept on this device. Tap to retry.',
+        label: `${t.offline}${waiting}`,
+        hint: t.offlineHint,
       };
     }
     if (pending > 0) {
       return {
         kind: 'pending',
-        label: `${pending} to send`,
-        hint: 'Tap to send',
+        label: t.toSend(pending),
+        hint: t.tapToSend,
       };
     }
     return {
       kind: 'synced',
-      label: 'Synced',
-      hint: `Last synchronized: ${this.sync.lastSyncedAt()?.toLocaleTimeString() ?? '–'}`,
+      label: t.synced,
+      hint: lastSynced
+        ? `{t.lastSynchronized}: {this.i18n.formatDateTime(lastSynced)}`
+        : '',
     };
   });
 }

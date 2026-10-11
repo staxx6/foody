@@ -5,10 +5,17 @@ export type Theme = 'system' | 'light' | 'dark';
 export const ACCENTS = ['indigo', 'teal', 'coral', 'plum', 'green'] as const;
 export type Accent = (typeof ACCENTS)[number];
 
-type Settings = { theme: Theme; accent: Accent };
+/** Language of the user interface; 'system' follows the browser */
+export type LanguageSetting = 'system' | 'en' | 'de';
+
+type Settings = { theme: Theme; accent: Accent; language: LanguageSetting };
 
 const STORAGE_KEY = 'foody-settings';
-const DEFAULTS: Settings = { theme: 'system', accent: 'indigo' };
+const DEFAULTS: Settings = {
+  theme: 'system',
+  accent: 'indigo',
+  language: 'system',
+};
 
 function load(): Settings {
   try {
@@ -32,6 +39,7 @@ export class SettingsStore {
 
   readonly theme = signal(load().theme);
   readonly accent = signal(load().accent);
+  readonly language = signal(load().language);
 
   constructor() {
     this.prefersDark.addEventListener('change', (event) =>
@@ -41,6 +49,7 @@ export class SettingsStore {
     effect(() => {
       const theme = this.theme();
       const accent = this.accent();
+      const language = this.language();
       const isDark =
         theme === 'dark' || (theme === 'system' && this.systemIsDark());
 
@@ -55,7 +64,10 @@ export class SettingsStore {
           getComputedStyle(root).getPropertyValue('--surface').trim(),
         );
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ theme, accent }));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ theme, accent, language }),
+      );
     });
   }
 }

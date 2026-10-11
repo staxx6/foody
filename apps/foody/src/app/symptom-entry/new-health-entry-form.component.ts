@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
 import { SymptomEntryStore } from './symptom-entry-store';
 import { SymptomStore } from './symptom-store';
@@ -30,18 +31,18 @@ import {
           type="button"
           class="back-btn"
           (click)="cancel()"
-          aria-label="Back"
+          [attr.aria-label]="t().back"
         >
           <app-icon name="back" />
         </button>
-        <h2>Log Symptom</h2>
+        <h2>{{ t().logSymptom }}</h2>
       </div>
 
       <form class="card" (ngSubmit)="save()">
         <div class="field">
-          <label for="symptom">Symptom *</label>
-          <select id="symptom" name="symptom" [(ngModel)]="symptomId" required>
-            <option value="">— Select symptom —</option>
+          <label for="symptom">{{ t().symptom }} *</label
+          ><select id="symptom" name="symptom" [(ngModel)]="symptomId" required>
+            <option value="">{{ t().selectSymptom }}</option>
             @for (s of symptomStore.symptoms(); track s.id) {
               <option [value]="s.id">{{ s.name }}</option>
             }
@@ -51,38 +52,38 @@ import {
             class="link"
             (click)="isCreatingSymptom.set(true)"
           >
-            + Create new symptom
+            {{ t().createNewSymptom }}
           </button>
         </div>
 
         <div class="field">
-          <label for="discomfort">Discomfort Level (1–100)</label>
-          <input
+          <label for="discomfort">{{ t().discomfortLevelRange }}</label
+          ><input
             type="number"
             id="discomfort"
             name="discomfort"
             [(ngModel)]="discomfortLevel"
             min="1"
             max="100"
-            placeholder="optional"
+            [placeholder]="t().optional"
           />
         </div>
 
         <div class="field">
-          <label for="comment">Comment</label>
-          <textarea
+          <label for="comment">{{ t().comment }}</label
+          ><textarea
             id="comment"
             name="comment"
             [(ngModel)]="comment"
             rows="3"
-            placeholder="optional"
+            [placeholder]="t().optional"
           ></textarea>
         </div>
 
         <div class="field-row">
           <div class="field">
-            <label for="date">Day *</label>
-            <input
+            <label for="date">{{ t().day }} *</label
+            ><input
               type="date"
               id="date"
               name="date"
@@ -91,8 +92,8 @@ import {
             />
           </div>
           <div class="field">
-            <label for="time">Time *</label>
-            <input
+            <label for="time">{{ t().time }} *</label
+            ><input
               type="time"
               id="time"
               name="time"
@@ -108,13 +109,13 @@ import {
 
         <div class="actions">
           <button type="button" class="secondary" (click)="cancel()">
-            Cancel
+            {{ t().cancel }}
           </button>
           <button
             type="submit"
             [disabled]="!symptomId() || !date || !time || isSaving()"
           >
-            {{ isSaving() ? 'Saving…' : 'Save' }}
+            {{ isSaving() ? t().saving : t().save }}
           </button>
         </div>
       </form>
@@ -122,6 +123,7 @@ import {
   `,
 })
 export class NewHealthEntryFormComponent implements OnInit {
+  protected readonly t = inject(I18n).t;
   readonly symptomStore = inject(SymptomStore);
   private readonly symptomEntryStore = inject(SymptomEntryStore);
   private readonly uiStore = inject(UiStore);
@@ -167,7 +169,9 @@ export class NewHealthEntryFormComponent implements OnInit {
       });
       this.uiStore.goHome();
     } catch (err) {
-      this.error.set(err instanceof Error ? err.message : 'Saving failed');
+      this.error.set(
+        err instanceof Error ? err.message : this.t().savingFailed,
+      );
       this.isSaving.set(false);
     }
   }

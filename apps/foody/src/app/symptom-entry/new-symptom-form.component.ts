@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, output, signal } from '@angular/core';
+import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
 import { SymptomStore } from './symptom-store';
 import { IconComponent } from '../shared/icon.component';
@@ -13,44 +14,41 @@ import { findByName } from '../shared/name-utils';
         type="button"
         class="back-btn"
         (click)="cancelled.emit()"
-        aria-label="Back"
+        [attr.aria-label]="t().back"
       >
         <app-icon name="back" />
       </button>
-      <h2>New Symptom</h2>
+      <h2>{{ t().newSymptom }}</h2>
     </div>
 
     <form class="card" (ngSubmit)="save()">
       <div class="field">
-        <label for="symptom-name">Name *</label>
-        <input
+        <label for="symptom-name">{{ t().name }} *</label
+        ><input
           id="symptom-name"
           name="name"
           [(ngModel)]="name"
-          placeholder="e.g. headache"
+          [placeholder]="t().symptomPlaceholder"
           required
         />
         @if (existing(); as duplicate) {
           <p class="warning">
-            <span>
-              A symptom named <strong>{{ duplicate.name }}</strong> already
-              exists.
-            </span>
-            <button type="button" class="link" (click)="saved.emit(duplicate)">
-              Use existing
+            <span>{{ t().symptomExists(duplicate.name) }}</span
+            ><button type="button" class="link" (click)="saved.emit(duplicate)">
+              {{ t().useExisting }}
             </button>
           </p>
         }
       </div>
 
       <div class="field">
-        <label for="symptom-comment">Comment</label>
-        <textarea
+        <label for="symptom-comment">{{ t().comment }}</label
+        ><textarea
           id="symptom-comment"
           name="comment"
           [(ngModel)]="comment"
           rows="3"
-          placeholder="optional"
+          [placeholder]="t().optional"
         ></textarea>
       </div>
 
@@ -60,16 +58,17 @@ import { findByName } from '../shared/name-utils';
 
       <div class="actions">
         <button type="button" class="secondary" (click)="cancelled.emit()">
-          Cancel
+          {{ t().cancel }}
         </button>
         <button type="submit" [disabled]="!name.trim() || isSaving()">
-          {{ isSaving() ? 'Saving…' : existing() ? 'Save anyway' : 'Save' }}
+          {{ isSaving() ? t().saving : existing() ? t().saveAnyway : t().save }}
         </button>
       </div>
     </form>
   `,
 })
 export class NewSymptomFormComponent implements OnInit {
+  protected readonly t = inject(I18n).t;
   private readonly symptomStore = inject(SymptomStore);
 
   /** The created symptom */
@@ -101,7 +100,9 @@ export class NewSymptomFormComponent implements OnInit {
       );
       this.saved.emit(symptom);
     } catch (err) {
-      this.error.set(err instanceof Error ? err.message : 'Saving failed');
+      this.error.set(
+        err instanceof Error ? err.message : this.t().savingFailed,
+      );
       this.isSaving.set(false);
     }
   }

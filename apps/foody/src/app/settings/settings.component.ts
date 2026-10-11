@@ -1,21 +1,42 @@
-import { DatePipe } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { IconComponent, IconName } from '../shared/icon.component';
-import { ACCENTS, SettingsStore, Theme } from '../shared/settings-store';
+import { I18n } from '../shared/i18n/i18n';
+import {
+  ACCENTS,
+  LanguageSetting,
+  SettingsStore,
+  Theme,
+} from '../shared/settings-store';
 
 @Component({
   selector: 'app-settings',
-  imports: [DatePipe, IconComponent],
+  imports: [IconComponent],
   template: `
-    <h2 class="page-title">Settings</h2>
+    <h2 class="page-title">{{ t().settings }}</h2>
 
     <section>
-      <h3>Appearance</h3>
+      <h3>{{ t().appearance }}</h3>
       <div class="card">
         <div class="setting">
-          <span class="label">Theme</span>
-          <div class="segments" role="group" aria-label="Theme">
+          <span class="label">{{ t().language }}</span>
+          <div class="segments" role="group" [attr.aria-label]="t().language">
+            @for (language of languages; track language.value) {
+              <button
+                type="button"
+                [class.active]="settings.language() === language.value"
+                [attr.aria-pressed]="settings.language() === language.value"
+                (click)="settings.language.set(language.value)"
+              >
+                {{ language.label ?? t().system }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="setting">
+          <span class="label">{{ t().theme }}</span>
+          <div class="segments" role="group" [attr.aria-label]="t().theme">
             @for (theme of themes; track theme.value) {
               <button
                 type="button"
@@ -24,23 +45,23 @@ import { ACCENTS, SettingsStore, Theme } from '../shared/settings-store';
                 (click)="settings.theme.set(theme.value)"
               >
                 <app-icon [name]="theme.icon" />
-                {{ theme.label }}
+                {{ t()[theme.value] }}
               </button>
             }
           </div>
         </div>
 
         <div class="setting">
-          <span class="label">Color</span>
-          <div class="swatches" role="group" aria-label="Color">
+          <span class="label">{{ t().color }}</span>
+          <div class="swatches" role="group" [attr.aria-label]="t().color">
             @for (accent of accents; track accent) {
               <button
                 type="button"
                 class="swatch"
                 [attr.data-accent]="accent"
-                [attr.aria-label]="accent"
+                [attr.aria-label]="t().accents[accent]"
                 [attr.aria-pressed]="settings.accent() === accent"
-                [title]="accent"
+                [title]="t().accents[accent]"
                 (click)="settings.accent.set(accent)"
               >
                 @if (settings.accent() === accent) {
@@ -54,21 +75,19 @@ import { ACCENTS, SettingsStore, Theme } from '../shared/settings-store';
     </section>
 
     <section>
-      <h3>Synchronization</h3>
+      <h3>{{ t().synchronization }}</h3>
       <div class="card">
         <dl>
           <div>
-            <dt>Server</dt>
-            <dd>{{ sync.isOnline() ? 'Reachable' : 'Not reachable' }}</dd>
+            <dt>{{ t().server }}</dt>
+            <dd>{{ sync.isOnline() ? t().reachable : t().notReachable }}</dd>
           </div>
           <div>
-            <dt>Last synchronized</dt>
-            <dd>
-              {{ (sync.lastSyncedAt() | date: 'dd.MM.yyyy, HH:mm') ?? 'Never' }}
-            </dd>
+            <dt>{{ t().lastSynchronized }}</dt>
+            <dd>{{ lastSynchronized() }}</dd>
           </div>
           <div>
-            <dt>Waiting to be sent</dt>
+            <dt>{{ t().waitingToBeSent }}</dt>
             <dd>{{ sync.pendingCount() }}</dd>
           </div>
         </dl>
@@ -82,7 +101,7 @@ import { ACCENTS, SettingsStore, Theme } from '../shared/settings-store';
           [disabled]="sync.isSyncing()"
         >
           <app-icon name="sync" />
-          {{ sync.isSyncing() ? 'Synchronizing…' : 'Synchronize now' }}
+          {{ sync.isSyncing() ? t().synchronizing : t().synchronizeNow }}
         </button>
       </div>
     </section>
@@ -240,12 +259,24 @@ import { ACCENTS, SettingsStore, Theme } from '../shared/settings-store';
 export class SettingsComponent {
   protected readonly settings = inject(SettingsStore);
   protected readonly sync = inject(OfflineDataAccessService);
+  private readonly i18n = inject(I18n);
+  protected readonly t = this.i18n.t;
 
   protected readonly accents = ACCENTS;
-  protected readonly themes: { value: Theme; label: string; icon: IconName }[] =
-    [
-      { value: 'system', label: 'System', icon: 'system' },
-      { value: 'light', label: 'Light', icon: 'sun' },
-      { value: 'dark', label: 'Dark', icon: 'moon' },
-    ];
+  protected readonly themes: { value: Theme; icon: IconName }[] = [
+    { value: 'system', icon: 'system' },
+    { value: 'light', icon: 'sun' },
+    { value: 'dark', icon: 'moon' },
+  ];
+  // The languages are named in themselves; 'system' follows the browser
+  protected readonly languages: { value: LanguageSetting; label?: string }[] = [
+    { value: 'system' },
+    { value: 'en', label: 'English' },
+    { value: 'de', label: 'Deutsch' },
+  ];
+
+  protected readonly lastSynchronized = computed(() => {
+    const date = this.sync.lastSyncedAt();
+    return date ? this.i18n.formatDateTime(date) : this.t().never;
+  });
 }

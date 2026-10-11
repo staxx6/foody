@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { I18n } from '../i18n/i18n';
 import { ActiveSite, UiStore } from '../ui-store';
 import { FooterButtonComponent } from './footer-button.component';
 import { IconComponent } from '../icon.component';
@@ -11,79 +12,84 @@ import { IconComponent } from '../icon.component';
       <button
         class="backdrop"
         (click)="toggleMenu()"
-        aria-label="Close menu"
+        [attr.aria-label]="t().closeMenu"
       ></button>
       <div class="menu-popup">
         <section>
-          <h3>Track today</h3>
-          <p class="hint">Record what happened, with date and time.</p>
+          <h3>{{ t().trackToday }}</h3>
+          <p class="hint">{{ t().trackTodayHint }}</p>
           <div class="tiles">
             <button class="tile" (click)="selectForm('new-meal')">
-              <app-icon class="icon" name="meal" />
-              <span class="title">Log meal</span>
-              <small>I ate or drank something</small>
+              <app-icon class="icon" name="meal" /><span class="title">{{
+                t().logMeal
+              }}</span
+              ><small>{{ t().logMealHint }}</small>
             </button>
             <button class="tile" (click)="selectForm('new-health-entry')">
-              <app-icon class="icon" name="symptom" />
-              <span class="title">Log symptom</span>
-              <small>I noticed a symptom</small>
+              <app-icon class="icon" name="symptom" /><span class="title">{{
+                t().logSymptom
+              }}</span
+              ><small>{{ t().logSymptomHint }}</small>
             </button>
           </div>
         </section>
 
         <section>
-          <h3>Add to your lists</h3>
-          <p class="hint">
-            What you can pick when logging. Add it once, use it any time.
-          </p>
+          <h3>{{ t().addToLists }}</h3>
+          <p class="hint">{{ t().addToListsHint }}</p>
           <button class="row" (click)="selectForm('new-food-item')">
             <app-icon class="icon" name="food" />
-            <span>
-              <span class="title">New food</span>
-              <small>A single food, e.g. apple or milk</small>
-            </span>
+            <span
+              ><span class="title">{{ t().newFood }}</span
+              ><small>{{ t().newFoodHint }}</small></span
+            >
           </button>
           <button class="row" (click)="selectForm('new-dish')">
             <app-icon class="icon" name="dish" />
-            <span>
-              <span class="title">New dish</span>
-              <small>Several foods together, e.g. lasagne</small>
-            </span>
+            <span
+              ><span class="title">{{ t().newDish }}</span
+              ><small>{{ t().newDishHint }}</small></span
+            >
           </button>
           <button class="row" (click)="selectForm('new-symptom')">
             <app-icon class="icon" name="tag" />
-            <span>
-              <span class="title">New symptom</span>
-              <small>Something you can feel, e.g. headache</small>
-            </span>
+            <span
+              ><span class="title">{{ t().newSymptom }}</span
+              ><small>{{ t().newSymptomHint }}</small></span
+            >
           </button>
         </section>
       </div>
     }
     <nav>
       <app-footer-button
-        label="Today"
+        [label]="t().today"
         icon="today"
         [active]="uiStore.isActive('today')"
         (clicked)="uiStore.goHome()"
       />
-      <app-footer-button label="Month" icon="month" [active]="false" disabled />
+      <app-footer-button
+        [label]="t().month"
+        icon="month"
+        [active]="false"
+        disabled
+      />
       <button
         class="add-btn"
         (click)="toggleMenu()"
-        [attr.aria-label]="showMenu() ? 'Close menu' : 'Add entry'"
+        [attr.aria-label]="showMenu() ? t().closeMenu : t().addEntry"
         [attr.aria-expanded]="showMenu()"
       >
         <app-icon [name]="showMenu() ? 'close' : 'plus'" />
       </button>
       <app-footer-button
-        label="Report"
+        [label]="t().report"
         icon="report"
         [active]="false"
         disabled
       />
       <app-footer-button
-        label="Settings"
+        [label]="t().settings"
         icon="settings"
         [active]="uiStore.isActive('settings')"
         (clicked)="selectForm('settings')"
@@ -253,6 +259,7 @@ import { IconComponent } from '../icon.component';
   ],
 })
 export class FooterNavComponent {
+  protected readonly t = inject(I18n).t;
   protected readonly uiStore = inject(UiStore);
   protected readonly showMenu = signal(false);
 

@@ -1,8 +1,9 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { DATA_ACCESS } from '@foody/pocketbase-access';
+import { LocalizedName, toLocalizedName } from './i18n/i18n';
 
-export type AmountUnit = {
+export type AmountUnit = LocalizedName & {
   id: string;
   code: string;
 };
@@ -30,6 +31,7 @@ export const AmountUnitStore = signalStore(
           collectionName: 'amountUnitET',
           options: { sort: 'code' },
           map: (record) => ({
+            ...toLocalizedName(record),
             id: record.id,
             code: String(record['code'] ?? ''),
           }),
@@ -45,6 +47,7 @@ export const AmountUnitStore = signalStore(
         collectionName: 'amountUnitET',
         data: { code, name: code },
         map: (record) => ({
+          ...toLocalizedName(record),
           id: record.id,
           code: String(record['code'] ?? ''),
         }),

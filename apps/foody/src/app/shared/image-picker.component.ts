@@ -1,4 +1,5 @@
-import { Component, computed, model } from '@angular/core';
+import { inject, Component, computed, model } from '@angular/core';
+import { I18n } from './i18n/i18n';
 import { IconComponent } from './icon.component';
 
 /**
@@ -14,7 +15,7 @@ import { IconComponent } from './icon.component';
         <button
           type="button"
           (click)="remove(preview.file)"
-          [attr.aria-label]="'Remove ' + preview.file.name"
+          [attr.aria-label]="t().removePhoto(preview.file.name)"
         >
           <app-icon name="close" />
         </button>
@@ -22,7 +23,7 @@ import { IconComponent } from './icon.component';
     }
     <label class="add">
       <app-icon name="image" />
-      Add photo
+      {{ t().addPhoto }}
       <input
         #input
         type="file"
@@ -107,6 +108,7 @@ import { IconComponent } from './icon.component';
   ],
 })
 export class ImagePickerComponent {
+  protected readonly t = inject(I18n).t;
   readonly files = model<File[]>([]);
 
   protected readonly previews = computed(() =>

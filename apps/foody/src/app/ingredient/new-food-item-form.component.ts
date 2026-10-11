@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, output, signal } from '@angular/core';
+import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
 import { IngredientStore } from './ingredient-store';
 import { IconComponent } from '../shared/icon.component';
@@ -14,49 +15,47 @@ import { findByName } from '../shared/name-utils';
         type="button"
         class="back-btn"
         (click)="cancelled.emit()"
-        aria-label="Back"
+        [attr.aria-label]="t().back"
       >
         <app-icon name="back" />
       </button>
-      <h2>New Food</h2>
+      <h2>{{ t().newFood }}</h2>
     </div>
 
     <form class="card" (ngSubmit)="save()">
       <div class="field">
-        <label for="food-name">Name *</label>
-        <input
+        <label for="food-name">{{ t().name }} *</label
+        ><input
           id="food-name"
           name="name"
           [(ngModel)]="name"
-          placeholder="e.g. apple"
+          [placeholder]="t().foodPlaceholder"
           required
         />
         @if (existing(); as duplicate) {
           <p class="warning">
-            <span>
-              A food named <strong>{{ duplicate.name }}</strong> already exists.
-            </span>
-            <button type="button" class="link" (click)="saved.emit(duplicate)">
-              Use existing
+            <span>{{ t().foodExists(duplicate.name) }}</span
+            ><button type="button" class="link" (click)="saved.emit(duplicate)">
+              {{ t().useExisting }}
             </button>
           </p>
         }
       </div>
 
       <div class="field">
-        <label for="food-description">Description</label>
-        <textarea
+        <label for="food-description">{{ t().description }}</label
+        ><textarea
           id="food-description"
           name="description"
           [(ngModel)]="description"
           rows="3"
-          placeholder="optional"
+          [placeholder]="t().optional"
         ></textarea>
       </div>
 
       <div class="field">
-        <span class="label">Photos</span>
-        <app-image-picker [(files)]="images" />
+        <span class="label">{{ t().photos }}</span
+        ><app-image-picker [(files)]="images" />
       </div>
 
       @if (error()) {
@@ -65,16 +64,17 @@ import { findByName } from '../shared/name-utils';
 
       <div class="actions">
         <button type="button" class="secondary" (click)="cancelled.emit()">
-          Cancel
+          {{ t().cancel }}
         </button>
         <button type="submit" [disabled]="!name.trim() || isSaving()">
-          {{ isSaving() ? 'Saving…' : existing() ? 'Save anyway' : 'Save' }}
+          {{ isSaving() ? t().saving : existing() ? t().saveAnyway : t().save }}
         </button>
       </div>
     </form>
   `,
 })
 export class NewFoodItemFormComponent implements OnInit {
+  protected readonly t = inject(I18n).t;
   private readonly ingredientStore = inject(IngredientStore);
 
   /** The created food */
@@ -108,7 +108,9 @@ export class NewFoodItemFormComponent implements OnInit {
       );
       this.saved.emit(food);
     } catch (err) {
-      this.error.set(err instanceof Error ? err.message : 'Saving failed');
+      this.error.set(
+        err instanceof Error ? err.message : this.t().savingFailed,
+      );
       this.isSaving.set(false);
     }
   }

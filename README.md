@@ -93,6 +93,19 @@ One-time setup on the phone, in the same network:
 
 The ports can be changed with the environment variables `FOODY_HTTPS_PORT` and `FOODY_HTTP_PORT`.
 
+## Languages
+
+The user interface is available in English and German. The language is chosen in the settings of
+the app; "System" follows the language of the browser.
+
+- All texts are in `apps/foody/src/app/shared/i18n/translations.ts`. English is the reference, the
+  compiler reports keys that are missing in another language.
+- Components read the texts with `t().key` (see `i18n.ts`), so they change without reloading.
+- Records the user creates (foods, dishes, symptoms) are not translated; they are shown as entered.
+- The reference data (`amountUnitET`, `symptomTypeET`, `symptomLocationET`) has the optional
+  fields `name_de` and `name_en`. The app shows the field of the current language if it is filled,
+  otherwise `name`. They can be maintained in the PocketBase dashboard.
+
 ## Single commands
 
 | Command                                      | Description                                            |

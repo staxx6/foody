@@ -1,4 +1,5 @@
 import { Component, effect, inject, untracked } from '@angular/core';
+import { I18n } from '../shared/i18n/i18n';
 import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { DatePipe } from '@angular/common';
 import { SymptomEntryStore } from './symptom-entry-store';
@@ -25,7 +26,7 @@ import { SymptomEntryStore } from './symptom-entry-store';
                   entry.discomfortLevel > 33 && entry.discomfortLevel <= 66
                 "
                 [class.high]="entry.discomfortLevel > 66"
-                title="Discomfort level"
+                [title]="t().discomfortLevel"
               >
                 {{ entry.discomfortLevel }}/100
               </span>
@@ -34,13 +35,14 @@ import { SymptomEntryStore } from './symptom-entry-store';
         }
       </ul>
     } @else if (symptomEntryStore.isLoading()) {
-      <p class="list-message">Loading…</p>
+      <p class="list-message">{{ t().loading }}</p>
     } @else {
-      <p class="list-message">No symptoms logged today.</p>
+      <p class="list-message">{{ t().noSymptoms }}</p>
     }
   `,
 })
 export class SymptomEntryListComponent {
+  protected readonly t = inject(I18n).t;
   readonly symptomEntryStore = inject(SymptomEntryStore);
   private readonly sync = inject(OfflineDataAccessService);
 

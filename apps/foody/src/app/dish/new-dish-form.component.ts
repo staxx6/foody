@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, output, signal } from '@angular/core';
+import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
 import { DishStore, NewIngredient } from './dish-store';
 import { IngredientStore } from '../ingredient/ingredient-store';
@@ -31,53 +32,50 @@ import { findByName } from '../shared/name-utils';
           type="button"
           class="back-btn"
           (click)="cancelled.emit()"
-          aria-label="Back"
+          [attr.aria-label]="t().back"
         >
           <app-icon name="back" />
         </button>
-        <h2>New Dish</h2>
+        <h2>{{ t().newDish }}</h2>
       </div>
 
       <form class="card" (ngSubmit)="save()">
         <div class="field">
-          <label for="dish-name">Name *</label>
-          <input
+          <label for="dish-name">{{ t().name }} *</label
+          ><input
             id="dish-name"
             name="name"
             [(ngModel)]="name"
-            placeholder="e.g. lasagne"
+            [placeholder]="t().dishPlaceholder"
             required
           />
           @if (existing(); as duplicate) {
             <p class="warning">
-              <span>
-                A dish named <strong>{{ duplicate.name }}</strong> already
-                exists.
-              </span>
-              <button
+              <span>{{ t().dishExists(duplicate.name) }}</span
+              ><button
                 type="button"
                 class="link"
                 (click)="saved.emit(duplicate)"
               >
-                Use existing
+                {{ t().useExisting }}
               </button>
             </p>
           }
         </div>
 
         <div class="field">
-          <label for="dish-description">Description</label>
-          <textarea
+          <label for="dish-description">{{ t().description }}</label
+          ><textarea
             id="dish-description"
             name="description"
             [(ngModel)]="description"
             rows="3"
-            placeholder="optional"
+            [placeholder]="t().optional"
           ></textarea>
         </div>
 
         <div class="field">
-          <span class="label">Ingredients</span>
+          <span class="label">{{ t().ingredients }}</span>
           @for (ingredient of ingredients(); track $index) {
             <div class="ingredient">
               <select
@@ -85,9 +83,9 @@ import { findByName } from '../shared/name-utils';
                 [ngModel]="ingredient.foodItemId"
                 (ngModelChange)="update($index, { foodItemId: $event })"
                 [ngModelOptions]="{ standalone: true }"
-                aria-label="Food"
+                [attr.aria-label]="t().food"
               >
-                <option value="">— Select food —</option>
+                <option value="">{{ t().selectFood }}</option>
                 @for (food of ingredientStore.foodItems(); track food.id) {
                   <option [value]="food.id">{{ food.name }}</option>
                 }
@@ -102,26 +100,26 @@ import { findByName } from '../shared/name-utils';
                   update($index, { amount: '' + ($event ?? '') })
                 "
                 [ngModelOptions]="{ standalone: true }"
-                placeholder="Amount"
-                aria-label="Amount"
+                [placeholder]="t().amount"
+                [attr.aria-label]="t().amount"
               />
               <select
                 class="unit"
                 [ngModel]="ingredient.amountUnitId"
                 (ngModelChange)="update($index, { amountUnitId: $event })"
                 [ngModelOptions]="{ standalone: true }"
-                aria-label="Unit"
+                [attr.aria-label]="t().unit"
               >
-                <option value="">Unit</option>
+                <option value="">{{ t().unit }}</option>
                 @for (unit of amountUnitStore.units(); track unit.id) {
-                  <option [value]="unit.id">{{ unit.code }}</option>
+                  <option [value]="unit.id">{{ i18n.name(unit) }}</option>
                 }
               </select>
               <button
                 type="button"
                 class="remove"
                 (click)="remove($index)"
-                aria-label="Remove ingredient"
+                [attr.aria-label]="t().removeIngredient"
               >
                 <app-icon name="trash" />
               </button>
@@ -129,21 +127,21 @@ import { findByName } from '../shared/name-utils';
           }
           <div class="ingredient-actions">
             <button type="button" class="link" (click)="add()">
-              + Add ingredient
+              {{ t().addIngredient }}
             </button>
             <button
               type="button"
               class="link"
               (click)="isCreatingFood.set(true)"
             >
-              + Create new food
+              {{ t().createNewFood }}
             </button>
           </div>
         </div>
 
         <div class="field">
-          <span class="label">Photos</span>
-          <app-image-picker [(files)]="images" />
+          <span class="label">{{ t().photos }}</span
+          ><app-image-picker [(files)]="images" />
         </div>
 
         @if (error()) {
@@ -152,10 +150,12 @@ import { findByName } from '../shared/name-utils';
 
         <div class="actions">
           <button type="button" class="secondary" (click)="cancelled.emit()">
-            Cancel
+            {{ t().cancel }}
           </button>
           <button type="submit" [disabled]="!name.trim() || isSaving()">
-            {{ isSaving() ? 'Saving…' : existing() ? 'Save anyway' : 'Save' }}
+            {{
+              isSaving() ? t().saving : existing() ? t().saveAnyway : t().save
+            }}
           </button>
         </div>
       </form>
@@ -210,6 +210,8 @@ import { findByName } from '../shared/name-utils';
   ],
 })
 export class NewDishFormComponent implements OnInit {
+  protected readonly i18n = inject(I18n);
+  protected readonly t = this.i18n.t;
   private readonly dishStore = inject(DishStore);
   protected readonly ingredientStore = inject(IngredientStore);
   protected readonly amountUnitStore = inject(AmountUnitStore);
@@ -277,7 +279,9 @@ export class NewDishFormComponent implements OnInit {
       );
       this.saved.emit(dish);
     } catch (err) {
-      this.error.set(err instanceof Error ? err.message : 'Saving failed');
+      this.error.set(
+        err instanceof Error ? err.message : this.t().savingFailed,
+      );
       this.isSaving.set(false);
     }
   }

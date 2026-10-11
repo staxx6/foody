@@ -2,13 +2,13 @@ import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { DATA_ACCESS, DataRecord } from '@foody/pocketbase-access';
 import { dayRange } from '../shared/date-utils';
+import { LocalizedName, toLocalizedName } from '../shared/i18n/i18n';
 
 export type DishEntry = {
   id: string;
   name: string;
   amount: string | null;
-  amountUnitCode: string | null;
-  amountUnitName: string | null;
+  amountUnit: LocalizedName | null;
   imageUrl: string | null;
   date: string;
 };
@@ -64,11 +64,8 @@ export const DishEntryStore = signalStore(
               id: record.id,
               name,
               amount: record['amount'] ? String(record['amount']) : null,
-              amountUnitCode: expand?.['to_amountUnit']?.['code']
-                ? String(expand['to_amountUnit']['code'])
-                : null,
-              amountUnitName: expand?.['to_amountUnit']?.['name']
-                ? String(expand['to_amountUnit']['name'])
+              amountUnit: expand?.['to_amountUnit']
+                ? toLocalizedName(expand['to_amountUnit'])
                 : null,
               imageUrl,
               date: record['date'] ? String(record['date']) : record.created,
@@ -105,8 +102,7 @@ export const DishEntryStore = signalStore(
           id: record.id,
           name: '',
           amount: record['amount'] ? String(record['amount']) : null,
-          amountUnitCode: null,
-          amountUnitName: null,
+          amountUnit: null,
           imageUrl: null,
           date: record['date'] ? String(record['date']) : record.created,
         }),

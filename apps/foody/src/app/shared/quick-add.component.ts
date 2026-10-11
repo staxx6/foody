@@ -1,4 +1,5 @@
-import { Component, input, signal } from '@angular/core';
+import { inject, Component, input, signal } from '@angular/core';
+import { I18n } from './i18n/i18n';
 
 /**
  * Inline "add a missing option" control for the select fields of a form
@@ -15,7 +16,7 @@ import { Component, input, signal } from '@angular/core';
           (keydown.enter)="$event.preventDefault(); add()"
           (keydown.escape)="close()"
           [placeholder]="placeholder()"
-          [attr.aria-label]="'Name of the new ' + label()"
+          [attr.aria-label]="label()"
         />
         <button
           type="button"
@@ -23,16 +24,18 @@ import { Component, input, signal } from '@angular/core';
           (click)="add()"
           [disabled]="!name().trim() || isSaving()"
         >
-          {{ isSaving() ? 'Adding…' : 'Add' }}
+          {{ isSaving() ? t().adding : t().add }}
         </button>
-        <button type="button" class="cancel" (click)="close()">Cancel</button>
+        <button type="button" class="cancel" (click)="close()">
+          {{ t().cancel }}
+        </button>
       </div>
       @if (error()) {
         <p class="error">{{ error() }}</p>
       }
     } @else {
       <button type="button" class="open" (click)="isOpen.set(true)">
-        + Create new {{ label() }}
+        {{ label() }}
       </button>
     }
   `,
@@ -102,9 +105,10 @@ import { Component, input, signal } from '@angular/core';
   ],
 })
 export class QuickAddComponent {
+  protected readonly t = inject(I18n).t;
   /** What gets added, e.g. "food item" */
   readonly label = input.required<string>();
-  readonly placeholder = input('Name');
+  readonly placeholder = input('');
   /** Creates the option; the form selects it afterwards */
   readonly create = input.required<(name: string) => Promise<void>>();
 
@@ -128,7 +132,9 @@ export class QuickAddComponent {
       await this.create()(name);
       this.close();
     } catch (err) {
-      this.error.set(err instanceof Error ? err.message : 'Adding failed');
+      this.error.set(
+        err instanceof Error ? err.message : this.t().addingFailed,
+      );
     } finally {
       this.isSaving.set(false);
     }

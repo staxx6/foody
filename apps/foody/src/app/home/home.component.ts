@@ -1,5 +1,5 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
+import { I18n } from '../shared/i18n/i18n';
 import { DishEntryListComponent } from '../dish-entry/dish-entry-list.component';
 import { SymptomEntryListComponent } from '../symptom-entry/symptom-entry-list.component';
 import { FooterNavComponent } from '../shared/footer/footer-nav.component';
@@ -15,7 +15,6 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
 
 @Component({
   imports: [
-    DatePipe,
     IconComponent,
     SettingsComponent,
     DishEntryListComponent,
@@ -65,17 +64,17 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
         }
         @default {
           <div class="day">
-            <span class="day-label">Today</span>
-            <span class="day-date">{{ today | date: 'EEEE, d MMMM' }}</span>
+            <span class="day-label">{{ t().today }}</span
+            ><span class="day-date">{{ i18n.formatDay(today) }}</span>
           </div>
 
           <section>
-            <h2><app-icon name="meal" /> Meals</h2>
+            <h2><app-icon name="meal" /> {{ t().meals }}</h2>
             <app-dish-entry-list class="card" />
           </section>
 
           <section>
-            <h2><app-icon name="symptom" /> Health</h2>
+            <h2><app-icon name="symptom" /> {{ t().health }}</h2>
             <app-symptom-entry-list class="card" />
           </section>
         }
@@ -159,6 +158,8 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
   ],
 })
 export class HomeComponent {
+  protected readonly i18n = inject(I18n);
+  protected readonly t = this.i18n.t;
   readonly uiStore = inject(UiStore);
   protected readonly today = new Date();
 }

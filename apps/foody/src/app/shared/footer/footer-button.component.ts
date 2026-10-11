@@ -1,4 +1,11 @@
-import { booleanAttribute, Component, input, output } from '@angular/core';
+import {
+  inject,
+  booleanAttribute,
+  Component,
+  input,
+  output,
+} from '@angular/core';
+import { I18n } from '../i18n/i18n';
 import { IconComponent, IconName } from '../icon.component';
 
 @Component({
@@ -8,7 +15,7 @@ import { IconComponent, IconName } from '../icon.component';
     <button
       [class.active]="active()"
       [disabled]="disabled()"
-      [title]="disabled() ? 'Coming soon' : ''"
+      [title]="disabled() ? t().comingSoon : ''"
       (click)="onClick()"
     >
       <app-icon class="icon" [name]="icon()" />
@@ -57,6 +64,7 @@ import { IconComponent, IconName } from '../icon.component';
   ],
 })
 export class FooterButtonComponent {
+  protected readonly t = inject(I18n).t;
   readonly label = input.required<string>();
   readonly icon = input.required<IconName>();
   readonly active = input.required<boolean>();
