@@ -23,7 +23,11 @@ import { FooterButtonComponent } from './footer-button.component';
       </div>
     }
     <nav>
-      <app-footer-button label='Today' [active]="uiStore.isActive('today')" />
+      <app-footer-button
+        label="Today"
+        [active]="uiStore.isActive('today')"
+        (clicked)="uiStore.goHome()"
+      />
       <app-footer-button label='Month' [active]="false" />
       <button class="add-btn" (click)="toggleMenu()">+</button>
       <app-footer-button label='Report' [active]='false' />

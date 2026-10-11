@@ -39,7 +39,7 @@ export const IngredientStore = signalStore(
           collectionName: 'foodItems',
           options: { sort: 'name' },
           map: (record) => {
-            const images = record['images'] as string[];
+            const images = (record['images'] as string[] | undefined) ?? [];
 
             return {
               id: record.id,
@@ -77,7 +77,11 @@ export const IngredientStore = signalStore(
           updated: record.updated,
         }),
       });
-      patchState(store, { foodItems: [...store.foodItems(), item] });
+      patchState(store, {
+        foodItems: [...store.foodItems(), item].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
+      });
       return item;
     },
   })),

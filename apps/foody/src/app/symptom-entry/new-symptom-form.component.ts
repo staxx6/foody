@@ -15,7 +15,7 @@ import { UiStore } from '../shared/ui-store';
     <form (ngSubmit)="save()">
       <div class="field">
         <label for="name">Name *</label>
-        <input id="name" name="name" [(ngModel)]="name" required autofocus />
+        <input id="name" name="name" [(ngModel)]="name" required />
       </div>
 
       <div class="field">

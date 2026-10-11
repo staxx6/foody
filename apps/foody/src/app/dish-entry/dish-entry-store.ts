@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { DATA_ACCESS, DataRecord } from '@foody/pocketbase-access';
+import { dayFilter } from '../shared/date-utils';
 
 export type DishEntry = {
   id: string;
@@ -31,13 +32,11 @@ export const DishEntryStore = signalStore(
     async loadTodayEntries() {
       patchState(store, { isLoading: true, error: null });
 
-      const today = new Date().toISOString().slice(0, 10);
-
       try {
         const entries = await dataAccess.list<DishEntry>({
           collectionName: 'dishEntries',
           options: {
-            filter: `date >= "${today} 00:00:00" && date < "${today} 23:59:59"`,
+            filter: dayFilter('date'),
             expand: 'to_foodItem,to_dish,to_amountUnit',
             sort: 'date',
           },

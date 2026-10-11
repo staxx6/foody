@@ -7,14 +7,19 @@ export type SymptomLocation = { id: string; name: string };
 type SymptomLocationState = {
   locations: SymptomLocation[];
   isLoading: boolean;
+  isLoaded: boolean;
 };
 
 export const SymptomLocationStore = signalStore(
   { providedIn: 'root' },
-  withState<SymptomLocationState>({ locations: [], isLoading: false }),
+  withState<SymptomLocationState>({
+    locations: [],
+    isLoading: false,
+    isLoaded: false,
+  }),
   withMethods((store, dataAccess = inject(DATA_ACCESS)) => ({
     async loadLocations() {
-      if (store.locations().length > 0) return;
+      if (store.isLoaded()) return;
       patchState(store, { isLoading: true });
       try {
         const locations = await dataAccess.list<SymptomLocation>({
@@ -22,7 +27,7 @@ export const SymptomLocationStore = signalStore(
           options: { sort: 'name' },
           map: (r) => ({ id: r.id, name: String(r['name'] ?? '') }),
         });
-        patchState(store, { locations, isLoading: false });
+        patchState(store, { locations, isLoading: false, isLoaded: true });
       } catch {
         patchState(store, { isLoading: false });
       }
@@ -34,6 +39,8 @@ export const SymptomLocationStore = signalStore(
         data: { name },
         map: (r) => ({ id: r.id, name: String(r['name'] ?? '') }),
       });
+      // Not loaded yet: the next load fetches the new record anyway
+      if (!store.isLoaded()) return location;
       patchState(store, {
         locations: [...store.locations(), location].sort((a, b) =>
           a.name.localeCompare(b.name),

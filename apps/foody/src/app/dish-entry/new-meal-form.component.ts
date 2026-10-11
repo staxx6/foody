@@ -5,6 +5,7 @@ import { IngredientStore } from '../ingredient/ingredient-store';
 import { DishStore } from '../dish/dish-store';
 import { AmountUnitStore } from '../shared/amount-unit-store';
 import { UiStore } from '../shared/ui-store';
+import { toDateTimeLocalValue, toPocketBaseDate } from '../shared/date-utils';
 
 type SourceType = 'food-item' | 'dish';
 
@@ -250,7 +251,7 @@ export class NewMealFormComponent implements OnInit {
   selectedSourceId = '';
   amount = '';
   amountUnitId = '';
-  date = new Date().toISOString().slice(0, 16);
+  date = toDateTimeLocalValue(new Date());
 
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
@@ -263,7 +264,10 @@ export class NewMealFormComponent implements OnInit {
 
   isValid(): boolean {
     return (
-      !!this.selectedSourceId && !!this.amount.trim() && !!this.amountUnitId
+      !!this.selectedSourceId &&
+      !!this.amount.trim() &&
+      !!this.amountUnitId &&
+      !!this.date
     );
   }
 
@@ -276,17 +280,14 @@ export class NewMealFormComponent implements OnInit {
     this.isSaving.set(true);
     this.error.set(null);
     try {
-      // PocketBase expects "YYYY-MM-DD HH:MM:SS.000Z"
-      const pbDate = this.date.replace('T', ' ') + ':00.000Z';
       await this.dishEntryStore.createDishEntry({
-        date: pbDate,
+        date: toPocketBaseDate(new Date(this.date)),
         amount: this.amount.trim(),
         amountUnitId: this.amountUnitId,
         foodItemId:
           this.sourceType === 'food-item' ? this.selectedSourceId : undefined,
         dishId: this.sourceType === 'dish' ? this.selectedSourceId : undefined,
       });
-      await this.dishEntryStore.loadTodayEntries();
       this.uiStore.goHome();
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Saving failed');

@@ -34,8 +34,8 @@ import { Component, input, output } from '@angular/core';
   ],
 })
 export class FooterButtonComponent {
-  readonly label = input.required();
-  readonly active = input.required();
+  readonly label = input.required<string>();
+  readonly active = input.required<boolean>();
 
   readonly clicked = output<void>();
 

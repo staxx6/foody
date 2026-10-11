@@ -10,11 +10,13 @@ export type Symptom = {
 type SymptomState = {
   symptoms: Symptom[];
   isLoading: boolean;
+  isLoaded: boolean;
 };
 
 const initialState: SymptomState = {
   symptoms: [],
   isLoading: false,
+  isLoaded: false,
 };
 
 export const SymptomStore = signalStore(
@@ -22,7 +24,7 @@ export const SymptomStore = signalStore(
   withState(initialState),
   withMethods((store, dataAccess = inject(DATA_ACCESS)) => ({
     async loadSymptoms() {
-      if (store.symptoms().length > 0) return;
+      if (store.isLoaded()) return;
       patchState(store, { isLoading: true });
       try {
         const symptoms = await dataAccess.list<Symptom>({
@@ -33,7 +35,7 @@ export const SymptomStore = signalStore(
             name: String(record['name'] ?? ''),
           }),
         });
-        patchState(store, { symptoms, isLoading: false });
+        patchState(store, { symptoms, isLoading: false, isLoaded: true });
       } catch {
         patchState(store, { isLoading: false });
       }
@@ -57,6 +59,8 @@ export const SymptomStore = signalStore(
           name: String(record['name'] ?? ''),
         }),
       });
+      // Not loaded yet: the next load fetches the new record anyway
+      if (!store.isLoaded()) return symptom;
       patchState(store, {
         symptoms: [...store.symptoms(), symptom].sort((a, b) =>
           a.name.localeCompare(b.name),

@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { SymptomEntryStore } from './symptom-entry-store';
 import { SymptomStore } from './symptom-store';
 import { UiStore } from '../shared/ui-store';
+import { toDateTimeLocalValue, toPocketBaseDate } from '../shared/date-utils';
 
 @Component({
   selector: 'app-new-health-entry-form',
@@ -53,7 +54,7 @@ import { UiStore } from '../shared/ui-store';
 
       <div class="actions">
         <button type="button" class="secondary" (click)="cancel()">Cancel</button>
-        <button type="submit" [disabled]="!symptomId || isSaving()">
+        <button type="submit" [disabled]="!symptomId || !date || isSaving()">
           {{ isSaving() ? 'Saving…' : 'Save' }}
         </button>
       </div>
@@ -141,7 +142,7 @@ export class NewHealthEntryFormComponent implements OnInit {
   symptomId = '';
   discomfortLevel: number | null = null;
   comment = '';
-  date = new Date().toISOString().slice(0, 16);
+  date = toDateTimeLocalValue(new Date());
 
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
@@ -155,19 +156,16 @@ export class NewHealthEntryFormComponent implements OnInit {
   }
 
   async save(): Promise<void> {
-    if (!this.symptomId || this.isSaving()) return;
+    if (!this.symptomId || !this.date || this.isSaving()) return;
     this.isSaving.set(true);
     this.error.set(null);
     try {
-      // PocketBase expects "YYYY-MM-DD HH:MM:SS.000Z"
-      const pbDate = this.date.replace('T', ' ') + ':00.000Z';
       await this.symptomEntryStore.createSymptomEntry({
-        date: pbDate,
+        date: toPocketBaseDate(new Date(this.date)),
         symptomId: this.symptomId,
         discomfortLevel: this.discomfortLevel,
         comment: this.comment.trim() || undefined,
       });
-      await this.symptomEntryStore.loadTodayEntries();
       this.uiStore.goHome();
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Saving failed');

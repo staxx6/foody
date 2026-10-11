@@ -53,7 +53,11 @@ export const DishStore = signalStore(
           description: String(record['description'] ?? ''),
         }),
       });
-      patchState(store, { dishes: [...store.dishes(), dish] });
+      patchState(store, {
+        dishes: [...store.dishes(), dish].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
+      });
       return dish;
     },
   })),

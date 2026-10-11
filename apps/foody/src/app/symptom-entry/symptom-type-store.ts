@@ -4,14 +4,18 @@ import { DATA_ACCESS } from '@foody/pocketbase-access';
 
 export type SymptomType = { id: string; name: string };
 
-type SymptomTypeState = { types: SymptomType[]; isLoading: boolean };
+type SymptomTypeState = {
+  types: SymptomType[];
+  isLoading: boolean;
+  isLoaded: boolean;
+};
 
 export const SymptomTypeStore = signalStore(
   { providedIn: 'root' },
-  withState<SymptomTypeState>({ types: [], isLoading: false }),
+  withState<SymptomTypeState>({ types: [], isLoading: false, isLoaded: false }),
   withMethods((store, dataAccess = inject(DATA_ACCESS)) => ({
     async loadTypes() {
-      if (store.types().length > 0) return;
+      if (store.isLoaded()) return;
       patchState(store, { isLoading: true });
       try {
         const types = await dataAccess.list<SymptomType>({
@@ -19,7 +23,7 @@ export const SymptomTypeStore = signalStore(
           options: { sort: 'name' },
           map: (r) => ({ id: r.id, name: String(r['name'] ?? '') }),
         });
-        patchState(store, { types, isLoading: false });
+        patchState(store, { types, isLoading: false, isLoaded: true });
       } catch {
         patchState(store, { isLoading: false });
       }
@@ -31,6 +35,8 @@ export const SymptomTypeStore = signalStore(
         data: { name },
         map: (r) => ({ id: r.id, name: String(r['name'] ?? '') }),
       });
+      // Not loaded yet: the next load fetches the new record anyway
+      if (!store.isLoaded()) return type;
       patchState(store, {
         types: [...store.types(), type].sort((a, b) => a.name.localeCompare(b.name)),
       });
