@@ -1,9 +1,11 @@
 // Keeps the app itself on the device, so it starts without the server.
 // The data is handled by the offline data access, not by this worker.
-const CACHE = 'foody-shell';
+// Count up when a file in STATIC_FILES changes, as those are only fetched once
+const CACHE = 'foody-shell-v2';
 const STATIC_FILES = [
   '/manifest.webmanifest',
   '/favicon.ico',
+  '/icons/favicon-32.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
 ];
@@ -40,7 +42,18 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches
+      .keys()
+      .then((names) =>
+        Promise.all(
+          names
+            .filter((name) => name !== CACHE)
+            .map((name) => caches.delete(name)),
+        ),
+      )
+      .then(() => self.clients.claim()),
+  );
 });
 
 self.addEventListener('fetch', (event) => {

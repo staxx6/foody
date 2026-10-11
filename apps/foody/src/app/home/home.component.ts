@@ -123,7 +123,11 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
 
       /* The logo leads back to today */
       h1 button {
+        display: block;
+        line-height: 1;
         padding: 0;
+        /* The letters sit low in their line; this centers what is visible */
+        transform: translateY(-3px);
         border: none;
         background: none;
         font: inherit;
