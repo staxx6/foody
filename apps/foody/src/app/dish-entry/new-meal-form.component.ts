@@ -1,4 +1,12 @@
-import { computed, Component, inject, OnInit, signal } from '@angular/core';
+import {
+  computed,
+  Component,
+  inject,
+  OnInit,
+  signal,
+  ChangeDetectorRef,
+  input,
+} from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
 import { DishEntryStore } from './dish-entry-store';
@@ -12,6 +20,7 @@ import { IconComponent } from '../shared/icon.component';
 import { QuickAddComponent } from '../shared/quick-add.component';
 import {
   fromDateAndTime,
+  fromPocketBaseDate,
   toDateInputValue,
   toPocketBaseDate,
   toTimeInputValue,
@@ -61,7 +70,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
         >
           <app-icon name="back" />
         </button>
-        <h2>{{ t().logMeal }}</h2>
+        <h2>{{ editId() ? t().editMeal : t().logMeal }}</h2>
       </div>
 
       <form class="card" (ngSubmit)="save()">
@@ -177,6 +186,10 @@ export class NewMealFormComponent implements OnInit {
   private readonly dishEntryStore = inject(DishEntryStore);
   private readonly uiStore = inject(UiStore);
 
+  /** The record to change; without it a new one is created */
+  readonly editId = input<string | null>(null);
+  private readonly changes = inject(ChangeDetectorRef);
+
   sourceType: SourceType = 'food-item';
   // Signals, as they are also set after loading and creating options
   readonly selectedSourceId = signal('');
@@ -194,6 +207,22 @@ export class NewMealFormComponent implements OnInit {
     this.ingredientStore.loadFoodItems();
     this.dishStore.loadDishes();
     void this.selectDefaultUnit();
+    void this.loadRecord();
+  }
+
+  private async loadRecord(): Promise<void> {
+    const id = this.editId();
+    const entry = id ? await this.dishEntryStore.getDishEntry(id) : null;
+    if (!entry) return;
+
+    const date = fromPocketBaseDate(entry.date);
+    this.sourceType = entry.dishId ? 'dish' : 'food-item';
+    this.selectedSourceId.set(entry.dishId ?? entry.foodItemId ?? '');
+    this.amount = entry.amount;
+    this.amountUnitId.set(entry.amountUnitId);
+    this.date = toDateInputValue(date);
+    this.time = toTimeInputValue(date);
+    this.changes.markForCheck();
   }
 
   private async selectDefaultUnit(): Promise<void> {
@@ -231,7 +260,7 @@ export class NewMealFormComponent implements OnInit {
   };
 
   cancel(): void {
-    this.uiStore.goHome();
+    this.uiStore.close();
   }
 
   async save(): Promise<void> {
@@ -239,7 +268,8 @@ export class NewMealFormComponent implements OnInit {
     this.isSaving.set(true);
     this.error.set(null);
     try {
-      await this.dishEntryStore.createDishEntry({
+      const id = this.editId();
+      const entry = {
         date: toPocketBaseDate(fromDateAndTime(this.date, this.time)),
         amount: this.amount.trim(),
         amountUnitId: this.amountUnitId(),
@@ -247,8 +277,11 @@ export class NewMealFormComponent implements OnInit {
           this.sourceType === 'food-item' ? this.selectedSourceId() : undefined,
         dishId:
           this.sourceType === 'dish' ? this.selectedSourceId() : undefined,
-      });
-      this.uiStore.goHome();
+      };
+      await (id
+        ? this.dishEntryStore.updateDishEntry(id, entry)
+        : this.dishEntryStore.createDishEntry(entry));
+      this.uiStore.close();
     } catch (err) {
       this.error.set(
         err instanceof Error ? err.message : this.t().savingFailed,

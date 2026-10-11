@@ -11,6 +11,14 @@ export type SymptomEntry = {
   date: string;
 };
 
+/** What is entered for a symptom entry */
+export type SymptomEntryInput = {
+  date: string;
+  symptomId: string;
+  discomfortLevel?: number | null;
+  comment?: string;
+};
+
 type SymptomEntryState = {
   entries: SymptomEntry[];
   isLoading: boolean;
@@ -61,10 +69,7 @@ export const SymptomEntryStore = signalStore(
             return {
               id: record.id,
               symptomName: String(symptom?.['name'] ?? '-'),
-              discomfortLevel:
-                record['discomfortLevel'] != null
-                  ? Number(record['discomfortLevel'])
-                  : null,
+              discomfortLevel: Number(record['discomfortLevel']) || null,
               locationImageUrls,
               date: record['date'] ? String(record['date']) : record.created,
             };
@@ -112,6 +117,37 @@ export const SymptomEntryStore = signalStore(
       await dataAccess.delete({ collectionName: 'symptomEntries', id });
       patchState(store, {
         entries: store.entries().filter((item) => item.id !== id),
+      });
+    },
+
+    getSymptomEntry(id: string): Promise<SymptomEntryInput | null> {
+      return dataAccess.getOne({
+        collectionName: 'symptomEntries',
+        id,
+        map: (record) => ({
+          date: String(record['date'] ?? record.created),
+          symptomId: String(record['to_symptom'] ?? ''),
+          // PocketBase stores "no value" of a number as 0
+          discomfortLevel: Number(record['discomfortLevel']) || null,
+          comment: String(record['comment'] ?? ''),
+        }),
+      });
+    },
+
+    async updateSymptomEntry(
+      id: string,
+      input: SymptomEntryInput,
+    ): Promise<void> {
+      await dataAccess.update({
+        collectionName: 'symptomEntries',
+        id,
+        data: {
+          date: input.date,
+          to_symptom: input.symptomId,
+          discomfortLevel: input.discomfortLevel ?? null,
+          comment: input.comment ?? '',
+        },
+        map: (record) => record,
       });
     },
   })),

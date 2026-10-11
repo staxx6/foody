@@ -6,18 +6,21 @@ import { ConfirmService } from '../shared/confirm/confirm.service';
 import { I18n } from '../shared/i18n/i18n';
 import { IconComponent, IconName } from '../shared/icon.component';
 import { fuzzyFilter } from '../shared/search/fuzzy';
+import { ActiveSite, UiStore } from '../shared/ui-store';
 import { SymptomStore } from '../symptom-entry/symptom-store';
 
 type ListItem = { id: string; name: string };
 type List = {
   title: string;
   icon: IconName;
+  /** The form that changes an item of the list */
+  editForm: ActiveSite;
   items: ListItem[];
   remove: (id: string) => Promise<void>;
 };
 
 /**
- * Shows what can be picked when logging and lets the user delete it
+ * Shows what can be picked when logging and lets the user edit and delete it
  */
 @Component({
   selector: 'app-manage-lists',
@@ -52,6 +55,14 @@ type List = {
                   <button
                     type="button"
                     class="icon-btn"
+                    (click)="uiStore.edit(list.editForm, item.id)"
+                    [attr.aria-label]="t().editNamed(item.name)"
+                  >
+                    <app-icon name="edit" />
+                  </button>
+                  <button
+                    type="button"
+                    class="icon-btn danger"
                     (click)="confirm.delete(item, bind(list, item))"
                     [attr.aria-label]="t().deleteNamed(item.name)"
                   >
@@ -133,30 +144,35 @@ export class ManageListsComponent implements OnInit {
   private readonly unitStore = inject(AmountUnitStore);
   private readonly i18n = inject(I18n);
   protected readonly confirm = inject(ConfirmService);
+  protected readonly uiStore = inject(UiStore);
   protected readonly t = this.i18n.t;
 
   protected readonly lists = computed<List[]>(() => [
     {
       title: this.t().foods,
       icon: 'food',
+      editForm: 'new-food-item',
       items: this.foodStore.foodItems(),
       remove: (id) => this.foodStore.deleteFoodItem(id),
     },
     {
       title: this.t().dishes,
       icon: 'dish',
+      editForm: 'new-dish',
       items: this.dishStore.dishes(),
       remove: (id) => this.dishStore.deleteDish(id),
     },
     {
       title: this.t().symptoms,
       icon: 'symptom',
+      editForm: 'new-symptom',
       items: this.symptomStore.symptoms(),
       remove: (id) => this.symptomStore.deleteSymptom(id),
     },
     {
       title: this.t().units,
       icon: 'tag',
+      editForm: 'edit-unit',
       items: this.unitStore
         .units()
         .map((unit) => ({ id: unit.id, name: this.i18n.name(unit) })),

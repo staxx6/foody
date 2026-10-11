@@ -24,6 +24,13 @@ export function fromDateAndTime(date: string, time: string): Date {
 }
 
 /**
+ * The point in time of a date as PocketBase stores it
+ */
+export function fromPocketBaseDate(value: string): Date {
+  return new Date(value.replace(' ', 'T'));
+}
+
+/**
  * PocketBase stores and compares dates in UTC as "YYYY-MM-DD HH:MM:SS.sssZ"
  */
 export function toPocketBaseDate(date: Date): string {

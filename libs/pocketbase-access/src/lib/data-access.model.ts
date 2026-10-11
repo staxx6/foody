@@ -54,6 +54,24 @@ export type CreateQuery<T> = {
   map: (record: DataRecord) => T;
 };
 
+export type GetQuery<T> = {
+  collectionName: string;
+  id: string;
+  expand?: string;
+  map: (record: DataRecord) => T;
+};
+
+export type UpdateQuery<T> = {
+  collectionName: string;
+  id: string;
+  /**
+   * The fields to change. Files of a field are added with the key
+   * `field+` and removed by their names with `field-`.
+   */
+  data: Record<string, unknown>;
+  map: (record: DataRecord) => T;
+};
+
 export type DeleteQuery = {
   collectionName: string;
   id: string;
@@ -65,7 +83,10 @@ export interface DataAccess {
    * @param query
    */
   list<T>(query: ListQuery<T>): Promise<T[]>;
+  /** The record, or null if it does not exist */
+  getOne<T>(query: GetQuery<T>): Promise<T | null>;
   create<T>(query: CreateQuery<T>): Promise<T>;
+  update<T>(query: UpdateQuery<T>): Promise<T>;
   delete(query: DeleteQuery): Promise<void>;
   getFileUrl(record: DataRecord, fileName: string): string;
 }

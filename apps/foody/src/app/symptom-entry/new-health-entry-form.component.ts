@@ -1,4 +1,11 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  signal,
+  ChangeDetectorRef,
+  input,
+} from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
 import { SymptomEntryStore } from './symptom-entry-store';
@@ -8,6 +15,7 @@ import { IconComponent } from '../shared/icon.component';
 import { NewSymptomFormComponent } from './new-symptom-form.component';
 import {
   fromDateAndTime,
+  fromPocketBaseDate,
   toDateInputValue,
   toPocketBaseDate,
   toTimeInputValue,
@@ -41,7 +49,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
         >
           <app-icon name="back" />
         </button>
-        <h2>{{ t().logSymptom }}</h2>
+        <h2>{{ editId() ? t().editSymptomEntry : t().logSymptom }}</h2>
       </div>
 
       <form class="card" (ngSubmit)="save()">
@@ -134,6 +142,10 @@ export class NewHealthEntryFormComponent implements OnInit {
   private readonly symptomEntryStore = inject(SymptomEntryStore);
   private readonly uiStore = inject(UiStore);
 
+  /** The record to change; without it a new one is created */
+  readonly editId = input<string | null>(null);
+  private readonly changes = inject(ChangeDetectorRef);
+
   // Signal, as it is also set after creating a symptom
   readonly symptomId = signal('');
   discomfortLevel: number | null = null;
@@ -148,6 +160,21 @@ export class NewHealthEntryFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.symptomStore.loadSymptoms();
+    void this.loadRecord();
+  }
+
+  private async loadRecord(): Promise<void> {
+    const id = this.editId();
+    const entry = id ? await this.symptomEntryStore.getSymptomEntry(id) : null;
+    if (!entry) return;
+
+    const date = fromPocketBaseDate(entry.date);
+    this.symptomId.set(entry.symptomId);
+    this.discomfortLevel = entry.discomfortLevel ?? null;
+    this.comment = entry.comment ?? '';
+    this.date = toDateInputValue(date);
+    this.time = toTimeInputValue(date);
+    this.changes.markForCheck();
   }
 
   /** A symptom that was created from here is selected right away */
@@ -157,7 +184,7 @@ export class NewHealthEntryFormComponent implements OnInit {
   }
 
   cancel(): void {
-    this.uiStore.goHome();
+    this.uiStore.close();
   }
 
   async save(): Promise<void> {
@@ -167,13 +194,17 @@ export class NewHealthEntryFormComponent implements OnInit {
     this.isSaving.set(true);
     this.error.set(null);
     try {
-      await this.symptomEntryStore.createSymptomEntry({
+      const id = this.editId();
+      const entry = {
         date: toPocketBaseDate(fromDateAndTime(this.date, this.time)),
         symptomId: this.symptomId(),
         discomfortLevel: this.discomfortLevel,
         comment: this.comment.trim() || undefined,
-      });
-      this.uiStore.goHome();
+      };
+      await (id
+        ? this.symptomEntryStore.updateSymptomEntry(id, entry)
+        : this.symptomEntryStore.createSymptomEntry(entry));
+      this.uiStore.close();
     } catch (err) {
       this.error.set(
         err instanceof Error ? err.message : this.t().savingFailed,

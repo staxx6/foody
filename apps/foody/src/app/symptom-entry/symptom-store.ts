@@ -74,5 +74,31 @@ export const SymptomStore = signalStore(
         symptoms: store.symptoms().filter((item) => item.id !== id),
       });
     },
+
+    getSymptom(id: string): Promise<{ name: string; comment: string } | null> {
+      return dataAccess.getOne({
+        collectionName: 'symptoms',
+        id,
+        map: (record) => ({
+          name: String(record['name'] ?? ''),
+          comment: String(record['comment'] ?? ''),
+        }),
+      });
+    },
+
+    async updateSymptom(
+      id: string,
+      name: string,
+      comment: string,
+    ): Promise<{ id: string }> {
+      await dataAccess.update({
+        collectionName: 'symptoms',
+        id,
+        data: { name, comment },
+        map: (record) => record,
+      });
+      await this.loadSymptoms();
+      return { id };
+    },
   })),
 );

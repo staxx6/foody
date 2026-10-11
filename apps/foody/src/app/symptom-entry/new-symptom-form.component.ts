@@ -1,4 +1,12 @@
-import { Component, inject, OnInit, output, signal } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  output,
+  signal,
+  ChangeDetectorRef,
+  input,
+} from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
 import { SymptomStore } from './symptom-store';
@@ -18,7 +26,7 @@ import { findByName } from '../shared/name-utils';
       >
         <app-icon name="back" />
       </button>
-      <h2>{{ t().newSymptom }}</h2>
+      <h2>{{ editId() ? t().editSymptom : t().newSymptom }}</h2>
     </div>
 
     <form class="card" (ngSubmit)="save()">
@@ -75,6 +83,10 @@ export class NewSymptomFormComponent implements OnInit {
   readonly saved = output<{ id: string }>();
   readonly cancelled = output<void>();
 
+  /** The record to change; without it a new one is created */
+  readonly editId = input<string | null>(null);
+  private readonly changes = inject(ChangeDetectorRef);
+
   name = '';
   comment = '';
   readonly isSaving = signal(false);
@@ -82,11 +94,27 @@ export class NewSymptomFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.symptomStore.loadSymptoms();
+    void this.loadRecord();
+  }
+
+  private async loadRecord(): Promise<void> {
+    const id = this.editId();
+    const symptom = id ? await this.symptomStore.getSymptom(id) : null;
+    if (!symptom) return;
+
+    this.name = symptom.name;
+    this.comment = symptom.comment;
+    this.changes.markForCheck();
   }
 
   /** A record with the entered name, to warn about the duplicate */
   protected existing() {
-    return findByName(this.symptomStore.symptoms(), this.name);
+    return findByName(
+      this.symptomStore
+        .symptoms()
+        .filter((symptom) => symptom.id !== this.editId()),
+      this.name,
+    );
   }
 
   async save(): Promise<void> {
@@ -94,10 +122,17 @@ export class NewSymptomFormComponent implements OnInit {
     this.isSaving.set(true);
     this.error.set(null);
     try {
-      const symptom = await this.symptomStore.createSymptom(
-        this.name.trim(),
-        this.comment.trim(),
-      );
+      const id = this.editId();
+      const symptom = id
+        ? await this.symptomStore.updateSymptom(
+            id,
+            this.name.trim(),
+            this.comment.trim(),
+          )
+        : await this.symptomStore.createSymptom(
+            this.name.trim(),
+            this.comment.trim(),
+          );
       this.saved.emit(symptom);
     } catch (err) {
       this.error.set(

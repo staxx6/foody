@@ -13,6 +13,15 @@ export type DishEntry = {
   date: string;
 };
 
+/** What is entered for a meal */
+export type DishEntryInput = {
+  date: string;
+  amount: string;
+  amountUnitId: string;
+  foodItemId?: string;
+  dishId?: string;
+};
+
 type DishEntryState = {
   entries: DishEntry[];
   isLoading: boolean;
@@ -113,6 +122,36 @@ export const DishEntryStore = signalStore(
       await dataAccess.delete({ collectionName: 'dishEntries', id });
       patchState(store, {
         entries: store.entries().filter((item) => item.id !== id),
+      });
+    },
+
+    getDishEntry(id: string): Promise<DishEntryInput | null> {
+      return dataAccess.getOne({
+        collectionName: 'dishEntries',
+        id,
+        map: (record) => ({
+          date: String(record['date'] ?? record.created),
+          amount: String(record['amount'] ?? ''),
+          amountUnitId: String(record['to_amountUnit'] ?? ''),
+          foodItemId: String(record['to_foodItem'] ?? '') || undefined,
+          dishId: String(record['to_dish'] ?? '') || undefined,
+        }),
+      });
+    },
+
+    async updateDishEntry(id: string, input: DishEntryInput): Promise<void> {
+      await dataAccess.update({
+        collectionName: 'dishEntries',
+        id,
+        data: {
+          date: input.date,
+          amount: input.amount,
+          to_amountUnit: input.amountUnitId,
+          // An entry is either a food or a dish
+          to_foodItem: input.foodItemId ?? '',
+          to_dish: input.dishId ?? '',
+        },
+        map: (record) => record,
       });
     },
   })),

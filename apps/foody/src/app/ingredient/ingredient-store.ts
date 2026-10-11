@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { DATA_ACCESS } from '@foody/pocketbase-access';
+import { ExistingImage } from '../shared/image-picker.component';
 
 type FoodItem = {
   id: string;
@@ -10,6 +11,13 @@ type FoodItem = {
   imageUrl?: string;
   created: string;
   updated: string;
+};
+
+/** Everything of a food that can be edited */
+export type FoodDetails = {
+  name: string;
+  description: string;
+  images: ExistingImage[];
 };
 
 type IngredientState = {
@@ -94,6 +102,47 @@ export const IngredientStore = signalStore(
       patchState(store, {
         foodItems: store.foodItems().filter((item) => item.id !== id),
       });
+    },
+
+    getFoodItem(id: string): Promise<FoodDetails | null> {
+      return dataAccess.getOne({
+        collectionName: 'foodItems',
+        id,
+        map: (record) => ({
+          name: String(record['name'] ?? ''),
+          description: String(record['description'] ?? ''),
+          images: ((record['images'] as string[] | undefined) ?? []).map(
+            (name) => ({ name, url: dataAccess.getFileUrl(record, name) }),
+          ),
+        }),
+      });
+    },
+
+    async updateFoodItem(
+      id: string,
+      changes: {
+        name: string;
+        description: string;
+        addedImages: File[];
+        removedImages: string[];
+      },
+    ): Promise<{ id: string }> {
+      const data: Record<string, unknown> = {
+        name: changes.name,
+        description: changes.description,
+      };
+      if (changes.addedImages.length > 0) data['images+'] = changes.addedImages;
+      if (changes.removedImages.length > 0) {
+        data['images-'] = changes.removedImages;
+      }
+      await dataAccess.update({
+        collectionName: 'foodItems',
+        id,
+        data,
+        map: (record) => record,
+      });
+      await this.loadFoodItems();
+      return { id };
     },
   })),
 );

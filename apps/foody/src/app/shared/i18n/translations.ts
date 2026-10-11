@@ -140,9 +140,22 @@ const en = {
     `“${name}” is still used by ${count} ${count === 1 ? 'entry' : 'entries'}. Delete ${count === 1 ? 'it' : 'them'} first.`,
   deletingFailed: 'Deleting failed',
 
+  // Editing
+  editNamed: (name: string) => `Edit ${name}`,
+  editMeal: 'Edit meal',
+  editSymptomEntry: 'Edit symptom entry',
+  editFood: 'Edit food',
+  editDish: 'Edit dish',
+  editSymptom: 'Edit symptom',
+  editUnit: 'Edit unit',
+  nameGerman: 'German name',
+  nameEnglish: 'English name',
+  translatedNameHint:
+    'Shown instead of the name when the app is used in that language.',
+
   // Managing the lists
   manageLists: 'Manage lists',
-  manageListsHint: 'View and delete foods, dishes, symptoms and units',
+  manageListsHint: 'View, edit and delete foods, dishes, symptoms and units',
   foods: 'Foods',
   dishes: 'Dishes',
   symptoms: 'Symptoms',
@@ -279,9 +292,21 @@ const de: Translations = {
     `„${name}“ wird noch von ${count} ${count === 1 ? 'Eintrag' : 'Einträgen'} verwendet. Lösche ${count === 1 ? 'ihn' : 'sie'} zuerst.`,
   deletingFailed: 'Löschen fehlgeschlagen',
 
+  editNamed: (name) => `${name} bearbeiten`,
+  editMeal: 'Mahlzeit bearbeiten',
+  editSymptomEntry: 'Symptom-Eintrag bearbeiten',
+  editFood: 'Lebensmittel bearbeiten',
+  editDish: 'Gericht bearbeiten',
+  editSymptom: 'Symptom bearbeiten',
+  editUnit: 'Einheit bearbeiten',
+  nameGerman: 'Deutscher Name',
+  nameEnglish: 'Englischer Name',
+  translatedNameHint:
+    'Wird statt des Namens angezeigt, wenn die App in dieser Sprache läuft.',
+
   manageLists: 'Listen verwalten',
   manageListsHint:
-    'Lebensmittel, Gerichte, Symptome und Einheiten ansehen und löschen',
+    'Lebensmittel, Gerichte, Symptome und Einheiten ansehen, bearbeiten und löschen',
   foods: 'Lebensmittel',
   dishes: 'Gerichte',
   symptoms: 'Symptome',

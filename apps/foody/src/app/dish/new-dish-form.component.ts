@@ -5,6 +5,8 @@ import {
   OnInit,
   output,
   signal,
+  ChangeDetectorRef,
+  input,
 } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
@@ -13,7 +15,10 @@ import { IngredientStore } from '../ingredient/ingredient-store';
 import { NewFoodItemFormComponent } from '../ingredient/new-food-item-form.component';
 import { AmountUnitStore } from '../shared/amount-unit-store';
 import { IconComponent } from '../shared/icon.component';
-import { ImagePickerComponent } from '../shared/image-picker.component';
+import {
+  ExistingImage,
+  ImagePickerComponent,
+} from '../shared/image-picker.component';
 import { findByName } from '../shared/name-utils';
 import { SearchSelectComponent } from '../shared/search/search-select.component';
 
@@ -45,7 +50,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
         >
           <app-icon name="back" />
         </button>
-        <h2>{{ t().newDish }}</h2>
+        <h2>{{ editId() ? t().editDish : t().newDish }}</h2>
       </div>
 
       <form class="card" (ngSubmit)="save()">
@@ -142,7 +147,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
 
         <div class="field">
           <span class="label">{{ t().photos }}</span
-          ><app-image-picker [(files)]="images" />
+          ><app-image-picker [(files)]="images" [(existing)]="existingImages" />
         </div>
 
         @if (error()) {
@@ -228,10 +233,17 @@ export class NewDishFormComponent implements OnInit {
   readonly saved = output<{ id: string }>();
   readonly cancelled = output<void>();
 
+  /** The record to change; without it a new one is created */
+  readonly editId = input<string | null>(null);
+  private readonly changes = inject(ChangeDetectorRef);
+
   name = '';
   description = '';
   readonly ingredients = signal<NewIngredient[]>([]);
   readonly images = signal<File[]>([]);
+  /** The photos the dish has, minus the ones removed in the form */
+  readonly existingImages = signal<ExistingImage[]>([]);
+  private originalImages: ExistingImage[] = [];
   readonly isCreatingFood = signal(false);
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
@@ -240,6 +252,20 @@ export class NewDishFormComponent implements OnInit {
     this.dishStore.loadDishes();
     this.ingredientStore.loadFoodItems();
     this.amountUnitStore.loadUnits();
+    void this.loadRecord();
+  }
+
+  private async loadRecord(): Promise<void> {
+    const id = this.editId();
+    const dish = id ? await this.dishStore.getDish(id) : null;
+    if (!dish) return;
+
+    this.name = dish.name;
+    this.description = dish.description;
+    this.ingredients.set(dish.ingredients);
+    this.originalImages = dish.images;
+    this.existingImages.set(dish.images);
+    this.changes.markForCheck();
   }
 
   protected add(foodItemId = ''): void {
@@ -270,7 +296,10 @@ export class NewDishFormComponent implements OnInit {
 
   /** A record with the entered name, to warn about the duplicate */
   protected existing() {
-    return findByName(this.dishStore.dishes(), this.name);
+    return findByName(
+      this.dishStore.dishes().filter((dish) => dish.id !== this.editId()),
+      this.name,
+    );
   }
 
   async save(): Promise<void> {
@@ -278,13 +307,27 @@ export class NewDishFormComponent implements OnInit {
     this.isSaving.set(true);
     this.error.set(null);
     try {
-      const dish = await this.dishStore.createDish(
-        this.name.trim(),
-        this.description.trim(),
-        // Rows without a food are left over from adding and not meant
-        this.ingredients().filter((ingredient) => ingredient.foodItemId),
-        this.images(),
+      const id = this.editId();
+      // Rows without a food are left over from adding and not meant
+      const ingredients = this.ingredients().filter(
+        (ingredient) => ingredient.foodItemId,
       );
+      const dish = id
+        ? await this.dishStore.updateDish(id, {
+            name: this.name.trim(),
+            description: this.description.trim(),
+            ingredients,
+            addedImages: this.images(),
+            removedImages: this.originalImages
+              .filter((image) => !this.existingImages().includes(image))
+              .map((image) => image.name),
+          })
+        : await this.dishStore.createDish(
+            this.name.trim(),
+            this.description.trim(),
+            ingredients,
+            this.images(),
+          );
       this.saved.emit(dish);
     } catch (err) {
       this.error.set(

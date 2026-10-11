@@ -12,6 +12,8 @@ export type OutboxItem = {
   data: Record<string, unknown> & { id: string };
   /** The record of `data.id` is to be deleted instead of created */
   delete?: true;
+  /** `data` are changes of the record of `data.id` */
+  update?: true;
 };
 
 export type OfflineSnapshot = {
@@ -39,6 +41,15 @@ export interface OfflineStorage {
     removeSeqs: number[],
     items: Omit<OutboxItem, 'seq'>[],
   ): Promise<OutboxItem[]>;
+  /**
+   * Stores a changed record, together with either the changed outbox item
+   * that creates it or a new item for the change
+   */
+  updateLocal(
+    record: DataRecord,
+    changedItem: OutboxItem | null,
+    newItem: Omit<OutboxItem, 'seq'> | null,
+  ): Promise<OutboxItem | null>;
   removeFromOutbox(seq: number): Promise<void>;
   applyChanges(put: DataRecord[], deleteIds: string[]): Promise<void>;
   setLastSyncedAt(value: string): Promise<void>;
@@ -115,6 +126,21 @@ export class IndexedDbOfflineStorage implements OfflineStorage {
     return items.map((item, index) => ({ ...item, seq: Number(seqs[index]) }));
   }
 
+  async updateLocal(
+    record: DataRecord,
+    changedItem: OutboxItem | null,
+    newItem: Omit<OutboxItem, 'seq'> | null,
+  ): Promise<OutboxItem | null> {
+    const tx = (await this.db).transaction([RECORDS, OUTBOX], 'readwrite');
+    tx.objectStore(RECORDS).put(record);
+    if (changedItem) tx.objectStore(OUTBOX).put(changedItem);
+    const seq = newItem
+      ? await result(tx.objectStore(OUTBOX).add(newItem))
+      : null;
+    await done(tx);
+    return newItem ? { ...newItem, seq: Number(seq) } : null;
+  }
+
   async removeFromOutbox(seq: number): Promise<void> {
     const tx = (await this.db).transaction(OUTBOX, 'readwrite');
     tx.objectStore(OUTBOX).delete(seq);
@@ -174,6 +200,23 @@ export class MemoryOfflineStorage implements OfflineStorage {
       ...this.outbox.filter((item) => !removeSeqs.includes(item.seq)),
       ...stored,
     ];
+    return stored;
+  }
+
+  async updateLocal(
+    record: DataRecord,
+    changedItem: OutboxItem | null,
+    newItem: Omit<OutboxItem, 'seq'> | null,
+  ): Promise<OutboxItem | null> {
+    this.records.set(record.id, record);
+    if (changedItem) {
+      this.outbox = this.outbox.map((item) =>
+        item.seq === changedItem.seq ? changedItem : item,
+      );
+    }
+    if (!newItem) return null;
+    const stored = { ...newItem, seq: this.nextSeq++ };
+    this.outbox.push(stored);
     return stored;
   }
 

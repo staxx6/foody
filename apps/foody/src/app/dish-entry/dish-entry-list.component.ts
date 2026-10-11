@@ -4,6 +4,7 @@ import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { DatePipe } from '@angular/common';
 import { ConfirmService } from '../shared/confirm/confirm.service';
 import { IconComponent } from '../shared/icon.component';
+import { UiStore } from '../shared/ui-store';
 import { DishEntry, DishEntryStore } from './dish-entry-store';
 
 @Component({
@@ -29,6 +30,14 @@ import { DishEntry, DishEntryStore } from './dish-entry-store';
             <button
               type="button"
               class="icon-btn"
+              (click)="uiStore.edit('new-meal', entry.id)"
+              [attr.aria-label]="t().editNamed(entry.name)"
+            >
+              <app-icon name="edit" />
+            </button>
+            <button
+              type="button"
+              class="icon-btn danger"
               (click)="remove(entry)"
               [attr.aria-label]="t().deleteNamed(entry.name)"
             >
@@ -50,6 +59,7 @@ export class DishEntryListComponent {
   readonly dishEntryStore = inject(DishEntryStore);
   private readonly sync = inject(OfflineDataAccessService);
   private readonly confirm = inject(ConfirmService);
+  protected readonly uiStore = inject(UiStore);
 
   constructor() {
     // Loads initially and whenever a synchronization changed the data

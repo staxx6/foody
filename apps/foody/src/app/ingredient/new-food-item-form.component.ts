@@ -1,9 +1,20 @@
-import { Component, inject, OnInit, output, signal } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  output,
+  signal,
+  ChangeDetectorRef,
+  input,
+} from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
 import { IngredientStore } from './ingredient-store';
 import { IconComponent } from '../shared/icon.component';
-import { ImagePickerComponent } from '../shared/image-picker.component';
+import {
+  ExistingImage,
+  ImagePickerComponent,
+} from '../shared/image-picker.component';
 import { findByName } from '../shared/name-utils';
 
 @Component({
@@ -19,7 +30,7 @@ import { findByName } from '../shared/name-utils';
       >
         <app-icon name="back" />
       </button>
-      <h2>{{ t().newFood }}</h2>
+      <h2>{{ editId() ? t().editFood : t().newFood }}</h2>
     </div>
 
     <form class="card" (ngSubmit)="save()">
@@ -55,7 +66,7 @@ import { findByName } from '../shared/name-utils';
 
       <div class="field">
         <span class="label">{{ t().photos }}</span
-        ><app-image-picker [(files)]="images" />
+        ><app-image-picker [(files)]="images" [(existing)]="existingImages" />
       </div>
 
       @if (error()) {
@@ -81,19 +92,44 @@ export class NewFoodItemFormComponent implements OnInit {
   readonly saved = output<{ id: string }>();
   readonly cancelled = output<void>();
 
+  /** The record to change; without it a new one is created */
+  readonly editId = input<string | null>(null);
+  private readonly changes = inject(ChangeDetectorRef);
+
   name = '';
   description = '';
   readonly images = signal<File[]>([]);
+  /** The photos the food has, minus the ones removed in the form */
+  readonly existingImages = signal<ExistingImage[]>([]);
+  private originalImages: ExistingImage[] = [];
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
 
   ngOnInit(): void {
     this.ingredientStore.loadFoodItems();
+    void this.loadRecord();
+  }
+
+  private async loadRecord(): Promise<void> {
+    const id = this.editId();
+    const food = id ? await this.ingredientStore.getFoodItem(id) : null;
+    if (!food) return;
+
+    this.name = food.name;
+    this.description = food.description;
+    this.originalImages = food.images;
+    this.existingImages.set(food.images);
+    this.changes.markForCheck();
   }
 
   /** A record with the entered name, to warn about the duplicate */
   protected existing() {
-    return findByName(this.ingredientStore.foodItems(), this.name);
+    return findByName(
+      this.ingredientStore
+        .foodItems()
+        .filter((food) => food.id !== this.editId()),
+      this.name,
+    );
   }
 
   async save(): Promise<void> {
@@ -101,11 +137,21 @@ export class NewFoodItemFormComponent implements OnInit {
     this.isSaving.set(true);
     this.error.set(null);
     try {
-      const food = await this.ingredientStore.createFoodItem(
-        this.name.trim(),
-        this.description.trim(),
-        this.images(),
-      );
+      const id = this.editId();
+      const food = id
+        ? await this.ingredientStore.updateFoodItem(id, {
+            name: this.name.trim(),
+            description: this.description.trim(),
+            addedImages: this.images(),
+            removedImages: this.originalImages
+              .filter((image) => !this.existingImages().includes(image))
+              .map((image) => image.name),
+          })
+        : await this.ingredientStore.createFoodItem(
+            this.name.trim(),
+            this.description.trim(),
+            this.images(),
+          );
       this.saved.emit(food);
     } catch (err) {
       this.error.set(

@@ -8,6 +8,7 @@ import { SyncStatusComponent } from '../shared/sync-status.component';
 import { IconComponent } from '../shared/icon.component';
 import { SettingsComponent } from '../settings/settings.component';
 import { ManageListsComponent } from '../lists/manage-lists.component';
+import { EditUnitFormComponent } from '../shared/edit-unit-form.component';
 import { ConfirmDialogComponent } from '../shared/confirm/confirm-dialog.component';
 import { NewFoodItemFormComponent } from '../ingredient/new-food-item-form.component';
 import { NewDishFormComponent } from '../dish/new-dish-form.component';
@@ -20,6 +21,7 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
     IconComponent,
     SettingsComponent,
     ManageListsComponent,
+    EditUnitFormComponent,
     ConfirmDialogComponent,
     DishEntryListComponent,
     SymptomEntryListComponent,
@@ -38,52 +40,64 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
     </header>
 
     <main>
-      @switch (uiStore.activeForm()) {
-        @case ('new-food-item') {
-          <app-new-food-item-form
-            (saved)="uiStore.goHome()"
-            (cancelled)="uiStore.goHome()"
-          />
-        }
-        @case ('new-dish') {
-          <app-new-dish-form
-            (saved)="uiStore.goHome()"
-            (cancelled)="uiStore.goHome()"
-          />
-        }
-        @case ('new-meal') {
-          <app-new-meal-form />
-        }
-        @case ('new-health-entry') {
-          <app-new-health-entry-form />
-        }
-        @case ('new-symptom') {
-          <app-new-symptom-form
-            (saved)="uiStore.goHome()"
-            (cancelled)="uiStore.goHome()"
-          />
-        }
-        @case ('lists') {
-          <app-manage-lists />
-        }
-        @case ('settings') {
-          <app-settings />
-        }
-        @default {
-          <div class="day">
-            <span class="day-label">{{ t().today }}</span
-            ><span class="day-date">{{ i18n.formatDay(today) }}</span>
-          </div>
+      @for (page of [uiStore.page()]; track page.key) {
+        @switch (page.form) {
+          @case ('new-food-item') {
+            <app-new-food-item-form
+              [editId]="page.editId"
+              (saved)="uiStore.close()"
+              (cancelled)="uiStore.close()"
+            />
+          }
+          @case ('new-dish') {
+            <app-new-dish-form
+              [editId]="page.editId"
+              (saved)="uiStore.close()"
+              (cancelled)="uiStore.close()"
+            />
+          }
+          @case ('new-meal') {
+            <app-new-meal-form [editId]="page.editId" />
+          }
+          @case ('new-health-entry') {
+            <app-new-health-entry-form [editId]="page.editId" />
+          }
+          @case ('new-symptom') {
+            <app-new-symptom-form
+              [editId]="page.editId"
+              (saved)="uiStore.close()"
+              (cancelled)="uiStore.close()"
+            />
+          }
+          @case ('edit-unit') {
+            <app-edit-unit-form
+              [editId]="page.editId"
+              (saved)="uiStore.close()"
+              (cancelled)="uiStore.close()"
+            />
+          }
+          @case ('lists') {
+            <app-manage-lists />
+          }
+          @case ('settings') {
+            <app-settings />
+          }
+          @default {
+            <div class="day">
+              <span class="day-label">{{ t().today }}</span
+              ><span class="day-date">{{ i18n.formatDay(today) }}</span>
+            </div>
 
-          <section>
-            <h2><app-icon name="meal" /> {{ t().meals }}</h2>
-            <app-dish-entry-list class="card" />
-          </section>
+            <section>
+              <h2><app-icon name="meal" /> {{ t().meals }}</h2>
+              <app-dish-entry-list class="card" />
+            </section>
 
-          <section>
-            <h2><app-icon name="symptom" /> {{ t().health }}</h2>
-            <app-symptom-entry-list class="card" />
-          </section>
+            <section>
+              <h2><app-icon name="symptom" /> {{ t().health }}</h2>
+              <app-symptom-entry-list class="card" />
+            </section>
+          }
         }
       }
     </main>

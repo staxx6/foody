@@ -5,7 +5,9 @@ import {
   DataRecord,
   DateRange,
   DeleteQuery,
+  GetQuery,
   ListQuery,
+  UpdateQuery,
 } from '../data-access.model';
 import { DATA_ACCESS_CONFIG } from '../data-access.token';
 import { PocketbaseAccessService } from '../pocketbase-access/pocketbase-access';
@@ -41,6 +43,52 @@ function withoutFiles(data: Record<string, unknown>): Record<string, unknown> {
       return [field, value];
     }),
   );
+}
+
+/**
+ * What an update changes in the local copy. Files are sent with the keys
+ * `field+` (add) and `field-` (remove by name), as PocketBase expects it.
+ */
+function localChanges(
+  current: DataRecord,
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  const changes: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (key.endsWith('-')) {
+      const field = key.slice(0, -1);
+      const removed = value as string[];
+      changes[field] = ((current[field] as string[] | undefined) ?? []).filter(
+        (name) => !removed.includes(name),
+      );
+    } else if (!key.endsWith('+')) {
+      // New files only get their names from the server
+      const hasFile =
+        isFile(value) || (Array.isArray(value) && value.some(isFile));
+      if (!hasFile) changes[key] = value;
+    }
+  }
+  return changes;
+}
+
+/** Applies an update to the data of a record that is not created yet */
+function mergeIntoCreate(
+  created: Record<string, unknown>,
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged = { ...created };
+  for (const [key, value] of Object.entries(data)) {
+    if (key.endsWith('+')) {
+      const field = key.slice(0, -1);
+      merged[field] = [
+        ...((merged[field] as unknown[] | undefined) ?? []),
+        ...(value as unknown[]),
+      ];
+    } else if (!key.endsWith('-')) {
+      merged[key] = value;
+    }
+  }
+  return merged;
 }
 
 function toDate(value: unknown): Date {
@@ -80,8 +128,8 @@ function isAlreadyCreated(error: unknown): boolean {
  * server. New records are queued and sent when the server is reachable;
  * records of other devices are fetched at the same time.
  *
- * Records are created and deleted, never changed: there are no conflicts
- * to resolve.
+ * If two devices change the same record, the change that reaches the
+ * server last wins.
  */
 @Injectable({ providedIn: 'root' })
 export class OfflineDataAccessService implements DataAccess {
@@ -182,15 +230,84 @@ export class OfflineDataAccessService implements DataAccess {
     return map(record);
   }
 
+  async getOne<T>({
+    collectionName,
+    id,
+    expand,
+    map,
+  }: GetQuery<T>): Promise<T | null> {
+    await this.ready;
+
+    const record = this.records.get(id);
+    if (record?.['collectionName'] !== collectionName) return null;
+    const paths = expand?.split(',').map((path) => path.trim()) ?? [];
+    return map(this.expand(record, paths));
+  }
+
+  /**
+   * Changes fields of a record. If two devices change the same record, the
+   * change that reaches the server last wins.
+   */
+  async update<T>({
+    collectionName,
+    id,
+    data,
+    map,
+  }: UpdateQuery<T>): Promise<T> {
+    await this.ready;
+
+    const current = this.records.get(id);
+    if (!current) throw new Error('The record does not exist anymore.');
+    const record: DataRecord = {
+      ...current,
+      ...localChanges(current, data),
+      updated: new Date().toISOString().replace('T', ' '),
+    };
+
+    // A record the server does not know yet is simply created changed,
+    // unless it is being sent right now
+    const unsentCreate =
+      this.running === null
+        ? this.outbox.find(
+            (item) => !item.delete && !item.update && item.data.id === id,
+          )
+        : undefined;
+
+    if (unsentCreate) {
+      const changed: OutboxItem = {
+        ...unsentCreate,
+        data: { ...mergeIntoCreate(unsentCreate.data, data), id },
+      };
+      await this.storage.updateLocal(record, changed, null);
+      this.outbox = this.outbox.map((item) =>
+        item === unsentCreate ? changed : item,
+      );
+    } else {
+      const added = await this.storage.updateLocal(record, null, {
+        collectionName,
+        data: { ...data, id },
+        update: true,
+      });
+      if (added) this.outbox.push(added);
+    }
+    this.records.set(id, record);
+    this.pendingCount.set(this.outbox.length);
+
+    void this.sync();
+    return map(record);
+  }
+
   async delete({ collectionName, id }: DeleteQuery): Promise<void> {
     await this.ready;
 
-    // A record the server never got does not have to be deleted there,
-    // unless it is being sent right now
+    // What is still queued for the record is not worth sending anymore. A
+    // record the server never got does not have to be deleted there, unless
+    // it is being sent right now.
     const unsent = this.outbox.filter(
       (item) => !item.delete && item.data.id === id,
     );
-    const isKnownToServer = unsent.length === 0 || this.running !== null;
+    const isKnownToServer =
+      unsent.every((item) => item.update) || this.running !== null;
 
     const added = await this.storage.deleteLocal(
       id,
@@ -292,6 +409,14 @@ export class OfflineDataAccessService implements DataAccess {
             collectionName: item.collectionName,
             id: item.data.id,
           });
+        } else if (item.update) {
+          const { id, ...data } = item.data;
+          await this.remote.update({
+            collectionName: item.collectionName,
+            id,
+            data,
+            map: (record) => record,
+          });
         } else {
           await this.remote.create({
             collectionName: item.collectionName,
@@ -302,12 +427,17 @@ export class OfflineDataAccessService implements DataAccess {
       } catch (error) {
         if (isNetworkError(error)) throw error;
         // Repeating a request that already took effect is not a failure
-        const isDone = item.delete
-          ? isNotFound(error)
-          : isAlreadyCreated(error);
+        const isDone =
+          item.delete || item.update
+            ? isNotFound(error)
+            : isAlreadyCreated(error);
         if (!isDone) {
           const reason = error instanceof Error ? error.message : 'rejected';
-          const action = item.delete ? 'delete' : 'send';
+          const action = item.delete
+            ? 'delete'
+            : item.update
+              ? 'change'
+              : 'send';
           this.syncError.set(
             `Could not ${action} a record of "${item.collectionName}": ${reason}`,
           );

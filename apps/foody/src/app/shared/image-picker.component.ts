@@ -2,6 +2,9 @@ import { inject, Component, computed, model } from '@angular/core';
 import { I18n } from './i18n/i18n';
 import { IconComponent } from './icon.component';
 
+/** A photo that is already stored for a record */
+export type ExistingImage = { name: string; url: string };
+
 /**
  * Selects photos for a record and shows them before saving
  */
@@ -9,6 +12,18 @@ import { IconComponent } from './icon.component';
   selector: 'app-image-picker',
   imports: [IconComponent],
   template: `
+    @for (image of existing(); track image.name) {
+      <div class="photo">
+        <img [src]="image.url" alt="" />
+        <button
+          type="button"
+          (click)="removeExisting(image)"
+          [attr.aria-label]="t().removePhoto(image.name)"
+        >
+          <app-icon name="close" />
+        </button>
+      </div>
+    }
     @for (preview of previews(); track preview.url) {
       <div class="photo">
         <img [src]="preview.url" alt="" />
@@ -112,7 +127,10 @@ import { IconComponent } from './icon.component';
 })
 export class ImagePickerComponent {
   protected readonly t = inject(I18n).t;
+  /** Newly selected photos */
   readonly files = model<File[]>([]);
+  /** Photos the record already has; removing one takes it out of the list */
+  readonly existing = model<ExistingImage[]>([]);
 
   protected readonly previews = computed(() =>
     this.files().map((file) => ({ file, url: URL.createObjectURL(file) })),
@@ -120,6 +138,10 @@ export class ImagePickerComponent {
 
   protected add(selected: FileList | null): void {
     this.files.update((files) => [...files, ...Array.from(selected ?? [])]);
+  }
+
+  protected removeExisting(image: ExistingImage): void {
+    this.existing.update((images) => images.filter((other) => other !== image));
   }
 
   protected remove(file: File): void {

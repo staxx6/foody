@@ -6,7 +6,9 @@ import {
   DataRecord,
   DateRange,
   DeleteQuery,
+  GetQuery,
   ListQuery,
+  UpdateQuery,
 } from '../data-access.model';
 import { DATA_ACCESS_CONFIG } from '../data-access.token';
 
@@ -48,6 +50,47 @@ export class PocketbaseAccessService implements DataAccess {
         updated: String(record['updated']),
       }),
     );
+  }
+
+  async getOne<T>({
+    collectionName,
+    id,
+    expand,
+    map,
+  }: GetQuery<T>): Promise<T | null> {
+    try {
+      const record = await this.pb.collection(collectionName).getOne(id, {
+        expand,
+        requestKey: null,
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      return map(this.toDataRecord(record));
+    } catch (error) {
+      if ((error as { status?: number })?.status === 404) return null;
+      throw error;
+    }
+  }
+
+  async update<T>({
+    collectionName,
+    id,
+    data,
+    map,
+  }: UpdateQuery<T>): Promise<T> {
+    const record = await this.pb.collection(collectionName).update(id, data, {
+      requestKey: null,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    return map(this.toDataRecord(record));
+  }
+
+  private toDataRecord(record: Record<string, unknown>): DataRecord {
+    return {
+      ...record,
+      id: String(record['id']),
+      created: String(record['created']),
+      updated: String(record['updated']),
+    };
   }
 
   async delete({ collectionName, id }: DeleteQuery): Promise<void> {

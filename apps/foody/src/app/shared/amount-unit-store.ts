@@ -68,5 +68,19 @@ export const AmountUnitStore = signalStore(
         units: store.units().filter((item) => item.id !== id),
       });
     },
+
+    async updateUnit(id: string, names: LocalizedName): Promise<void> {
+      await dataAccess.update({
+        collectionName: 'amountUnitET',
+        id,
+        data: {
+          name: names.name,
+          name_de: names.nameDe,
+          name_en: names.nameEn,
+        },
+        map: (record) => record,
+      });
+      await this.loadUnits();
+    },
   })),
 );

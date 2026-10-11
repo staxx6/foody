@@ -12,6 +12,7 @@ class FakeServer {
   readonly records: DataRecord[] = [];
   readonly createCalls: string[] = [];
   readonly deleteCalls: string[] = [];
+  readonly updateCalls: Record<string, unknown>[] = [];
 
   private assertReachable(): void {
     if (!this.online) throw Object.assign(new Error('offline'), { status: 0 });
@@ -47,6 +48,23 @@ class FakeServer {
       updated: 'server',
     };
     this.records.push(record);
+    return map(record);
+  }
+
+  async update<T>({
+    id,
+    data,
+    map,
+  }: {
+    id: string;
+    data: Record<string, unknown>;
+    map: (record: DataRecord) => T;
+  }): Promise<T> {
+    this.assertReachable();
+    this.updateCalls.push(data);
+    const record = this.records.find((other) => other.id === id);
+    if (!record) throw Object.assign(new Error('gone'), { status: 404 });
+    Object.assign(record, data, { updated: 'server-changed' });
     return map(record);
   }
 
@@ -246,6 +264,155 @@ describe('OfflineDataAccessService', () => {
 
     expect(service.pendingCount()).toBe(0);
     expect(service.syncError()).toBeNull();
+  });
+
+  it('should change a record offline and tell the server later', async () => {
+    server.records.push({
+      id: 'a',
+      collectionName: 'foodItems',
+      name: 'Aple',
+      description: 'red',
+      created: '',
+      updated: '1',
+    });
+    const service = createService();
+    await service.sync();
+    server.online = false;
+
+    const changed = await service.update({
+      collectionName: 'foodItems',
+      id: 'a',
+      data: { name: 'Apple' },
+      map: identity,
+    });
+    await service.sync();
+
+    expect(changed['name']).toBe('Apple');
+    expect(changed['description']).toBe('red');
+    expect(service.pendingCount()).toBe(1);
+    const read = () =>
+      service.getOne({ collectionName: 'foodItems', id: 'a', map: identity });
+    expect((await read())?.['name']).toBe('Apple');
+
+    server.online = true;
+    await service.sync();
+
+    expect(server.updateCalls).toEqual([{ name: 'Apple' }]);
+    expect(server.records[0]['name']).toBe('Apple');
+    expect(service.pendingCount()).toBe(0);
+    expect((await read())?.updated).toBe('server-changed');
+  });
+
+  it('should create a record changed that was changed before sending', async () => {
+    const service = createService();
+    await service.sync();
+    server.online = false;
+    const item = await service.create({
+      collectionName: 'foodItems',
+      data: { name: 'Aple' },
+      map: identity,
+    });
+    await service.sync();
+
+    await service.update({
+      collectionName: 'foodItems',
+      id: item.id,
+      data: { name: 'Apple' },
+      map: identity,
+    });
+    server.online = true;
+    await service.sync();
+
+    expect(server.updateCalls).toEqual([]);
+    expect(server.records.map((record) => record['name'])).toEqual(['Apple']);
+  });
+
+  it('should handle the files of a changed record', async () => {
+    server.records.push({
+      id: 'a',
+      collectionName: 'foodItems',
+      images: ['old.png', 'keep.png'],
+      created: '',
+      updated: '1',
+    });
+    const service = createService();
+    await service.sync();
+    server.online = false;
+    const photo = new Blob(['photo']);
+
+    const changed = await service.update({
+      collectionName: 'foodItems',
+      id: 'a',
+      data: { 'images+': [photo], 'images-': ['old.png'] },
+      map: identity,
+    });
+
+    // The new photo only gets its name from the server
+    expect(changed['images']).toEqual(['keep.png']);
+    const { outbox } = await storage.load();
+    expect(outbox[0].data['images+']).toEqual([photo]);
+  });
+
+  it('should drop the change of a record that was deleted elsewhere', async () => {
+    server.records.push({
+      id: 'a',
+      collectionName: 'foodItems',
+      name: 'Aple',
+      created: '',
+      updated: '1',
+    });
+    const service = createService();
+    await service.sync();
+    server.online = false;
+    await service.update({
+      collectionName: 'foodItems',
+      id: 'a',
+      data: { name: 'Apple' },
+      map: identity,
+    });
+    await service.sync();
+    server.records.length = 0;
+
+    server.online = true;
+    await service.sync();
+
+    expect(service.pendingCount()).toBe(0);
+    expect(service.syncError()).toBeNull();
+    expect(
+      await service.getOne({
+        collectionName: 'foodItems',
+        id: 'a',
+        map: identity,
+      }),
+    ).toBeNull();
+  });
+
+  it('should not send the changes of a record that is deleted afterwards', async () => {
+    server.records.push({
+      id: 'a',
+      collectionName: 'foodItems',
+      name: 'Aple',
+      created: '',
+      updated: '1',
+    });
+    const service = createService();
+    await service.sync();
+    server.online = false;
+    await service.update({
+      collectionName: 'foodItems',
+      id: 'a',
+      data: { name: 'Apple' },
+      map: identity,
+    });
+    await service.sync();
+
+    await service.delete({ collectionName: 'foodItems', id: 'a' });
+    server.online = true;
+    await service.sync();
+
+    expect(server.updateCalls).toEqual([]);
+    expect(server.deleteCalls).toEqual(['a']);
+    expect(server.records).toEqual([]);
   });
 
   it('should count the records that refer to a record', async () => {

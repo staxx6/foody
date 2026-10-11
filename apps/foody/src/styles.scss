@@ -413,6 +413,16 @@ form .warning {
 }
 
 .icon-btn:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.icon-btn.danger:hover {
   background: var(--danger-soft);
   color: var(--danger);
+}
+
+/* Several of them next to each other */
+.icon-btn + .icon-btn {
+  margin-left: 4px;
 }
