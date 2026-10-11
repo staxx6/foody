@@ -3,6 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { DishEntryStore } from './dish-entry-store';
 import { IngredientStore } from '../ingredient/ingredient-store';
 import { DishStore } from '../dish/dish-store';
+import { NewDishFormComponent } from '../dish/new-dish-form.component';
+import { NewFoodItemFormComponent } from '../ingredient/new-food-item-form.component';
 import { AmountUnitStore } from '../shared/amount-unit-store';
 import { UiStore } from '../shared/ui-store';
 import { IconComponent } from '../shared/icon.component';
@@ -22,130 +24,139 @@ const DEFAULT_UNIT_CODE = 'piece';
 
 @Component({
   selector: 'app-new-meal-form',
-  imports: [FormsModule, IconComponent, QuickAddComponent],
+  imports: [
+    FormsModule,
+    IconComponent,
+    QuickAddComponent,
+    NewFoodItemFormComponent,
+    NewDishFormComponent,
+  ],
   template: `
-    <div class="form-header">
-      <button
-        type="button"
-        class="back-btn"
-        (click)="cancel()"
-        aria-label="Back"
-      >
-        <app-icon name="back" />
-      </button>
-      <h2>Log Meal</h2>
-    </div>
+    @switch (creating()) {
+      @case ('food-item') {
+        <app-new-food-item-form
+          (saved)="created($event.id)"
+          (cancelled)="creating.set(null)"
+        />
+      }
+      @case ('dish') {
+        <app-new-dish-form
+          (saved)="created($event.id)"
+          (cancelled)="creating.set(null)"
+        />
+      }
+    }
 
-    <form class="card" (ngSubmit)="save()">
-      <div class="field">
-        <span class="label">Type</span>
-        <div class="toggle" role="group">
-          <button
-            type="button"
-            [class.active]="sourceType === 'food-item'"
-            (click)="sourceType = 'food-item'; selectedSourceId.set('')"
-          >
-            Food Item
-          </button>
-          <button
-            type="button"
-            [class.active]="sourceType === 'dish'"
-            (click)="sourceType = 'dish'; selectedSourceId.set('')"
-          >
-            Dish
-          </button>
-        </div>
+    <!-- Hidden instead of removed, so the input is kept while creating -->
+    <div [hidden]="creating()">
+      <div class="form-header">
+        <button
+          type="button"
+          class="back-btn"
+          (click)="cancel()"
+          aria-label="Back"
+        >
+          <app-icon name="back" />
+        </button>
+        <h2>Log Meal</h2>
       </div>
 
-      <div class="field">
-        <label for="source"
-          >{{ sourceType === 'food-item' ? 'Food Item' : 'Dish' }} *</label
-        >
-        <select
-          id="source"
-          name="source"
-          [(ngModel)]="selectedSourceId"
-          required
-        >
-          <option value="">— Select —</option>
-          @if (sourceType === 'food-item') {
-            @for (item of ingredientStore.foodItems(); track item.id) {
-              <option [value]="item.id">{{ item.name }}</option>
-            }
-          } @else {
-            @for (dish of dishStore.dishes(); track dish.id) {
-              <option [value]="dish.id">{{ dish.name }}</option>
-            }
-          }
-        </select>
-        @if (sourceType === 'food-item') {
-          <app-quick-add
-            label="food item"
-            placeholder="e.g. apple"
-            [create]="addFoodItem"
-          />
-        } @else {
-          <app-quick-add
-            label="dish"
-            placeholder="e.g. lasagne"
-            [create]="addDish"
-          />
-        }
-      </div>
-
-      <div class="field-row">
+      <form class="card" (ngSubmit)="save()">
         <div class="field">
-          <label for="amount">Amount *</label>
-          <input id="amount" name="amount" [(ngModel)]="amount" required />
-        </div>
-        <div class="field">
-          <label for="unit">Unit *</label>
-          <select id="unit" name="unit" [(ngModel)]="amountUnitId" required>
-            <option value="">—</option>
-            @for (unit of amountUnitStore.units(); track unit.id) {
-              <option [value]="unit.id">{{ unit.code }}</option>
+          <span class="label">What did you eat or drink? *</span>
+          <div class="toggle" role="group">
+            <button
+              type="button"
+              [class.active]="sourceType === 'food-item'"
+              (click)="sourceType = 'food-item'; selectedSourceId.set('')"
+            >
+              Single food
+            </button>
+            <button
+              type="button"
+              [class.active]="sourceType === 'dish'"
+              (click)="sourceType = 'dish'; selectedSourceId.set('')"
+            >
+              Dish
+            </button>
+          </div>
+          <select
+            name="source"
+            [(ngModel)]="selectedSourceId"
+            [attr.aria-label]="sourceType === 'food-item' ? 'Food' : 'Dish'"
+            required
+          >
+            @if (sourceType === 'food-item') {
+              <option value="">— Select food —</option>
+              @for (item of ingredientStore.foodItems(); track item.id) {
+                <option [value]="item.id">{{ item.name }}</option>
+              }
+            } @else {
+              <option value="">— Select dish —</option>
+              @for (dish of dishStore.dishes(); track dish.id) {
+                <option [value]="dish.id">{{ dish.name }}</option>
+              }
             }
           </select>
+          <button type="button" class="link" (click)="creating.set(sourceType)">
+            + Create new {{ sourceType === 'food-item' ? 'food' : 'dish' }}
+          </button>
         </div>
-      </div>
-      <app-quick-add label="unit" placeholder="e.g. ml" [create]="addUnit" />
 
-      <div class="field-row">
-        <div class="field">
-          <label for="date">Day *</label>
-          <input
-            type="date"
-            id="date"
-            name="date"
-            [(ngModel)]="date"
-            required
-          />
+        <div class="field-row">
+          <div class="field">
+            <label for="amount">Amount *</label>
+            <input id="amount" name="amount" [(ngModel)]="amount" required />
+          </div>
+          <div class="field">
+            <label for="unit">Unit *</label>
+            <select id="unit" name="unit" [(ngModel)]="amountUnitId" required>
+              <option value="">—</option>
+              @for (unit of amountUnitStore.units(); track unit.id) {
+                <option [value]="unit.id">{{ unit.code }}</option>
+              }
+            </select>
+          </div>
         </div>
-        <div class="field">
-          <label for="time">Time *</label>
-          <input
-            type="time"
-            id="time"
-            name="time"
-            [(ngModel)]="time"
-            required
-          />
+        <app-quick-add label="unit" placeholder="e.g. ml" [create]="addUnit" />
+
+        <div class="field-row">
+          <div class="field">
+            <label for="date">Day *</label>
+            <input
+              type="date"
+              id="date"
+              name="date"
+              [(ngModel)]="date"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="time">Time *</label>
+            <input
+              type="time"
+              id="time"
+              name="time"
+              [(ngModel)]="time"
+              required
+            />
+          </div>
         </div>
-      </div>
 
-      @if (error()) {
-        <p class="error">{{ error() }}</p>
-      }
+        @if (error()) {
+          <p class="error">{{ error() }}</p>
+        }
 
-      <div class="actions">
-        <button type="button" class="secondary" (click)="cancel()">
-          Cancel
-        </button>
-        <button type="submit" [disabled]="!isValid() || isSaving()">
-          {{ isSaving() ? 'Saving…' : 'Save' }}
-        </button>
-      </div>
-    </form>
+        <div class="actions">
+          <button type="button" class="secondary" (click)="cancel()">
+            Cancel
+          </button>
+          <button type="submit" [disabled]="!isValid() || isSaving()">
+            {{ isSaving() ? 'Saving…' : 'Save' }}
+          </button>
+        </div>
+      </form>
+    </div>
   `,
 })
 export class NewMealFormComponent implements OnInit {
@@ -163,6 +174,8 @@ export class NewMealFormComponent implements OnInit {
   date = toDateInputValue(new Date());
   time = toTimeInputValue(new Date());
 
+  /** The form for a new food or dish shown in place of this one */
+  protected readonly creating = signal<SourceType | null>(null);
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
 
@@ -190,18 +203,19 @@ export class NewMealFormComponent implements OnInit {
     );
   }
 
-  readonly addFoodItem = async (name: string): Promise<void> => {
-    const item = await this.ingredientStore.createFoodItem(name, '');
-    this.selectedSourceId.set(item.id);
-  };
-
-  readonly addDish = async (name: string): Promise<void> => {
-    const dish = await this.dishStore.createDish(name, '');
-    this.selectedSourceId.set(dish.id);
-  };
+  /** A food or dish that was created from here is selected right away */
+  protected created(id: string): void {
+    this.selectedSourceId.set(id);
+    this.creating.set(null);
+  }
 
   readonly addUnit = async (name: string): Promise<void> => {
-    const unit = await this.amountUnitStore.createUnit(name);
+    // An existing unit is selected instead of creating it a second time
+    const unit =
+      this.amountUnitStore
+        .units()
+        .find(({ code }) => code.toLowerCase() === name.toLowerCase()) ??
+      (await this.amountUnitStore.createUnit(name));
     this.amountUnitId.set(unit.id);
   };
 

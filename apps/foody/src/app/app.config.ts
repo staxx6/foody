@@ -29,6 +29,7 @@ export const appConfig: ApplicationConfig = {
         collections: [
           'amountUnitET',
           'foodItems',
+          'ingredients',
           'dishes',
           'dishEntries',
           'symptomTypeET',

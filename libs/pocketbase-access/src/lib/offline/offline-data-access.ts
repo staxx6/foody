@@ -25,6 +25,23 @@ function generateId(): string {
   );
 }
 
+const isFile = (value: unknown) =>
+  typeof Blob !== 'undefined' && value instanceof Blob;
+
+/**
+ * Files only become file names once the server stored them. Until then the
+ * local copy of the record has none; the files wait in the queue.
+ */
+function withoutFiles(data: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(data).map(([field, value]) => {
+      if (isFile(value)) return [field, ''];
+      if (Array.isArray(value) && value.some(isFile)) return [field, []];
+      return [field, value];
+    }),
+  );
+}
+
 function toDate(value: unknown): Date {
   // PocketBase separates date and time with a space
   return new Date(String(value).replace(' ', 'T'));
@@ -140,7 +157,7 @@ export class OfflineDataAccessService implements DataAccess {
     const id = generateId();
     const now = new Date().toISOString().replace('T', ' ');
     const record: DataRecord = {
-      ...data,
+      ...withoutFiles(data),
       id,
       collectionName,
       created: now,

@@ -367,3 +367,29 @@ form .actions .secondary {
   background: var(--surface);
   color: var(--text);
 }
+
+/* Text button for a secondary action of a field, e.g. creating an option */
+
+form .link {
+  align-self: flex-start;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+form .warning {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 12px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.85rem;
+}

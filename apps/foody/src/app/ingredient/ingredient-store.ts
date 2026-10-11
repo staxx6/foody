@@ -63,10 +63,14 @@ export const IngredientStore = signalStore(
       }
     },
 
-    async createFoodItem(name: string, description: string): Promise<FoodItem> {
+    async createFoodItem(
+      name: string,
+      description: string,
+      images: File[] = [],
+    ): Promise<FoodItem> {
       const item = await dataAccess.create<FoodItem>({
         collectionName: 'foodItems',
-        data: { name, description },
+        data: { name, description, images },
         map: (record) => ({
           id: record.id,
           name: String(record['name'] ?? ''),

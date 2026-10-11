@@ -8,6 +8,12 @@ export type Dish = {
   description: string;
 };
 
+export type NewIngredient = {
+  foodItemId: string;
+  amount: string;
+  amountUnitId: string;
+};
+
 type DishState = {
   dishes: Dish[];
   isLoading: boolean;
@@ -44,10 +50,35 @@ export const DishStore = signalStore(
       }
     },
 
-    async createDish(name: string, description: string): Promise<Dish> {
+    async createDish(
+      name: string,
+      description: string,
+      ingredients: NewIngredient[] = [],
+      images: File[] = [],
+    ): Promise<Dish> {
+      // The dish refers to its ingredients, so they are created first
+      const ingredientIds: string[] = [];
+      for (const ingredient of ingredients) {
+        const data: Record<string, unknown> = {
+          to_foodItem: ingredient.foodItemId,
+        };
+        if (ingredient.amount.trim())
+          data['amount'] = Number(ingredient.amount);
+        if (ingredient.amountUnitId) {
+          data['to_amountUnit'] = ingredient.amountUnitId;
+        }
+        ingredientIds.push(
+          await dataAccess.create({
+            collectionName: 'ingredients',
+            data,
+            map: (record) => record.id,
+          }),
+        );
+      }
+
       const dish = await dataAccess.create<Dish>({
         collectionName: 'dishes',
-        data: { name, description },
+        data: { name, description, images, to_ingredients: ingredientIds },
         map: (record) => ({
           id: record.id,
           name: String(record['name'] ?? ''),

@@ -37,10 +37,16 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
     <main>
       @switch (uiStore.activeForm()) {
         @case ('new-food-item') {
-          <app-new-food-item-form />
+          <app-new-food-item-form
+            (saved)="uiStore.goHome()"
+            (cancelled)="uiStore.goHome()"
+          />
         }
         @case ('new-dish') {
-          <app-new-dish-form />
+          <app-new-dish-form
+            (saved)="uiStore.goHome()"
+            (cancelled)="uiStore.goHome()"
+          />
         }
         @case ('new-meal') {
           <app-new-meal-form />
@@ -49,7 +55,10 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
           <app-new-health-entry-form />
         }
         @case ('new-symptom') {
-          <app-new-symptom-form />
+          <app-new-symptom-form
+            (saved)="uiStore.goHome()"
+            (cancelled)="uiStore.goHome()"
+          />
         }
         @case ('settings') {
           <app-settings />

@@ -32,7 +32,7 @@ import { Component, input, signal } from '@angular/core';
       }
     } @else {
       <button type="button" class="open" (click)="isOpen.set(true)">
-        + New {{ label() }}
+        + Create new {{ label() }}
       </button>
     }
   `,

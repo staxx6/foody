@@ -32,14 +32,14 @@ import { IconComponent } from '../icon.component';
         </section>
 
         <section>
-          <h3>Extend your lists</h3>
+          <h3>Add to your lists</h3>
           <p class="hint">
-            Something missing when logging? Add it once, pick it any time.
+            What you can pick when logging. Add it once, use it any time.
           </p>
           <button class="row" (click)="selectForm('new-food-item')">
             <app-icon class="icon" name="food" />
             <span>
-              <span class="title">New food item</span>
+              <span class="title">New food</span>
               <small>A single food, e.g. apple or milk</small>
             </span>
           </button>
@@ -47,14 +47,14 @@ import { IconComponent } from '../icon.component';
             <app-icon class="icon" name="dish" />
             <span>
               <span class="title">New dish</span>
-              <small>A prepared meal, e.g. lasagne</small>
+              <small>Several foods together, e.g. lasagne</small>
             </span>
           </button>
           <button class="row" (click)="selectForm('new-symptom')">
             <app-icon class="icon" name="tag" />
             <span>
-              <span class="title">New symptom type</span>
-              <small>A kind of symptom, e.g. headache</small>
+              <span class="title">New symptom</span>
+              <small>Something you can feel, e.g. headache</small>
             </span>
           </button>
         </section>

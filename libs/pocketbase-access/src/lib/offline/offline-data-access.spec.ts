@@ -155,6 +155,23 @@ describe('OfflineDataAccessService', () => {
     expect(synced.updated).toBe('server');
   });
 
+  it('should queue files but keep them out of the local copy', async () => {
+    const service = createService();
+    await service.sync();
+    server.online = false;
+    const photo = new Blob(['photo']);
+
+    const item = await service.create({
+      collectionName: 'foodItems',
+      data: { name: 'Apple', images: [photo] },
+      map: identity,
+    });
+
+    expect(item['images']).toEqual([]);
+    const { outbox } = await storage.load();
+    expect(outbox[0].data['images']).toEqual([photo]);
+  });
+
   it('should send queued records in the order of creation', async () => {
     const service = createService();
     await service.sync();

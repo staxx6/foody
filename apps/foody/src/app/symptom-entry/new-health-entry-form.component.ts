@@ -4,7 +4,7 @@ import { SymptomEntryStore } from './symptom-entry-store';
 import { SymptomStore } from './symptom-store';
 import { UiStore } from '../shared/ui-store';
 import { IconComponent } from '../shared/icon.component';
-import { QuickAddComponent } from '../shared/quick-add.component';
+import { NewSymptomFormComponent } from './new-symptom-form.component';
 import {
   fromDateAndTime,
   toDateInputValue,
@@ -14,99 +14,111 @@ import {
 
 @Component({
   selector: 'app-new-health-entry-form',
-  imports: [FormsModule, IconComponent, QuickAddComponent],
+  imports: [FormsModule, IconComponent, NewSymptomFormComponent],
   template: `
-    <div class="form-header">
-      <button
-        type="button"
-        class="back-btn"
-        (click)="cancel()"
-        aria-label="Back"
-      >
-        <app-icon name="back" />
-      </button>
-      <h2>Log Symptom</h2>
-    </div>
+    @if (isCreatingSymptom()) {
+      <app-new-symptom-form
+        (saved)="symptomCreated($event.id)"
+        (cancelled)="isCreatingSymptom.set(false)"
+      />
+    }
 
-    <form class="card" (ngSubmit)="save()">
-      <div class="field">
-        <label for="symptom">Symptom *</label>
-        <select id="symptom" name="symptom" [(ngModel)]="symptomId" required>
-          <option value="">— Select —</option>
-          @for (s of symptomStore.symptoms(); track s.id) {
-            <option [value]="s.id">{{ s.name }}</option>
-          }
-        </select>
-        <app-quick-add
-          label="symptom type"
-          placeholder="e.g. headache"
-          [create]="addSymptom"
-        />
-      </div>
-
-      <div class="field">
-        <label for="discomfort">Discomfort Level (1–100)</label>
-        <input
-          type="number"
-          id="discomfort"
-          name="discomfort"
-          [(ngModel)]="discomfortLevel"
-          min="1"
-          max="100"
-          placeholder="optional"
-        />
-      </div>
-
-      <div class="field">
-        <label for="comment">Comment</label>
-        <textarea
-          id="comment"
-          name="comment"
-          [(ngModel)]="comment"
-          rows="3"
-          placeholder="optional"
-        ></textarea>
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label for="date">Day *</label>
-          <input
-            type="date"
-            id="date"
-            name="date"
-            [(ngModel)]="date"
-            required
-          />
-        </div>
-        <div class="field">
-          <label for="time">Time *</label>
-          <input
-            type="time"
-            id="time"
-            name="time"
-            [(ngModel)]="time"
-            required
-          />
-        </div>
-      </div>
-
-      @if (error()) {
-        <p class="error">{{ error() }}</p>
-      }
-
-      <div class="actions">
-        <button type="button" class="secondary" (click)="cancel()">
-          Cancel
-        </button>
+    <!-- Hidden instead of removed, so the input is kept while creating -->
+    <div [hidden]="isCreatingSymptom()">
+      <div class="form-header">
         <button
-          type="submit"
-          [disabled]="!symptomId() || !date || !time || isSaving()"
+          type="button"
+          class="back-btn"
+          (click)="cancel()"
+          aria-label="Back"
         >
-          {{ isSaving() ? 'Saving…' : 'Save' }}
+          <app-icon name="back" />
         </button>
+        <h2>Log Symptom</h2>
       </div>
-    </form>
+
+      <form class="card" (ngSubmit)="save()">
+        <div class="field">
+          <label for="symptom">Symptom *</label>
+          <select id="symptom" name="symptom" [(ngModel)]="symptomId" required>
+            <option value="">— Select symptom —</option>
+            @for (s of symptomStore.symptoms(); track s.id) {
+              <option [value]="s.id">{{ s.name }}</option>
+            }
+          </select>
+          <button
+            type="button"
+            class="link"
+            (click)="isCreatingSymptom.set(true)"
+          >
+            + Create new symptom
+          </button>
+        </div>
+
+        <div class="field">
+          <label for="discomfort">Discomfort Level (1–100)</label>
+          <input
+            type="number"
+            id="discomfort"
+            name="discomfort"
+            [(ngModel)]="discomfortLevel"
+            min="1"
+            max="100"
+            placeholder="optional"
+          />
+        </div>
+
+        <div class="field">
+          <label for="comment">Comment</label>
+          <textarea
+            id="comment"
+            name="comment"
+            [(ngModel)]="comment"
+            rows="3"
+            placeholder="optional"
+          ></textarea>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="date">Day *</label>
+            <input
+              type="date"
+              id="date"
+              name="date"
+              [(ngModel)]="date"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="time">Time *</label>
+            <input
+              type="time"
+              id="time"
+              name="time"
+              [(ngModel)]="time"
+              required
+            />
+          </div>
+        </div>
+
+        @if (error()) {
+          <p class="error">{{ error() }}</p>
+        }
+
+        <div class="actions">
+          <button type="button" class="secondary" (click)="cancel()">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            [disabled]="!symptomId() || !date || !time || isSaving()"
+          >
+            {{ isSaving() ? 'Saving…' : 'Save' }}
+          </button>
+        </div>
+      </form>
+    </div>
   `,
 })
 export class NewHealthEntryFormComponent implements OnInit {
@@ -114,13 +126,15 @@ export class NewHealthEntryFormComponent implements OnInit {
   private readonly symptomEntryStore = inject(SymptomEntryStore);
   private readonly uiStore = inject(UiStore);
 
-  // Signal, as it is also set after creating a symptom type
+  // Signal, as it is also set after creating a symptom
   readonly symptomId = signal('');
   discomfortLevel: number | null = null;
   comment = '';
   date = toDateInputValue(new Date());
   time = toTimeInputValue(new Date());
 
+  /** The form for a new symptom shown in place of this one */
+  protected readonly isCreatingSymptom = signal(false);
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
 
@@ -128,10 +142,11 @@ export class NewHealthEntryFormComponent implements OnInit {
     this.symptomStore.loadSymptoms();
   }
 
-  readonly addSymptom = async (name: string): Promise<void> => {
-    const symptom = await this.symptomStore.createSymptom(name, '');
-    this.symptomId.set(symptom.id);
-  };
+  /** A symptom that was created from here is selected right away */
+  protected symptomCreated(id: string): void {
+    this.symptomId.set(id);
+    this.isCreatingSymptom.set(false);
+  }
 
   cancel(): void {
     this.uiStore.goHome();
