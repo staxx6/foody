@@ -1,10 +1,11 @@
-import { Component, computed, inject, OnInit } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DishStore } from '../dish/dish-store';
 import { IngredientStore } from '../ingredient/ingredient-store';
 import { AmountUnitStore } from '../shared/amount-unit-store';
 import { ConfirmService } from '../shared/confirm/confirm.service';
 import { I18n } from '../shared/i18n/i18n';
 import { IconComponent, IconName } from '../shared/icon.component';
+import { fuzzyFilter } from '../shared/search/fuzzy';
 import { SymptomStore } from '../symptom-entry/symptom-store';
 
 type ListItem = { id: string; name: string };
@@ -24,7 +25,22 @@ type List = {
   template: `
     <h2 class="page-title">{{ t().manageLists }}</h2>
 
-    @for (list of lists(); track list.title) {
+    <label class="search">
+      <app-icon name="search" />
+      <input
+        #search
+        type="search"
+        [value]="query()"
+        (input)="query.set(search.value)"
+        [placeholder]="t().search"
+        [attr.aria-label]="t().search"
+      />
+    </label>
+
+    @if (visibleLists().length === 0) {
+      <p class="list-message">{{ t().noMatches }}</p>
+    }
+    @for (list of visibleLists(); track list.title) {
       <section>
         <h3><app-icon [name]="list.icon" /> {{ list.title }}</h3>
         <div class="card">
@@ -80,6 +96,33 @@ type List = {
       .card {
         overflow: hidden;
       }
+
+      .search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+        color: var(--text-muted);
+      }
+
+      .search:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
+      }
+
+      .search input {
+        flex: 1;
+        min-width: 0;
+        min-height: 44px;
+        border: none;
+        outline: none;
+        background: none;
+        color: var(--text);
+        font-size: 1rem;
+      }
     `,
   ],
 })
@@ -120,6 +163,16 @@ export class ManageListsComponent implements OnInit {
       remove: (id) => this.unitStore.deleteUnit(id),
     },
   ]);
+
+  protected readonly query = signal('');
+
+  /** While searching, only the lists with matches are shown */
+  protected readonly visibleLists = computed(() => {
+    const query = this.query();
+    return this.lists()
+      .map((list) => ({ ...list, items: fuzzyFilter(list.items, query) }))
+      .filter((list) => !query.trim() || list.items.length > 0);
+  });
 
   ngOnInit(): void {
     this.foodStore.loadFoodItems();

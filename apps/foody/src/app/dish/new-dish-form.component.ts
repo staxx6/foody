@@ -1,4 +1,11 @@
-import { Component, inject, OnInit, output, signal } from '@angular/core';
+import {
+  computed,
+  Component,
+  inject,
+  OnInit,
+  output,
+  signal,
+} from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
 import { DishStore, NewIngredient } from './dish-store';
@@ -8,11 +15,13 @@ import { AmountUnitStore } from '../shared/amount-unit-store';
 import { IconComponent } from '../shared/icon.component';
 import { ImagePickerComponent } from '../shared/image-picker.component';
 import { findByName } from '../shared/name-utils';
+import { SearchSelectComponent } from '../shared/search/search-select.component';
 
 @Component({
   selector: 'app-new-dish-form',
   imports: [
     FormsModule,
+    SearchSelectComponent,
     IconComponent,
     ImagePickerComponent,
     NewFoodItemFormComponent,
@@ -78,18 +87,14 @@ import { findByName } from '../shared/name-utils';
           <span class="label">{{ t().ingredients }}</span>
           @for (ingredient of ingredients(); track $index) {
             <div class="ingredient">
-              <select
+              <app-search-select
                 class="food"
-                [ngModel]="ingredient.foodItemId"
-                (ngModelChange)="update($index, { foodItemId: $event })"
-                [ngModelOptions]="{ standalone: true }"
-                [attr.aria-label]="t().food"
-              >
-                <option value="">{{ t().selectFood }}</option>
-                @for (food of ingredientStore.foodItems(); track food.id) {
-                  <option [value]="food.id">{{ food.name }}</option>
-                }
-              </select>
+                [options]="ingredientStore.foodItems()"
+                [value]="ingredient.foodItemId"
+                (valueChange)="update($index, { foodItemId: $event })"
+                [placeholder]="t().selectFood"
+                [ariaLabel]="t().food"
+              />
               <input
                 class="amount"
                 type="number"
@@ -103,18 +108,14 @@ import { findByName } from '../shared/name-utils';
                 [placeholder]="t().amount"
                 [attr.aria-label]="t().amount"
               />
-              <select
+              <app-search-select
                 class="unit"
-                [ngModel]="ingredient.amountUnitId"
-                (ngModelChange)="update($index, { amountUnitId: $event })"
-                [ngModelOptions]="{ standalone: true }"
-                [attr.aria-label]="t().unit"
-              >
-                <option value="">{{ t().unit }}</option>
-                @for (unit of amountUnitStore.units(); track unit.id) {
-                  <option [value]="unit.id">{{ i18n.name(unit) }}</option>
-                }
-              </select>
+                [options]="unitOptions()"
+                [value]="ingredient.amountUnitId"
+                (valueChange)="update($index, { amountUnitId: $event })"
+                [placeholder]="t().unit"
+                [ariaLabel]="t().unit"
+              />
               <button
                 type="button"
                 class="remove"
@@ -215,6 +216,13 @@ export class NewDishFormComponent implements OnInit {
   private readonly dishStore = inject(DishStore);
   protected readonly ingredientStore = inject(IngredientStore);
   protected readonly amountUnitStore = inject(AmountUnitStore);
+
+  /** The units with their names in the current language */
+  protected readonly unitOptions = computed(() =>
+    this.amountUnitStore
+      .units()
+      .map((unit) => ({ id: unit.id, name: this.i18n.name(unit) })),
+  );
 
   /** The created dish */
   readonly saved = output<{ id: string }>();

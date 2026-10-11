@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { computed, Component, inject, OnInit, signal } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { FormsModule } from '@angular/forms';
 import { DishEntryStore } from './dish-entry-store';
@@ -22,11 +22,13 @@ type SourceType = 'food-item' | 'dish';
 // Most entries are a single piece of something
 const DEFAULT_AMOUNT = '1';
 const DEFAULT_UNIT_CODE = 'piece';
+import { SearchSelectComponent } from '../shared/search/search-select.component';
 
 @Component({
   selector: 'app-new-meal-form',
   imports: [
     FormsModule,
+    SearchSelectComponent,
     IconComponent,
     QuickAddComponent,
     NewFoodItemFormComponent,
@@ -81,24 +83,18 @@ const DEFAULT_UNIT_CODE = 'piece';
               {{ t().dish }}
             </button>
           </div>
-          <select
-            name="source"
-            [(ngModel)]="selectedSourceId"
-            [attr.aria-label]="sourceType === 'food-item' ? t().food : t().dish"
-            required
-          >
-            @if (sourceType === 'food-item') {
-              <option value="">{{ t().selectFood }}</option>
-              @for (item of ingredientStore.foodItems(); track item.id) {
-                <option [value]="item.id">{{ item.name }}</option>
-              }
-            } @else {
-              <option value="">{{ t().selectDish }}</option>
-              @for (dish of dishStore.dishes(); track dish.id) {
-                <option [value]="dish.id">{{ dish.name }}</option>
-              }
-            }
-          </select>
+          <app-search-select
+            [options]="
+              sourceType === 'food-item'
+                ? ingredientStore.foodItems()
+                : dishStore.dishes()
+            "
+            [(value)]="selectedSourceId"
+            [placeholder]="
+              sourceType === 'food-item' ? t().selectFood : t().selectDish
+            "
+            [ariaLabel]="sourceType === 'food-item' ? t().food : t().dish"
+          />
           <button type="button" class="link" (click)="creating.set(sourceType)">
             {{
               sourceType === 'food-item' ? t().createNewFood : t().createNewDish
@@ -113,12 +109,12 @@ const DEFAULT_UNIT_CODE = 'piece';
           </div>
           <div class="field">
             <label for="unit">{{ t().unit }} *</label
-            ><select id="unit" name="unit" [(ngModel)]="amountUnitId" required>
-              <option value="">—</option>
-              @for (unit of amountUnitStore.units(); track unit.id) {
-                <option [value]="unit.id">{{ i18n.name(unit) }}</option>
-              }
-            </select>
+            ><app-search-select
+              inputId="unit"
+              [options]="unitOptions()"
+              [(value)]="amountUnitId"
+              [placeholder]="t().search"
+            />
           </div>
         </div>
         <app-quick-add
@@ -171,6 +167,13 @@ export class NewMealFormComponent implements OnInit {
   readonly ingredientStore = inject(IngredientStore);
   readonly dishStore = inject(DishStore);
   readonly amountUnitStore = inject(AmountUnitStore);
+
+  /** The units with their names in the current language */
+  protected readonly unitOptions = computed(() =>
+    this.amountUnitStore
+      .units()
+      .map((unit) => ({ id: unit.id, name: this.i18n.name(unit) })),
+  );
   private readonly dishEntryStore = inject(DishEntryStore);
   private readonly uiStore = inject(UiStore);
 

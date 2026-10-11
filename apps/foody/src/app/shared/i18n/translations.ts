@@ -23,6 +23,9 @@ const en = {
   dish: 'Dish',
   symptom: 'Symptom',
   useExisting: 'Use existing',
+  search: 'Search…',
+  noMatches: 'No matches',
+  clearSelection: 'Clear selection',
 
   // Photos
   photos: 'Photos',
@@ -65,8 +68,8 @@ const en = {
   // Log meal
   whatDidYouEat: 'What did you eat or drink?',
   singleFood: 'Single food',
-  selectFood: '— Select food —',
-  selectDish: '— Select dish —',
+  selectFood: 'Search food…',
+  selectDish: 'Search dish…',
   createNewFood: '+ Create new food',
   createNewDish: '+ Create new dish',
   createNewUnit: '+ Create new unit',
@@ -76,7 +79,7 @@ const en = {
   addingFailed: 'Adding failed',
 
   // Log symptom
-  selectSymptom: '— Select symptom —',
+  selectSymptom: 'Search symptom…',
   createNewSymptom: '+ Create new symptom',
   discomfortLevelRange: 'Discomfort level (1–100)',
 
@@ -169,6 +172,9 @@ const de: Translations = {
   dish: 'Gericht',
   symptom: 'Symptom',
   useExisting: 'Vorhandenes verwenden',
+  search: 'Suchen…',
+  noMatches: 'Keine Treffer',
+  clearSelection: 'Auswahl aufheben',
 
   photos: 'Fotos',
   addPhoto: 'Foto hinzufügen',
@@ -206,8 +212,8 @@ const de: Translations = {
 
   whatDidYouEat: 'Was hast du gegessen oder getrunken?',
   singleFood: 'Lebensmittel',
-  selectFood: '— Lebensmittel wählen —',
-  selectDish: '— Gericht wählen —',
+  selectFood: 'Lebensmittel suchen…',
+  selectDish: 'Gericht suchen…',
   createNewFood: '+ Neues Lebensmittel anlegen',
   createNewDish: '+ Neues Gericht anlegen',
   createNewUnit: '+ Neue Einheit anlegen',
@@ -216,7 +222,7 @@ const de: Translations = {
   adding: 'Wird angelegt…',
   addingFailed: 'Anlegen fehlgeschlagen',
 
-  selectSymptom: '— Symptom wählen —',
+  selectSymptom: 'Symptom suchen…',
   createNewSymptom: '+ Neues Symptom anlegen',
   discomfortLevelRange: 'Beschwerdegrad (1–100)',
 

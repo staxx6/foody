@@ -44,8 +44,8 @@ import { IconComponent } from './icon.component';
       .photo,
       .add {
         position: relative;
-        width: 72px;
-        height: 72px;
+        width: 88px;
+        height: 88px;
         border-radius: var(--radius);
         overflow: hidden;
       }
@@ -82,8 +82,11 @@ import { IconComponent } from './icon.component';
         gap: 4px;
         border: 1px dashed var(--border);
         color: var(--text-muted);
+        padding: 4px;
         font-size: 0.7rem;
         font-weight: 600;
+        line-height: 1.2;
+        text-align: center;
         cursor: pointer;
       }
 

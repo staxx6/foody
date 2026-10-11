@@ -12,10 +12,16 @@ import {
   toPocketBaseDate,
   toTimeInputValue,
 } from '../shared/date-utils';
+import { SearchSelectComponent } from '../shared/search/search-select.component';
 
 @Component({
   selector: 'app-new-health-entry-form',
-  imports: [FormsModule, IconComponent, NewSymptomFormComponent],
+  imports: [
+    FormsModule,
+    SearchSelectComponent,
+    IconComponent,
+    NewSymptomFormComponent,
+  ],
   template: `
     @if (isCreatingSymptom()) {
       <app-new-symptom-form
@@ -41,12 +47,12 @@ import {
       <form class="card" (ngSubmit)="save()">
         <div class="field">
           <label for="symptom">{{ t().symptom }} *</label
-          ><select id="symptom" name="symptom" [(ngModel)]="symptomId" required>
-            <option value="">{{ t().selectSymptom }}</option>
-            @for (s of symptomStore.symptoms(); track s.id) {
-              <option [value]="s.id">{{ s.name }}</option>
-            }
-          </select>
+          ><app-search-select
+            inputId="symptom"
+            [options]="symptomStore.symptoms()"
+            [(value)]="symptomId"
+            [placeholder]="t().selectSymptom"
+          />
           <button
             type="button"
             class="link"
