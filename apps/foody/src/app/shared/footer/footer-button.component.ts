@@ -38,9 +38,6 @@ import { IconComponent, IconName } from '../icon.component';
         font-size: 0.7rem;
         font-weight: 600;
         cursor: pointer;
-        transition:
-          color 150ms,
-          background-color 150ms;
       }
 
       .icon {
@@ -59,6 +56,17 @@ import { IconComponent, IconName } from '../icon.component';
       button:disabled {
         opacity: 0.4;
         cursor: default;
+      }
+
+      /* In the sidebar of wide screens: icon and label side by side */
+      @media (min-width: 1024px) {
+        button {
+          flex-direction: row;
+          justify-content: flex-start;
+          gap: 12px;
+          padding: 11px 12px;
+          font-size: 0.95rem;
+        }
       }
     `,
   ],

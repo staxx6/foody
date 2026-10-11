@@ -162,6 +162,15 @@ type DayCell = {
                   <span class="medication"></span>
                 }
               </span>
+              <!-- Wide screens have room for the numbers -->
+              <span class="facts">
+                @if (cell.meals > 0) {
+                  <span><app-icon name="meal" /> {{ cell.meals }}</span>
+                }
+                @if (cell.medications > 0) {
+                  <span><app-icon name="pill" /> {{ cell.medications }}</span>
+                }
+              </span>
             </button>
           } @else {
             <span></span>
@@ -541,6 +550,133 @@ type DayCell = {
         min-width: 4px;
         border-radius: 3px;
         background: var(--step-2);
+      }
+
+      .facts {
+        display: none;
+      }
+
+      /* Wide screens: a large calendar with the filter and the symptoms next
+         to it */
+      @media (min-width: 1024px) {
+        :host {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) clamp(260px, 26vw, 340px);
+          grid-template-rows: auto auto auto auto 1fr;
+          grid-template-areas:
+            'head head'
+            'picker picker'
+            'back back'
+            'calendar filter'
+            'calendar totals';
+          gap: 0 28px;
+        }
+
+        .month {
+          grid-area: head;
+          justify-content: flex-start;
+          margin-bottom: 20px;
+        }
+
+        h2 {
+          flex: none;
+          order: -1;
+          margin-right: 16px;
+          text-align: left;
+        }
+
+        .title {
+          font-size: 2rem;
+        }
+
+        .picker {
+          grid-area: picker;
+          max-width: 420px;
+          margin-bottom: 20px;
+        }
+
+        .back-to-current {
+          grid-area: back;
+          justify-self: start;
+          margin-bottom: 20px;
+        }
+
+        .filter {
+          grid-area: filter;
+          margin-bottom: 20px;
+        }
+
+        .calendar {
+          grid-area: calendar;
+          padding: 20px;
+        }
+
+        :host > section:last-of-type {
+          grid-area: totals;
+        }
+
+        :host > section:last-of-type h3 {
+          margin-top: 0;
+        }
+
+        .grid {
+          gap: 6px;
+        }
+
+        .cell {
+          align-items: stretch;
+          gap: 8px;
+          min-height: 104px;
+          padding: 8px 10px;
+          background: var(--bg);
+          text-align: left;
+        }
+
+        .cell:hover {
+          background: var(--border);
+        }
+
+        .number {
+          font-size: 0.95rem;
+          font-weight: 600;
+        }
+
+        /* The discomfort as a bar across the day */
+        .mark[data-step] {
+          width: 100%;
+          height: 12px;
+        }
+
+        .mark:not([data-step]) {
+          width: auto;
+          height: 12px;
+          justify-content: flex-start;
+        }
+
+        .marks {
+          display: none;
+        }
+
+        .facts {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 2px 10px;
+          margin-top: auto;
+          font-size: 0.8rem;
+          font-variant-numeric: tabular-nums;
+          color: var(--text-muted);
+        }
+
+        .facts span {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .legend .mark[data-step] {
+          width: 14px;
+          height: 14px;
+        }
       }
     `,
   ],

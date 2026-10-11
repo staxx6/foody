@@ -192,6 +192,42 @@ const SWIPE_MAX_DRIFT = 50;
         display: block;
         overflow: hidden;
       }
+
+      /* Wide screens: meals, symptoms and medications side by side */
+      @media (min-width: 1024px) {
+        :host {
+          display: grid;
+          /* As many columns as fit without squeezing the entries */
+          grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+          align-items: start;
+          gap: 28px 24px;
+        }
+
+        .day,
+        .back-to-today {
+          grid-column: 1 / -1;
+        }
+
+        .day {
+          justify-content: flex-start;
+        }
+
+        .title {
+          flex: none;
+          order: -1;
+          align-items: flex-start;
+          margin-right: 16px;
+        }
+
+        .day-label {
+          font-size: 2rem;
+        }
+
+        .back-to-today {
+          justify-self: start;
+          margin-top: -16px;
+        }
+      }
     `,
   ],
 })

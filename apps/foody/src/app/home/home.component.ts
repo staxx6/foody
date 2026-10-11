@@ -1,4 +1,10 @@
-import { Component, inject } from '@angular/core';
+import {
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  viewChild,
+} from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { DayComponent } from './day.component';
 import { MonthComponent } from '../month/month.component';
@@ -49,101 +55,115 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
       <app-sync-status />
     </header>
 
-    <main>
-      @for (page of [uiStore.page()]; track page.key) {
-        @switch (page.form) {
-          @case ('new-food-item') {
-            <app-new-food-item-form
-              [editId]="page.editId"
-              (saved)="uiStore.close()"
-              (cancelled)="uiStore.close()"
-            />
-          }
-          @case ('new-dish') {
-            <app-new-dish-form
-              [editId]="page.editId"
-              (saved)="uiStore.close()"
-              (cancelled)="uiStore.close()"
-            />
-          }
-          @case ('new-meal') {
-            <app-new-meal-form [editId]="page.editId" />
-          }
-          @case ('new-health-entry') {
-            <app-new-health-entry-form [editId]="page.editId" />
-          }
-          @case ('new-symptom') {
-            <app-new-symptom-form
-              [editId]="page.editId"
-              (saved)="uiStore.close()"
-              (cancelled)="uiStore.close()"
-            />
-          }
-          @case ('new-medication') {
-            <app-new-medication-form
-              [editId]="page.editId"
-              (saved)="uiStore.close()"
-              (cancelled)="uiStore.close()"
-            />
-          }
-          @case ('new-medication-entry') {
-            <app-log-medication-form [editId]="page.editId" />
-          }
-          @case ('view-food') {
-            <app-item-details kind="food" [id]="page.editId ?? ''" />
-          }
-          @case ('view-dish') {
-            <app-item-details kind="dish" [id]="page.editId ?? ''" />
-          }
-          @case ('view-symptom') {
-            <app-item-details kind="symptom" [id]="page.editId ?? ''" />
-          }
-          @case ('view-medication') {
-            <app-item-details kind="medication" [id]="page.editId ?? ''" />
-          }
-          @case ('edit-unit') {
-            <app-edit-unit-form
-              [editId]="page.editId"
-              (saved)="uiStore.close()"
-              (cancelled)="uiStore.close()"
-            />
-          }
-          @case ('month') {
-            <app-month />
-          }
-          @case ('report') {
-            <app-report />
-          }
-          @case ('lists') {
-            <app-manage-lists />
-          }
-          @case ('settings') {
-            <app-settings />
-          }
-          @default {
-            <app-day />
+    <div class="scroll" #scroll>
+      <main>
+        @for (page of [uiStore.page()]; track page.key) {
+          @switch (page.form) {
+            @case ('new-food-item') {
+              <app-new-food-item-form
+                [editId]="page.editId"
+                (saved)="uiStore.close()"
+                (cancelled)="uiStore.close()"
+              />
+            }
+            @case ('new-dish') {
+              <app-new-dish-form
+                [editId]="page.editId"
+                (saved)="uiStore.close()"
+                (cancelled)="uiStore.close()"
+              />
+            }
+            @case ('new-meal') {
+              <app-new-meal-form [editId]="page.editId" />
+            }
+            @case ('new-health-entry') {
+              <app-new-health-entry-form [editId]="page.editId" />
+            }
+            @case ('new-symptom') {
+              <app-new-symptom-form
+                [editId]="page.editId"
+                (saved)="uiStore.close()"
+                (cancelled)="uiStore.close()"
+              />
+            }
+            @case ('new-medication') {
+              <app-new-medication-form
+                [editId]="page.editId"
+                (saved)="uiStore.close()"
+                (cancelled)="uiStore.close()"
+              />
+            }
+            @case ('new-medication-entry') {
+              <app-log-medication-form [editId]="page.editId" />
+            }
+            @case ('view-food') {
+              <app-item-details kind="food" [id]="page.editId ?? ''" />
+            }
+            @case ('view-dish') {
+              <app-item-details kind="dish" [id]="page.editId ?? ''" />
+            }
+            @case ('view-symptom') {
+              <app-item-details kind="symptom" [id]="page.editId ?? ''" />
+            }
+            @case ('view-medication') {
+              <app-item-details kind="medication" [id]="page.editId ?? ''" />
+            }
+            @case ('edit-unit') {
+              <app-edit-unit-form
+                [editId]="page.editId"
+                (saved)="uiStore.close()"
+                (cancelled)="uiStore.close()"
+              />
+            }
+            @case ('month') {
+              <app-month />
+            }
+            @case ('report') {
+              <app-report />
+            }
+            @case ('lists') {
+              <app-manage-lists />
+            }
+            @case ('settings') {
+              <app-settings />
+            }
+            @default {
+              <app-day />
+            }
           }
         }
-      }
-    </main>
+      </main>
+    </div>
 
     <app-footer-nav />
     <app-confirm-dialog />
   `,
   styles: [
     `
+      /*
+       * The page is a column that fills the screen: header, the content,
+       * which scrolls, and the navigation. The navigation is part of the
+       * column instead of fixed to the screen, as Firefox on Android
+       * sometimes stops drawing the content of fixed elements.
+       */
       :host {
         display: flex;
         flex-direction: column;
-        min-height: 100dvh;
+        height: 100dvh;
+        overflow: hidden;
+      }
+
+      .scroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
       }
 
       header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        position: sticky;
-        top: 0;
+        flex: none;
         background: var(--surface);
         border-bottom: 1px solid var(--border);
         padding: 12px 16px;
@@ -172,9 +192,7 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
       }
 
       main {
-        flex: 1;
-        padding: 20px 16px;
-        padding-bottom: calc(96px + env(safe-area-inset-bottom));
+        padding: 20px 16px 40px;
         display: flex;
         flex-direction: column;
         gap: 24px;
@@ -182,10 +200,62 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
         width: 100%;
         margin: 0 auto;
       }
+
+      /* Wide screens: the navigation is a sidebar (see footer-nav) and the
+         pages use the width */
+      @media (min-width: 1024px) {
+        /* The page itself scrolls, next to the fixed sidebar */
+        :host {
+          display: block;
+          height: auto;
+          min-height: 100dvh;
+          overflow: visible;
+        }
+
+        .scroll {
+          overflow: visible;
+        }
+
+        header {
+          display: none;
+        }
+
+        main {
+          width: auto;
+          max-width: 1240px;
+          margin: 0 0 0 248px;
+          padding: 40px 48px 48px;
+          gap: 28px;
+        }
+
+        /* Forms stay as narrow as they are comfortable to fill in */
+        app-new-meal-form,
+        app-new-health-entry-form,
+        app-log-medication-form,
+        app-new-food-item-form,
+        app-new-dish-form,
+        app-new-symptom-form,
+        app-new-medication-form,
+        app-edit-unit-form {
+          max-width: 680px;
+        }
+      }
     `,
   ],
 })
 export class HomeComponent {
   protected readonly t = inject(I18n).t;
   readonly uiStore = inject(UiStore);
+
+  private readonly scroll =
+    viewChild.required<ElementRef<HTMLElement>>('scroll');
+
+  constructor() {
+    // Every page starts at its top
+    effect(() => {
+      this.uiStore.page();
+      this.scroll().nativeElement.scrollTop = 0;
+      window.scrollTo(0, 0);
+    });
+  }
 }

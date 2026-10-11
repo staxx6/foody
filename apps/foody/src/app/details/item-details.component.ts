@@ -299,6 +299,40 @@ type Details = {
       .history app-icon {
         color: var(--text-muted);
       }
+
+      /* Wide screens: the item on the left, when it was logged on the right */
+      @media (min-width: 1024px) {
+        :host {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          align-items: start;
+          gap: 20px 32px;
+          max-width: 1000px;
+        }
+
+        .form-header {
+          grid-column: 1 / -1;
+        }
+
+        .photos,
+        :host > section {
+          grid-column: 1;
+        }
+
+        :host > section:last-of-type {
+          grid-column: 2;
+          grid-row: 2 / span 4;
+        }
+
+        :host > section:last-of-type h3 {
+          margin-top: 0;
+        }
+
+        /* Nothing but the log: it takes the place of the item */
+        :host > section:only-of-type {
+          grid-column: 1;
+        }
+      }
     `,
   ],
 })

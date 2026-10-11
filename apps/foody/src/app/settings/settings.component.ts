@@ -253,6 +253,21 @@ import {
         opacity: 0.5;
         cursor: default;
       }
+
+      /* Wide screens: the sections side by side */
+      @media (min-width: 1024px) {
+        :host {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 420px));
+          align-items: start;
+          gap: 24px 28px;
+        }
+
+        .page-title {
+          grid-column: 1 / -1;
+          font-size: 2rem;
+        }
+      }
     `,
   ],
 })

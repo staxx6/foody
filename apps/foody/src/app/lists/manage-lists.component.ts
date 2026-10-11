@@ -135,6 +135,41 @@ type List = {
         color: var(--text);
         font-size: 1rem;
       }
+
+      /* Wide screens: the lists flow into columns */
+      @media (min-width: 1024px) {
+        :host {
+          display: block;
+          columns: 2;
+          column-gap: 28px;
+        }
+
+        .page-title,
+        .search,
+        :host > .list-message {
+          column-span: all;
+          margin-bottom: 24px;
+        }
+
+        .page-title {
+          font-size: 2rem;
+        }
+
+        .search {
+          max-width: 420px;
+        }
+
+        section {
+          break-inside: avoid;
+          margin-bottom: 28px;
+        }
+      }
+
+      @media (min-width: 1400px) {
+        :host {
+          columns: 3;
+        }
+      }
     `,
   ],
 })

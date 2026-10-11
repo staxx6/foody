@@ -3,10 +3,11 @@ import { I18n } from '../i18n/i18n';
 import { ActiveSite, UiStore } from '../ui-store';
 import { FooterButtonComponent } from './footer-button.component';
 import { IconComponent } from '../icon.component';
+import { SyncStatusComponent } from '../sync-status.component';
 
 @Component({
   selector: 'app-footer-nav',
-  imports: [FooterButtonComponent, IconComponent],
+  imports: [FooterButtonComponent, IconComponent, SyncStatusComponent],
   template: `
     @if (showMenu()) {
       <button
@@ -81,6 +82,14 @@ import { IconComponent } from '../icon.component';
       </div>
     }
     <nav>
+      <button
+        type="button"
+        class="brand wide-only"
+        (click)="uiStore.goHome()"
+        [title]="t().today"
+      >
+        foody
+      </button>
       <app-footer-button
         [label]="t().today"
         icon="today"
@@ -100,6 +109,7 @@ import { IconComponent } from '../icon.component';
         [attr.aria-expanded]="showMenu()"
       >
         <app-icon [name]="showMenu() ? 'close' : 'plus'" />
+        <span class="add-label wide-only">{{ t().addEntry }}</span>
       </button>
       <app-footer-button
         [label]="t().report"
@@ -108,11 +118,20 @@ import { IconComponent } from '../icon.component';
         (clicked)="selectForm('report')"
       />
       <app-footer-button
+        class="wide-only"
+        [label]="t().lists"
+        icon="list"
+        [active]="uiStore.isActive('lists')"
+        (clicked)="selectForm('lists')"
+      />
+      <app-footer-button
+        class="last"
         [label]="t().settings"
         icon="settings"
         [active]="uiStore.isActive('settings')"
         (clicked)="selectForm('settings')"
       />
+      <app-sync-status class="status wide-only" />
     </nav>
   `,
   styles: [
@@ -240,11 +259,13 @@ import { IconComponent } from '../icon.component';
         background: var(--bg);
       }
 
+      :host {
+        flex: none;
+      }
+
+      /* Part of the column of the page, see home.component */
       nav {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        position: relative;
         display: grid;
         grid-template-columns: 1fr 1fr auto 1fr 1fr;
         align-items: center;
@@ -275,6 +296,89 @@ import { IconComponent } from '../icon.component';
 
       .add-btn:hover {
         background: var(--primary-hover);
+      }
+
+      /* Only part of the sidebar of wide screens */
+      .wide-only {
+        display: none;
+      }
+
+      /* Wide screens: the bar at the bottom becomes a sidebar */
+      @media (min-width: 1024px) {
+        nav {
+          position: fixed;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          width: 248px;
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 4px;
+          padding: 28px 16px 20px;
+          border-top: none;
+          border-right: 1px solid var(--border);
+        }
+
+        .brand {
+          display: block;
+          order: 0;
+          margin: 0 12px 24px;
+          padding: 0;
+          border: none;
+          background: none;
+          color: var(--primary);
+          font-size: 1.7rem;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .add-btn {
+          order: 1;
+          width: auto;
+          height: 48px;
+          margin: 0 0 20px;
+          gap: 8px;
+          border-radius: var(--radius);
+          box-shadow: none;
+          font-size: 1.2rem;
+        }
+
+        .add-label {
+          display: inline;
+          font-size: 1rem;
+          font-weight: 600;
+        }
+
+        app-footer-button {
+          order: 2;
+        }
+
+        app-footer-button.wide-only {
+          display: block;
+        }
+
+        app-footer-button.last {
+          order: 3;
+        }
+
+        .status {
+          display: block;
+          order: 4;
+          margin-top: auto;
+          align-self: flex-start;
+        }
+
+        /* The menu opens next to the button instead of above the bar */
+        .menu-popup {
+          top: 80px;
+          bottom: auto;
+          left: 264px;
+          transform: none;
+          max-height: calc(100dvh - 104px);
+        }
       }
     `,
   ],

@@ -477,6 +477,43 @@ const TIME_SPANS = [6, 12, 24, 48];
         opacity: 0.45;
         cursor: not-allowed;
       }
+
+      /* Wide screens: the settings stay at the side of the results */
+      @media (min-width: 1024px) {
+        :host {
+          display: grid;
+          grid-template-columns: 360px minmax(0, 760px);
+          grid-template-rows: auto auto 1fr;
+          grid-template-areas:
+            'title title'
+            'settings findings'
+            'export findings';
+          align-items: start;
+          gap: 16px 32px;
+        }
+
+        .page-title {
+          grid-area: title;
+          font-size: 2rem;
+        }
+
+        .settings {
+          grid-area: settings;
+        }
+
+        :host > section:nth-of-type(2) {
+          grid-area: findings;
+        }
+
+        :host > section:nth-of-type(2) h3,
+        :host > section:nth-of-type(3) h3 {
+          margin-top: 0;
+        }
+
+        :host > section:nth-of-type(3) {
+          grid-area: export;
+        }
+      }
     `,
   ],
 })

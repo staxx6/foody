@@ -173,7 +173,8 @@ textarea {
 /* Name and value of an entry; the value wraps below a long name */
 .entry .content {
   flex: 1;
-  min-width: 0;
+  /* Room for a short word, so a name never breaks letter by letter */
+  min-width: 6rem;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
