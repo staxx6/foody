@@ -9,7 +9,7 @@ import { UiStore } from '../shared/ui-store';
   template: `
     <div class="form-header">
       <button class="back-btn" (click)="cancel()">← Back</button>
-      <h2>New Symptom</h2>
+      <h2>New Symptom Type</h2>
     </div>
 
     <form (ngSubmit)="save()">

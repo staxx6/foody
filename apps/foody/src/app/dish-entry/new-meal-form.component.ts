@@ -15,7 +15,7 @@ type SourceType = 'food-item' | 'dish';
   template: `
     <div class="form-header">
       <button class="back-btn" (click)="cancel()">← Back</button>
-      <h2>New Meal</h2>
+      <h2>Log Meal</h2>
     </div>
 
     <form (ngSubmit)="save()">

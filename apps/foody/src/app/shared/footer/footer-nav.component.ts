@@ -13,13 +13,50 @@ import { FooterButtonComponent } from './footer-button.component';
         aria-label="Close menu"
       ></button>
       <div class="menu-popup">
-        <button (click)="selectForm('new-food-item')">Food Item</button>
-        <button (click)="selectForm('new-dish')">Dish</button>
-        <button (click)="selectForm('new-meal')">Meal</button>
-        <button (click)="selectForm('new-health-entry')">
-          Health Entry
-        </button>
-        <button (click)="selectForm('new-symptom')">New Symptom</button>
+        <section>
+          <h3>Track today</h3>
+          <p class="hint">Record what happened, with date and time.</p>
+          <div class="tiles">
+            <button class="tile" (click)="selectForm('new-meal')">
+              <span class="icon" aria-hidden="true">🍽️</span>
+              <span class="title">Log meal</span>
+              <small>I ate or drank something</small>
+            </button>
+            <button class="tile" (click)="selectForm('new-health-entry')">
+              <span class="icon" aria-hidden="true">🩺</span>
+              <span class="title">Log symptom</span>
+              <small>I noticed a symptom</small>
+            </button>
+          </div>
+        </section>
+
+        <section>
+          <h3>Extend your lists</h3>
+          <p class="hint">
+            Something missing when logging? Add it once, pick it any time.
+          </p>
+          <button class="row" (click)="selectForm('new-food-item')">
+            <span class="icon" aria-hidden="true">🍎</span>
+            <span>
+              <span class="title">New food item</span>
+              <small>A single food, e.g. apple or milk</small>
+            </span>
+          </button>
+          <button class="row" (click)="selectForm('new-dish')">
+            <span class="icon" aria-hidden="true">🍲</span>
+            <span>
+              <span class="title">New dish</span>
+              <small>A prepared meal, e.g. lasagne</small>
+            </span>
+          </button>
+          <button class="row" (click)="selectForm('new-symptom')">
+            <span class="icon" aria-hidden="true">🏷️</span>
+            <span>
+              <span class="title">New symptom type</span>
+              <small>A kind of symptom, e.g. headache</small>
+            </span>
+          </button>
+        </section>
       </div>
     }
     <nav>
@@ -29,7 +66,14 @@ import { FooterButtonComponent } from './footer-button.component';
         (clicked)="uiStore.goHome()"
       />
       <app-footer-button label='Month' [active]="false" />
-      <button class="add-btn" (click)="toggleMenu()">+</button>
+      <button
+        class="add-btn"
+        (click)="toggleMenu()"
+        [attr.aria-label]="showMenu() ? 'Close menu' : 'Add entry'"
+        [attr.aria-expanded]="showMenu()"
+      >
+        {{ showMenu() ? '×' : '+' }}
+      </button>
       <app-footer-button label='Report' [active]='false' />
       <app-footer-button label='Settings' [active]='false' />
     </nav>
@@ -40,7 +84,7 @@ import { FooterButtonComponent } from './footer-button.component';
         position: fixed;
         inset: 0;
         z-index: 20;
-        background: transparent;
+        background: rgba(0, 0, 0, 0.25);
         border: none;
         cursor: default;
         padding: 0;
@@ -53,32 +97,103 @@ import { FooterButtonComponent } from './footer-button.component';
         transform: translateX(-50%);
         background: #fff;
         border: 1px solid #e0e0e0;
-        border-radius: 12px;
+        border-radius: 16px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        gap: 16px;
+        padding: 16px;
         z-index: 30;
-        min-width: 200px;
+        width: min(360px, calc(100vw - 32px));
+        box-sizing: border-box;
+      }
+
+      .menu-popup section {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .menu-popup section + section {
+        border-top: 1px solid #f0f0f0;
+        padding-top: 16px;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #666;
+      }
+
+      .hint {
+        margin: 2px 0 10px;
+        font-size: 0.75rem;
+        color: #888;
       }
 
       .menu-popup button {
-        padding: 14px 20px;
-        background: none;
         border: none;
-        border-bottom: 1px solid #f0f0f0;
         cursor: pointer;
-        font-size: 0.95rem;
         color: #333;
+        font-family: inherit;
+      }
+
+      .title {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      .menu-popup small {
+        display: block;
+        margin-top: 2px;
+        font-size: 0.75rem;
+        color: #888;
+      }
+
+      .tiles {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .tile {
+        padding: 12px 8px;
+        background: #e8f5e9;
+        border-radius: 12px;
+        text-align: center;
+      }
+
+      .tile .icon {
+        display: block;
+        font-size: 1.6rem;
+        margin-bottom: 4px;
+      }
+
+      .tile:hover {
+        background: #d7edd9;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px;
+        background: none;
+        border-radius: 8px;
         text-align: left;
       }
 
-      .menu-popup button:last-child {
-        border-bottom: none;
+      .row .icon {
+        font-size: 1.2rem;
+        width: 1.5rem;
+        text-align: center;
       }
 
-      .menu-popup button:hover {
-        background: #f9f9f9;
+      .row:hover {
+        background: #f5f5f5;
       }
 
       nav {

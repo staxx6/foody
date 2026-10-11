@@ -11,7 +11,7 @@ import { toDateTimeLocalValue, toPocketBaseDate } from '../shared/date-utils';
   template: `
     <div class="form-header">
       <button class="back-btn" (click)="cancel()">← Back</button>
-      <h2>New Health Entry</h2>
+      <h2>Log Symptom</h2>
     </div>
 
     <form (ngSubmit)="save()">
