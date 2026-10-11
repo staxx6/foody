@@ -67,5 +67,12 @@ export const SymptomStore = signalStore(
       });
       return symptom;
     },
+
+    async deleteSymptom(id: string): Promise<void> {
+      await dataAccess.delete({ collectionName: 'symptoms', id });
+      patchState(store, {
+        symptoms: store.symptoms().filter((item) => item.id !== id),
+      });
+    },
   })),
 );

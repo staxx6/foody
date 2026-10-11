@@ -10,6 +10,8 @@ export type OutboxItem = {
   collectionName: string;
   /** The data to create, including the id generated on this device */
   data: Record<string, unknown> & { id: string };
+  /** The record of `data.id` is to be deleted instead of created */
+  delete?: true;
 };
 
 export type OfflineSnapshot = {
@@ -28,6 +30,15 @@ export interface OfflineStorage {
     record: DataRecord,
     item: Omit<OutboxItem, 'seq'>,
   ): Promise<OutboxItem>;
+  /**
+   * Removes a record from the local copy, together with the given outbox
+   * items, and queues the new ones
+   */
+  deleteLocal(
+    recordId: string,
+    removeSeqs: number[],
+    items: Omit<OutboxItem, 'seq'>[],
+  ): Promise<OutboxItem[]>;
   removeFromOutbox(seq: number): Promise<void>;
   applyChanges(put: DataRecord[], deleteIds: string[]): Promise<void>;
   setLastSyncedAt(value: string): Promise<void>;
@@ -89,6 +100,21 @@ export class IndexedDbOfflineStorage implements OfflineStorage {
     return { ...item, seq: Number(seq) };
   }
 
+  async deleteLocal(
+    recordId: string,
+    removeSeqs: number[],
+    items: Omit<OutboxItem, 'seq'>[],
+  ): Promise<OutboxItem[]> {
+    const tx = (await this.db).transaction([RECORDS, OUTBOX], 'readwrite');
+    tx.objectStore(RECORDS).delete(recordId);
+    removeSeqs.forEach((seq) => tx.objectStore(OUTBOX).delete(seq));
+    const seqs = await Promise.all(
+      items.map((item) => result(tx.objectStore(OUTBOX).add(item))),
+    );
+    await done(tx);
+    return items.map((item, index) => ({ ...item, seq: Number(seqs[index]) }));
+  }
+
   async removeFromOutbox(seq: number): Promise<void> {
     const tx = (await this.db).transaction(OUTBOX, 'readwrite');
     tx.objectStore(OUTBOX).delete(seq);
@@ -134,6 +160,20 @@ export class MemoryOfflineStorage implements OfflineStorage {
     const stored = { ...item, seq: this.nextSeq++ };
     this.records.set(record.id, record);
     this.outbox.push(stored);
+    return stored;
+  }
+
+  async deleteLocal(
+    recordId: string,
+    removeSeqs: number[],
+    items: Omit<OutboxItem, 'seq'>[],
+  ): Promise<OutboxItem[]> {
+    const stored = items.map((item) => ({ ...item, seq: this.nextSeq++ }));
+    this.records.delete(recordId);
+    this.outbox = [
+      ...this.outbox.filter((item) => !removeSeqs.includes(item.seq)),
+      ...stored,
+    ];
     return stored;
   }
 

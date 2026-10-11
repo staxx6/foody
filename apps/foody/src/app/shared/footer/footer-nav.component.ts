@@ -58,6 +58,13 @@ import { IconComponent } from '../icon.component';
               ><small>{{ t().newSymptomHint }}</small></span
             >
           </button>
+          <button class="row" (click)="selectForm('lists')">
+            <app-icon class="icon" name="list" />
+            <span>
+              <span class="title">{{ t().manageLists }}</span>
+              <small>{{ t().manageListsHint }}</small>
+            </span>
+          </button>
         </section>
       </div>
     }

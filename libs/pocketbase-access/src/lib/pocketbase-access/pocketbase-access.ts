@@ -5,6 +5,7 @@ import {
   DataAccess,
   DataRecord,
   DateRange,
+  DeleteQuery,
   ListQuery,
 } from '../data-access.model';
 import { DATA_ACCESS_CONFIG } from '../data-access.token';
@@ -47,6 +48,13 @@ export class PocketbaseAccessService implements DataAccess {
         updated: String(record['updated']),
       }),
     );
+  }
+
+  async delete({ collectionName, id }: DeleteQuery): Promise<void> {
+    await this.pb.collection(collectionName).delete(id, {
+      requestKey: null,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
   }
 
   getFileUrl(record: DataRecord, fileName: string): string {

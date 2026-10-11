@@ -7,7 +7,8 @@ export type ActiveSite =
   | 'new-meal'
   | 'new-health-entry'
   | 'new-symptom'
-  | 'settings';
+  | 'settings'
+  | 'lists';
 
 @Injectable({ providedIn: 'root' })
 export class UiStore {

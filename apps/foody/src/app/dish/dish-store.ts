@@ -6,6 +6,8 @@ export type Dish = {
   id: string;
   name: string;
   description: string;
+  /** The ingredients belong to the dish and are deleted with it */
+  ingredientIds: string[];
 };
 
 export type NewIngredient = {
@@ -40,6 +42,8 @@ export const DishStore = signalStore(
             id: record.id,
             name: String(record['name'] ?? ''),
             description: String(record['description'] ?? ''),
+            ingredientIds:
+              (record['to_ingredients'] as string[] | undefined) ?? [],
           }),
         });
         patchState(store, { dishes, isLoading: false });
@@ -83,6 +87,8 @@ export const DishStore = signalStore(
           id: record.id,
           name: String(record['name'] ?? ''),
           description: String(record['description'] ?? ''),
+          ingredientIds:
+            (record['to_ingredients'] as string[] | undefined) ?? [],
         }),
       });
       patchState(store, {
@@ -91,6 +97,20 @@ export const DishStore = signalStore(
         ),
       });
       return dish;
+    },
+
+    async deleteDish(id: string): Promise<void> {
+      const dish = store.dishes().find((other) => other.id === id);
+      await dataAccess.delete({ collectionName: 'dishes', id });
+      for (const ingredientId of dish?.ingredientIds ?? []) {
+        await dataAccess.delete({
+          collectionName: 'ingredients',
+          id: ingredientId,
+        });
+      }
+      patchState(store, {
+        dishes: store.dishes().filter((other) => other.id !== id),
+      });
     },
   })),
 );

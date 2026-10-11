@@ -13,7 +13,10 @@ const certDir = join(root, 'certs');
 const HTTPS_PORT = Number(process.env.FOODY_HTTPS_PORT ?? 8443);
 // Plain HTTP only hands out the certificate the phone has to trust
 const HTTP_PORT = Number(process.env.FOODY_HTTP_PORT ?? 8880);
-const POCKETBASE = { host: '127.0.0.1', port: 8090 };
+const POCKETBASE = {
+  host: '127.0.0.1',
+  port: Number(process.env.FOODY_POCKETBASE_PORT ?? 8090),
+};
 const CA_FILE = 'foody-ca.crt';
 
 const MIME_TYPES = {

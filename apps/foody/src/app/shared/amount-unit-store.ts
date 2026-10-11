@@ -61,5 +61,12 @@ export const AmountUnitStore = signalStore(
       });
       return unit;
     },
+
+    async deleteUnit(id: string): Promise<void> {
+      await dataAccess.delete({ collectionName: 'amountUnitET', id });
+      patchState(store, {
+        units: store.units().filter((item) => item.id !== id),
+      });
+    },
   })),
 );

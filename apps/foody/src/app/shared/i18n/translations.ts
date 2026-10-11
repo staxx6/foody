@@ -124,6 +124,27 @@ const en = {
   tapToSend: 'Tap to send',
   offlineHint:
     'Server not reachable. Entries are kept on this device. Tap to retry.',
+
+  // Deleting
+  ok: 'OK',
+  delete: 'Delete',
+  deleteNamed: (name: string) => `Delete ${name}`,
+  deleteTitle: 'Delete permanently?',
+  deleteMessage: (name: string) =>
+    `“${name}” will be deleted on all your devices. This cannot be undone.`,
+  cannotDeleteTitle: 'Cannot be deleted',
+  stillUsed: (name: string, count: number) =>
+    `“${name}” is still used by ${count} ${count === 1 ? 'entry' : 'entries'}. Delete ${count === 1 ? 'it' : 'them'} first.`,
+  deletingFailed: 'Deleting failed',
+
+  // Managing the lists
+  manageLists: 'Manage lists',
+  manageListsHint: 'View and delete foods, dishes, symptoms and units',
+  foods: 'Foods',
+  dishes: 'Dishes',
+  symptoms: 'Symptoms',
+  units: 'Units',
+  emptyList: 'Nothing here yet.',
 };
 
 export type Translations = typeof en;
@@ -240,6 +261,26 @@ const de: Translations = {
   tapToSend: 'Tippen zum Senden',
   offlineHint:
     'Server nicht erreichbar. Einträge bleiben auf diesem Gerät. Tippen zum Wiederholen.',
+
+  ok: 'OK',
+  delete: 'Löschen',
+  deleteNamed: (name) => `${name} löschen`,
+  deleteTitle: 'Endgültig löschen?',
+  deleteMessage: (name) =>
+    `„${name}“ wird auf allen deinen Geräten gelöscht. Das lässt sich nicht rückgängig machen.`,
+  cannotDeleteTitle: 'Löschen nicht möglich',
+  stillUsed: (name, count) =>
+    `„${name}“ wird noch von ${count} ${count === 1 ? 'Eintrag' : 'Einträgen'} verwendet. Lösche ${count === 1 ? 'ihn' : 'sie'} zuerst.`,
+  deletingFailed: 'Löschen fehlgeschlagen',
+
+  manageLists: 'Listen verwalten',
+  manageListsHint:
+    'Lebensmittel, Gerichte, Symptome und Einheiten ansehen und löschen',
+  foods: 'Lebensmittel',
+  dishes: 'Gerichte',
+  symptoms: 'Symptome',
+  units: 'Einheiten',
+  emptyList: 'Noch nichts vorhanden.',
 };
 
 export const TRANSLATIONS = { en, de };

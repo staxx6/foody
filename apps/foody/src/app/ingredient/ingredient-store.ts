@@ -88,5 +88,12 @@ export const IngredientStore = signalStore(
       });
       return item;
     },
+
+    async deleteFoodItem(id: string): Promise<void> {
+      await dataAccess.delete({ collectionName: 'foodItems', id });
+      patchState(store, {
+        foodItems: store.foodItems().filter((item) => item.id !== id),
+      });
+    },
   })),
 );

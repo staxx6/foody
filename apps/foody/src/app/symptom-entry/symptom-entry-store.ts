@@ -107,5 +107,12 @@ export const SymptomEntryStore = signalStore(
         }),
       });
     },
+
+    async deleteSymptomEntry(id: string): Promise<void> {
+      await dataAccess.delete({ collectionName: 'symptomEntries', id });
+      patchState(store, {
+        entries: store.entries().filter((item) => item.id !== id),
+      });
+    },
   })),
 );

@@ -4,6 +4,7 @@ import {
   DataAccess,
   DataRecord,
   DateRange,
+  DeleteQuery,
   ListQuery,
 } from '../data-access.model';
 import { DATA_ACCESS_CONFIG } from '../data-access.token';
@@ -61,6 +62,11 @@ function isNetworkError(error: unknown): boolean {
   return !status || (status >= 502 && status <= 504);
 }
 
+/** The record is already gone, e.g. deleted by another device */
+function isNotFound(error: unknown): boolean {
+  return (error as RequestError)?.status === 404;
+}
+
 /** The record was already created by an earlier attempt */
 function isAlreadyCreated(error: unknown): boolean {
   const { status, response } = (error ?? {}) as RequestError;
@@ -74,7 +80,8 @@ function isAlreadyCreated(error: unknown): boolean {
  * server. New records are queued and sent when the server is reachable;
  * records of other devices are fetched at the same time.
  *
- * Only creating is supported: there are no conflicts to resolve.
+ * Records are created and deleted, never changed: there are no conflicts
+ * to resolve.
  */
 @Injectable({ providedIn: 'root' })
 export class OfflineDataAccessService implements DataAccess {
@@ -175,6 +182,47 @@ export class OfflineDataAccessService implements DataAccess {
     return map(record);
   }
 
+  async delete({ collectionName, id }: DeleteQuery): Promise<void> {
+    await this.ready;
+
+    // A record the server never got does not have to be deleted there,
+    // unless it is being sent right now
+    const unsent = this.outbox.filter(
+      (item) => !item.delete && item.data.id === id,
+    );
+    const isKnownToServer = unsent.length === 0 || this.running !== null;
+
+    const added = await this.storage.deleteLocal(
+      id,
+      unsent.map((item) => item.seq),
+      isKnownToServer ? [{ collectionName, data: { id }, delete: true }] : [],
+    );
+    this.records.delete(id);
+    this.outbox = [
+      ...this.outbox.filter((item) => !unsent.includes(item)),
+      ...added,
+    ];
+    this.pendingCount.set(this.outbox.length);
+
+    void this.sync();
+  }
+
+  /**
+   * How many records of the local copy refer to the record, e.g. the
+   * entries of a food. Deleting it would leave them without it.
+   */
+  async usages(id: string): Promise<number> {
+    await this.ready;
+
+    return [...this.records.values()].filter((record) =>
+      Object.entries(record).some(
+        ([field, value]) =>
+          field !== 'id' &&
+          (value === id || (Array.isArray(value) && value.includes(id))),
+      ),
+    ).length;
+  }
+
   getFileUrl(record: DataRecord, fileName: string): string {
     return this.remote.getFileUrl(record, fileName);
   }
@@ -239,24 +287,37 @@ export class OfflineDataAccessService implements DataAccess {
     while (this.outbox.length > 0) {
       const item = this.outbox[0];
       try {
-        await this.remote.create({
-          collectionName: item.collectionName,
-          data: item.data,
-          map: (record) => record,
-        });
+        if (item.delete) {
+          await this.remote.delete({
+            collectionName: item.collectionName,
+            id: item.data.id,
+          });
+        } else {
+          await this.remote.create({
+            collectionName: item.collectionName,
+            data: item.data,
+            map: (record) => record,
+          });
+        }
       } catch (error) {
         if (isNetworkError(error)) throw error;
-        if (!isAlreadyCreated(error)) {
+        // Repeating a request that already took effect is not a failure
+        const isDone = item.delete
+          ? isNotFound(error)
+          : isAlreadyCreated(error);
+        if (!isDone) {
           const reason = error instanceof Error ? error.message : 'rejected';
+          const action = item.delete ? 'delete' : 'send';
           this.syncError.set(
-            `Could not send a record of "${item.collectionName}": ${reason}`,
+            `Could not ${action} a record of "${item.collectionName}": ${reason}`,
           );
           return false;
         }
       }
 
       await this.storage.removeFromOutbox(item.seq);
-      this.outbox.shift();
+      // By seq: the queue can change while a request is on its way
+      this.outbox = this.outbox.filter((other) => other.seq !== item.seq);
       this.pendingCount.set(this.outbox.length);
     }
     return true;

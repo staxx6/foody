@@ -2,11 +2,13 @@ import { Component, effect, inject, untracked } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { DatePipe } from '@angular/common';
-import { SymptomEntryStore } from './symptom-entry-store';
+import { ConfirmService } from '../shared/confirm/confirm.service';
+import { IconComponent } from '../shared/icon.component';
+import { SymptomEntry, SymptomEntryStore } from './symptom-entry-store';
 
 @Component({
   selector: 'app-symptom-entry-list',
-  imports: [DatePipe],
+  imports: [DatePipe, IconComponent],
   template: `
     @if (symptomEntryStore.error()) {
       <p class="list-message error">{{ symptomEntryStore.error() }}</p>
@@ -31,6 +33,14 @@ import { SymptomEntryStore } from './symptom-entry-store';
                 {{ entry.discomfortLevel }}/100
               </span>
             }
+            <button
+              type="button"
+              class="icon-btn"
+              (click)="remove(entry)"
+              [attr.aria-label]="t().deleteNamed(entry.symptomName)"
+            >
+              <app-icon name="trash" />
+            </button>
           </li>
         }
       </ul>
@@ -45,6 +55,7 @@ export class SymptomEntryListComponent {
   protected readonly t = inject(I18n).t;
   readonly symptomEntryStore = inject(SymptomEntryStore);
   private readonly sync = inject(OfflineDataAccessService);
+  private readonly confirm = inject(ConfirmService);
 
   constructor() {
     // Loads initially and whenever a synchronization changed the data
@@ -52,5 +63,11 @@ export class SymptomEntryListComponent {
       this.sync.revision();
       untracked(() => void this.symptomEntryStore.loadTodayEntries());
     });
+  }
+
+  protected remove(entry: SymptomEntry): Promise<void> {
+    return this.confirm.delete({ id: entry.id, name: entry.symptomName }, () =>
+      this.symptomEntryStore.deleteSymptomEntry(entry.id),
+    );
   }
 }

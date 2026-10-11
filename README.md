@@ -50,8 +50,11 @@ The app works on a local copy of the data in the browser (IndexedDB), see
 - Synchronization runs on start, after creating a record, when the device comes back online, when
   the app becomes visible again and once a minute. The status in the header shows the state and
   triggers it manually.
-- Only creating records is supported, so there are no conflicts to resolve. The same name created
-  on two devices results in two records.
+- Records can be created and deleted, not changed, so there are no conflicts to resolve. The same
+  name created on two devices results in two records; a record deleted on two devices is simply
+  gone.
+- A record that is still referred to by others (e.g. a food with entries) cannot be deleted in the
+  app.
 - The collections that are copied to the device are listed in `apps/foody/src/app/app.config.ts`.
 - A device has to reach the server once before it can be used offline.
 - A service worker (`apps/foody/public/sw.js`) keeps the built app on the device, so it starts

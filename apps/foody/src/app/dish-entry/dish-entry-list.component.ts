@@ -2,11 +2,13 @@ import { Component, effect, inject, untracked } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { DatePipe } from '@angular/common';
-import { DishEntryStore } from './dish-entry-store';
+import { ConfirmService } from '../shared/confirm/confirm.service';
+import { IconComponent } from '../shared/icon.component';
+import { DishEntry, DishEntryStore } from './dish-entry-store';
 
 @Component({
   selector: 'app-dish-entry-list',
-  imports: [DatePipe],
+  imports: [DatePipe, IconComponent],
   template: `
     @if (dishEntryStore.error()) {
       <p class="list-message error">{{ dishEntryStore.error() }}</p>
@@ -24,6 +26,14 @@ import { DishEntryStore } from './dish-entry-store';
                 {{ entry.amount }} {{ i18n.name(entry.amountUnit) }}
               </span>
             }
+            <button
+              type="button"
+              class="icon-btn"
+              (click)="remove(entry)"
+              [attr.aria-label]="t().deleteNamed(entry.name)"
+            >
+              <app-icon name="trash" />
+            </button>
           </li>
         }
       </ul>
@@ -39,6 +49,7 @@ export class DishEntryListComponent {
   protected readonly t = this.i18n.t;
   readonly dishEntryStore = inject(DishEntryStore);
   private readonly sync = inject(OfflineDataAccessService);
+  private readonly confirm = inject(ConfirmService);
 
   constructor() {
     // Loads initially and whenever a synchronization changed the data
@@ -46,5 +57,11 @@ export class DishEntryListComponent {
       this.sync.revision();
       untracked(() => void this.dishEntryStore.loadTodayEntries());
     });
+  }
+
+  protected remove(entry: DishEntry): Promise<void> {
+    return this.confirm.delete(entry, () =>
+      this.dishEntryStore.deleteDishEntry(entry.id),
+    );
   }
 }

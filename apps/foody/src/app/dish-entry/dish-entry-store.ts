@@ -108,5 +108,12 @@ export const DishEntryStore = signalStore(
         }),
       });
     },
+
+    async deleteDishEntry(id: string): Promise<void> {
+      await dataAccess.delete({ collectionName: 'dishEntries', id });
+      patchState(store, {
+        entries: store.entries().filter((item) => item.id !== id),
+      });
+    },
   })),
 );

@@ -54,6 +54,11 @@ export type CreateQuery<T> = {
   map: (record: DataRecord) => T;
 };
 
+export type DeleteQuery = {
+  collectionName: string;
+  id: string;
+};
+
 export interface DataAccess {
   /**
    *
@@ -61,6 +66,7 @@ export interface DataAccess {
    */
   list<T>(query: ListQuery<T>): Promise<T[]>;
   create<T>(query: CreateQuery<T>): Promise<T>;
+  delete(query: DeleteQuery): Promise<void>;
   getFileUrl(record: DataRecord, fileName: string): string;
 }
 

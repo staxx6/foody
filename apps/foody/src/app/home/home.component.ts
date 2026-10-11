@@ -7,6 +7,8 @@ import { UiStore } from '../shared/ui-store';
 import { SyncStatusComponent } from '../shared/sync-status.component';
 import { IconComponent } from '../shared/icon.component';
 import { SettingsComponent } from '../settings/settings.component';
+import { ManageListsComponent } from '../lists/manage-lists.component';
+import { ConfirmDialogComponent } from '../shared/confirm/confirm-dialog.component';
 import { NewFoodItemFormComponent } from '../ingredient/new-food-item-form.component';
 import { NewDishFormComponent } from '../dish/new-dish-form.component';
 import { NewMealFormComponent } from '../dish-entry/new-meal-form.component';
@@ -17,6 +19,8 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
   imports: [
     IconComponent,
     SettingsComponent,
+    ManageListsComponent,
+    ConfirmDialogComponent,
     DishEntryListComponent,
     SymptomEntryListComponent,
     FooterNavComponent,
@@ -59,6 +63,9 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
             (cancelled)="uiStore.goHome()"
           />
         }
+        @case ('lists') {
+          <app-manage-lists />
+        }
         @case ('settings') {
           <app-settings />
         }
@@ -82,6 +89,7 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
     </main>
 
     <app-footer-nav />
+    <app-confirm-dialog />
   `,
   styles: [
     `

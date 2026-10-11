@@ -11,6 +11,7 @@ class FakeServer {
   rejectCollection: string | null = null;
   readonly records: DataRecord[] = [];
   readonly createCalls: string[] = [];
+  readonly deleteCalls: string[] = [];
 
   private assertReachable(): void {
     if (!this.online) throw Object.assign(new Error('offline'), { status: 0 });
@@ -47,6 +48,14 @@ class FakeServer {
     };
     this.records.push(record);
     return map(record);
+  }
+
+  async delete({ id }: { id: string }): Promise<void> {
+    this.assertReachable();
+    this.deleteCalls.push(id);
+    const index = this.records.findIndex((record) => record.id === id);
+    if (index < 0) throw Object.assign(new Error('gone'), { status: 404 });
+    this.records.splice(index, 1);
   }
 
   getFileUrl(): string {
@@ -170,6 +179,104 @@ describe('OfflineDataAccessService', () => {
     expect(item['images']).toEqual([]);
     const { outbox } = await storage.load();
     expect(outbox[0].data['images']).toEqual([photo]);
+  });
+
+  it('should delete offline and tell the server later', async () => {
+    server.records.push(
+      { id: 'a', collectionName: 'foodItems', created: '', updated: '1' },
+      { id: 'b', collectionName: 'foodItems', created: '', updated: '1' },
+    );
+    const service = createService();
+    await service.sync();
+    server.online = false;
+
+    await service.delete({ collectionName: 'foodItems', id: 'a' });
+    await service.sync();
+
+    const ids = () =>
+      service.list({ collectionName: 'foodItems', map: (record) => record.id });
+    expect(await ids()).toEqual(['b']);
+    expect(service.pendingCount()).toBe(1);
+
+    server.online = true;
+    await service.sync();
+
+    expect(server.records.map((record) => record.id)).toEqual(['b']);
+    expect(await ids()).toEqual(['b']);
+    expect(service.pendingCount()).toBe(0);
+  });
+
+  it('should not send a record that was created and deleted offline', async () => {
+    const service = createService();
+    await service.sync();
+    server.online = false;
+    const item = await service.create({
+      collectionName: 'foodItems',
+      data: { name: 'Apple' },
+      map: identity,
+    });
+    await service.sync();
+
+    await service.delete({ collectionName: 'foodItems', id: item.id });
+    server.online = true;
+    await service.sync();
+
+    expect(service.pendingCount()).toBe(0);
+    expect(server.createCalls).toEqual([]);
+    expect(server.deleteCalls).toEqual([]);
+  });
+
+  it('should accept that a record was already deleted elsewhere', async () => {
+    server.records.push({
+      id: 'a',
+      collectionName: 'foodItems',
+      created: '',
+      updated: '1',
+    });
+    const service = createService();
+    await service.sync();
+    server.online = false;
+    await service.delete({ collectionName: 'foodItems', id: 'a' });
+    await service.sync();
+    // Another device deleted it in the meantime
+    server.records.length = 0;
+
+    server.online = true;
+    await service.sync();
+
+    expect(service.pendingCount()).toBe(0);
+    expect(service.syncError()).toBeNull();
+  });
+
+  it('should count the records that refer to a record', async () => {
+    server.records.push(
+      { id: 'food', collectionName: 'foodItems', created: '', updated: '1' },
+      {
+        id: 'e1',
+        collectionName: 'dishEntries',
+        to_foodItem: 'food',
+        created: '',
+        updated: '1',
+      },
+      {
+        id: 'e2',
+        collectionName: 'dishEntries',
+        to_foods: ['x', 'food'],
+        created: '',
+        updated: '1',
+      },
+      {
+        id: 'e3',
+        collectionName: 'dishEntries',
+        to_foodItem: 'other',
+        created: '',
+        updated: '1',
+      },
+    );
+    const service = createService();
+
+    expect(await service.usages('food')).toBe(2);
+    expect(await service.usages('e1')).toBe(0);
   });
 
   it('should send queued records in the order of creation', async () => {
