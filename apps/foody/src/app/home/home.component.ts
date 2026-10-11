@@ -7,6 +7,7 @@ import { UiStore } from '../shared/ui-store';
 import { SyncStatusComponent } from '../shared/sync-status.component';
 import { SettingsComponent } from '../settings/settings.component';
 import { ManageListsComponent } from '../lists/manage-lists.component';
+import { ReportComponent } from '../report/report.component';
 import { ItemDetailsComponent } from '../details/item-details.component';
 import { EditUnitFormComponent } from '../shared/edit-unit-form.component';
 import { ConfirmDialogComponent } from '../shared/confirm/confirm-dialog.component';
@@ -22,6 +23,7 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
   imports: [
     SettingsComponent,
     ManageListsComponent,
+    ReportComponent,
     ItemDetailsComponent,
     EditUnitFormComponent,
     ConfirmDialogComponent,
@@ -108,6 +110,9 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
           }
           @case ('month') {
             <app-month />
+          }
+          @case ('report') {
+            <app-report />
           }
           @case ('lists') {
             <app-manage-lists />

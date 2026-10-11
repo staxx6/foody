@@ -16,6 +16,7 @@ export type ActiveSite =
   | 'view-symptom'
   | 'view-medication'
   | 'month'
+  | 'report'
   | 'settings'
   | 'lists';
 

@@ -165,6 +165,47 @@ const en = {
   symptomType: 'Type',
   symptomLocation: 'Location',
 
+  // Report
+  period: 'Period',
+  periodFrom: 'From',
+  periodTo: 'To',
+  lastDays: (days: number) => `Last ${days} days`,
+  timeSpan: 'Symptoms within',
+  hours: (hours: number) => `${hours} h`,
+  timeSpanHint:
+    'Symptoms count for a meal if they start within this time after it.',
+  possibleTriggers: 'Possible triggers',
+  notEnoughData:
+    'There are no meals or no symptoms in this period, so there is nothing to compare.',
+  reportSummary: (
+    meals: number,
+    complaints: number,
+    percent: number,
+    hours: number,
+  ) =>
+    `${meals} meals and ${complaints} symptom entries. Symptoms followed ${percent} % of all meals within ${hours} hours.`,
+  followedBy: (followed: number, eaten: number) =>
+    `Symptoms followed ${followed} of ${eaten} times:`,
+  followedShort: (followed: number, eaten: number) => `${followed} of ${eaten}`,
+  eatenBefore: (preceded: number, complaints: number) =>
+    `Eaten before ${preceded} of ${complaints} symptom entries.`,
+  usualShare: (percent: number) => `Usual for all meals: ${percent} %`,
+  nothingConspicuous:
+    'Nothing stands out: no food is followed by symptoms clearly more often than meals in general.',
+  conspicuous: 'Conspicuous',
+  unremarkable: 'Unremarkable',
+  unremarkableHint: 'Not followed by symptoms more often than usual.',
+  tooFewData: 'Too little data',
+  tooFewDataHint: 'Eaten fewer than 3 times, which is too few to judge.',
+  reportNote:
+    'This shows what coincides, not what causes it. Foods eaten together cannot be told apart, and a few entries can be a coincidence. It does not replace medical advice.',
+  export: 'Export',
+  exportHint:
+    'All meals, medications and symptoms of the period as one Excel table, day by day.',
+  weekday: 'Weekday',
+  mealName: 'Food',
+  exportExcel: 'Export to Excel',
+
   // Settings
   appearance: 'Appearance',
   language: 'Language',
@@ -384,6 +425,42 @@ const de: Translations = {
   neverLogged: 'Noch nie eingetragen.',
   symptomType: 'Art',
   symptomLocation: 'Körperstelle',
+
+  period: 'Zeitraum',
+  periodFrom: 'Von',
+  periodTo: 'Bis',
+  lastDays: (days) => `Letzte ${days} Tage`,
+  timeSpan: 'Beschwerden innerhalb von',
+  hours: (hours) => `${hours} Std.`,
+  timeSpanHint:
+    'Beschwerden zählen zu einer Mahlzeit, wenn sie in dieser Zeit danach beginnen.',
+  possibleTriggers: 'Mögliche Auslöser',
+  notEnoughData:
+    'In diesem Zeitraum gibt es keine Mahlzeiten oder keine Symptome, es lässt sich also nichts vergleichen.',
+  reportSummary: (meals, complaints, percent, hours) =>
+    `${meals} Mahlzeiten und ${complaints} Symptom-Einträge. Nach ${percent} % aller Mahlzeiten folgten innerhalb von ${hours} Stunden Beschwerden.`,
+  followedBy: (followed, eaten) =>
+    `Nach ${followed} von ${eaten} Mal folgten Beschwerden:`,
+  followedShort: (followed, eaten) => `${followed} von ${eaten}`,
+  eatenBefore: (preceded, complaints) =>
+    `Vor ${preceded} von ${complaints} Symptom-Einträgen gegessen.`,
+  usualShare: (percent) => `Üblich bei allen Mahlzeiten: ${percent} %`,
+  nothingConspicuous:
+    'Nichts fällt auf: Auf kein Lebensmittel folgen deutlich öfter Beschwerden als auf Mahlzeiten allgemein.',
+  conspicuous: 'Auffällig',
+  unremarkable: 'Unauffällig',
+  unremarkableHint: 'Danach folgen nicht öfter Beschwerden als üblich.',
+  tooFewData: 'Zu wenig Daten',
+  tooFewDataHint:
+    'Weniger als 3-mal gegessen, das reicht nicht für eine Einschätzung.',
+  reportNote:
+    'Das zeigt, was zusammen auftritt, nicht was die Ursache ist. Lebensmittel, die zusammen gegessen werden, lassen sich nicht unterscheiden, und wenige Einträge können Zufall sein. Es ersetzt keinen ärztlichen Rat.',
+  export: 'Export',
+  exportHint:
+    'Alle Mahlzeiten, Medikamente und Symptome des Zeitraums als eine Excel-Tabelle, Tag für Tag.',
+  weekday: 'Wochentag',
+  mealName: 'Essen',
+  exportExcel: 'Als Excel exportieren',
 
   appearance: 'Darstellung',
   language: 'Sprache',

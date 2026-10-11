@@ -104,8 +104,8 @@ import { IconComponent } from '../icon.component';
       <app-footer-button
         [label]="t().report"
         icon="report"
-        [active]="false"
-        disabled
+        [active]="uiStore.isActive('report')"
+        (clicked)="selectForm('report')"
       />
       <app-footer-button
         [label]="t().settings"
