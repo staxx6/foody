@@ -7,6 +7,7 @@ import { UiStore } from '../shared/ui-store';
 import { SyncStatusComponent } from '../shared/sync-status.component';
 import { SettingsComponent } from '../settings/settings.component';
 import { ManageListsComponent } from '../lists/manage-lists.component';
+import { ItemDetailsComponent } from '../details/item-details.component';
 import { EditUnitFormComponent } from '../shared/edit-unit-form.component';
 import { ConfirmDialogComponent } from '../shared/confirm/confirm-dialog.component';
 import { NewFoodItemFormComponent } from '../ingredient/new-food-item-form.component';
@@ -21,6 +22,7 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
   imports: [
     SettingsComponent,
     ManageListsComponent,
+    ItemDetailsComponent,
     EditUnitFormComponent,
     ConfirmDialogComponent,
     DayComponent,
@@ -84,6 +86,18 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
           }
           @case ('new-medication-entry') {
             <app-log-medication-form [editId]="page.editId" />
+          }
+          @case ('view-food') {
+            <app-item-details kind="food" [id]="page.editId ?? ''" />
+          }
+          @case ('view-dish') {
+            <app-item-details kind="dish" [id]="page.editId ?? ''" />
+          }
+          @case ('view-symptom') {
+            <app-item-details kind="symptom" [id]="page.editId ?? ''" />
+          }
+          @case ('view-medication') {
+            <app-item-details kind="medication" [id]="page.editId ?? ''" />
           }
           @case ('edit-unit') {
             <app-edit-unit-form

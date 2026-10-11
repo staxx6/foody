@@ -7,6 +7,9 @@ import { LocalizedName, toLocalizedName } from '../shared/i18n/i18n';
 export type DishEntry = {
   id: string;
   name: string;
+  /** What was eaten: one of the two is set */
+  foodItemId: string;
+  dishId: string;
   amount: string | null;
   amountUnit: LocalizedName | null;
   imageUrl: string | null;
@@ -73,6 +76,8 @@ export const DishEntryStore = signalStore(
             return {
               id: record.id,
               name,
+              foodItemId: String(record['to_foodItem'] ?? ''),
+              dishId: String(record['to_dish'] ?? ''),
               amount: record['amount'] ? String(record['amount']) : null,
               amountUnit: expand?.['to_amountUnit']
                 ? toLocalizedName(expand['to_amountUnit'])
@@ -111,6 +116,8 @@ export const DishEntryStore = signalStore(
         map: (record) => ({
           id: record.id,
           name: '',
+          foodItemId: String(record['to_foodItem'] ?? ''),
+          dishId: String(record['to_dish'] ?? ''),
           amount: record['amount'] ? String(record['amount']) : null,
           amountUnit: null,
           imageUrl: null,

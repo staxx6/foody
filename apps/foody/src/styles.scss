@@ -185,6 +185,26 @@ textarea {
   overflow-wrap: break-word;
 }
 
+/* A name that leads to the details of what it names */
+button.name {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.name:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+button.name:disabled {
+  cursor: default;
+}
+
 .entry img {
   flex: none;
   width: 40px;

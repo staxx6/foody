@@ -11,6 +11,10 @@ export type ActiveSite =
   | 'new-medication'
   | 'new-medication-entry'
   | 'edit-unit'
+  | 'view-food'
+  | 'view-dish'
+  | 'view-symptom'
+  | 'view-medication'
   | 'month'
   | 'settings'
   | 'lists';
@@ -36,26 +40,32 @@ export class UiStore {
   }));
 
   /** Where closing the form leads back to */
-  private returnTo: ActiveSite = 'today';
+  private returnTo: { form: ActiveSite; id: string | null } = {
+    form: 'today',
+    id: null,
+  };
 
   showForm(form: ActiveSite): void {
-    this.open(form, null, 'today');
+    this.open(form, null);
   }
 
-  /** Opens the form of a record; closing it leads back to the current page */
+  /**
+   * Opens the form or the details of a record; closing it leads back to
+   * the current page
+   */
   edit(form: ActiveSite, id: string): void {
-    this.open(form, id, this.activeForm());
+    this.open(form, id, { form: this.activeForm(), id: this.editId() });
   }
 
   /** Leaves a form */
   close(): void {
-    this.open(this.returnTo, null, 'today');
+    this.open(this.returnTo.form, this.returnTo.id);
   }
 
   /** Shows what was logged on a day */
   showDay(day: Date): void {
     this.selectedDay.set(startOfDay(day));
-    this.open('today', null, 'today');
+    this.open('today', null);
   }
 
   /** Shows today */
@@ -67,7 +77,14 @@ export class UiStore {
     return this.activeForm() === activeForm;
   }
 
-  private open(form: ActiveSite, id: string | null, returnTo: ActiveSite) {
+  private open(
+    form: ActiveSite,
+    id: string | null,
+    returnTo: { form: ActiveSite; id: string | null } = {
+      form: 'today',
+      id: null,
+    },
+  ) {
     this.returnTo = returnTo;
     this.editId.set(id);
     this.activeForm.set(form);

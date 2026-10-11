@@ -25,12 +25,18 @@ import {
               <img [src]="entry.imageUrl" alt="" />
             }
             <span class="content">
-              <span class="name">
+              <button
+                type="button"
+                class="name"
+                [disabled]="!entry.medicationId"
+                (click)="uiStore.edit('view-medication', entry.medicationId)"
+                [title]="t().showDetails"
+              >
                 {{ entry.name }}
                 @if (entry.strength) {
                   <span class="strength">{{ entry.strength }}</span>
                 }
-              </span>
+              </button>
               @if (entry.amount !== null) {
                 <span class="chip">
                   {{ entry.amount }} {{ i18n.name(entry.amountUnit) }}

@@ -22,7 +22,15 @@ import { SymptomEntry, SymptomEntryStore } from './symptom-entry-store';
               <img [src]="url" alt="" />
             }
             <span class="content">
-              <span class="name">{{ entry.symptomName }}</span>
+              <button
+                type="button"
+                class="name"
+                [disabled]="!entry.symptomId"
+                (click)="uiStore.edit('view-symptom', entry.symptomId)"
+                [title]="t().showDetails"
+              >
+                {{ entry.symptomName }}
+              </button>
               @if (entry.discomfortLevel !== null) {
                 <span
                   class="chip"

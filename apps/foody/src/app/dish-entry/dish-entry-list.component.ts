@@ -22,7 +22,20 @@ import { DishEntry, DishEntryStore } from './dish-entry-store';
               <img [src]="entry.imageUrl" alt="" />
             }
             <span class="content">
-              <span class="name">{{ entry.name }}</span>
+              <button
+                type="button"
+                class="name"
+                [disabled]="!entry.dishId && !entry.foodItemId"
+                (click)="
+                  uiStore.edit(
+                    entry.dishId ? 'view-dish' : 'view-food',
+                    entry.dishId || entry.foodItemId
+                  )
+                "
+                [title]="t().showDetails"
+              >
+                {{ entry.name }}
+              </button>
               @if (entry.amount !== null) {
                 <span class="chip">
                   {{ entry.amount }} {{ i18n.name(entry.amountUnit) }}

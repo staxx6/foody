@@ -155,6 +155,16 @@ const en = {
   dayMedications: (count: number) =>
     `${count} ${count === 1 ? 'medication' : 'medications'}`,
 
+  // Details of a food, dish, symptom or medication
+  edit: 'Edit',
+  showDetails: 'Show details',
+  logged: 'Logged',
+  timesLogged: (count: number) =>
+    `Logged ${count} ${count === 1 ? 'time' : 'times'}, most recently:`,
+  neverLogged: 'Not logged yet.',
+  symptomType: 'Type',
+  symptomLocation: 'Location',
+
   // Settings
   appearance: 'Appearance',
   language: 'Language',
@@ -366,6 +376,14 @@ const de: Translations = {
   medicationTaken: 'Medikament genommen',
   dayMedications: (count) =>
     `${count} ${count === 1 ? 'Medikament' : 'Medikamente'}`,
+
+  edit: 'Bearbeiten',
+  showDetails: 'Details anzeigen',
+  logged: 'Eingetragen',
+  timesLogged: (count) => `${count}-mal eingetragen, zuletzt:`,
+  neverLogged: 'Noch nie eingetragen.',
+  symptomType: 'Art',
+  symptomLocation: 'Körperstelle',
 
   appearance: 'Darstellung',
   language: 'Sprache',

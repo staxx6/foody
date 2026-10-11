@@ -7,6 +7,7 @@ import { LocalizedName, toLocalizedName } from '../shared/i18n/i18n';
 /** A medication that was taken, as shown in the list of a day */
 export type MedicationEntry = {
   id: string;
+  medicationId: string;
   name: string;
   strength: string;
   amount: string | null;
@@ -70,6 +71,7 @@ export const MedicationEntryStore = signalStore(
 
             return {
               id: record.id,
+              medicationId: String(record['to_medication'] ?? ''),
               name: String(medication?.['name'] ?? '–'),
               strength: String(medication?.['strength'] ?? ''),
               amount: record['amount'] ? String(record['amount']) : null,

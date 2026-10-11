@@ -5,6 +5,7 @@ import { dayRange } from '../shared/date-utils';
 
 export type SymptomEntry = {
   id: string;
+  symptomId: string;
   symptomName: string;
   discomfortLevel: number | null;
   locationImageUrls: string[];
@@ -69,6 +70,7 @@ export const SymptomEntryStore = signalStore(
 
             return {
               id: record.id,
+              symptomId: String(record['to_symptom'] ?? ''),
               symptomName: String(symptom?.['name'] ?? '-'),
               discomfortLevel: Number(record['discomfortLevel']) || null,
               locationImageUrls,
@@ -103,6 +105,7 @@ export const SymptomEntryStore = signalStore(
         data,
         map: (record) => ({
           id: record.id,
+          symptomId: String(record['to_symptom'] ?? ''),
           symptomName: '',
           discomfortLevel:
             record['discomfortLevel'] != null
