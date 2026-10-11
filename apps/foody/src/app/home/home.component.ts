@@ -1,9 +1,12 @@
+import { DatePipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { DishEntryListComponent } from '../dish-entry/dish-entry-list.component';
 import { SymptomEntryListComponent } from '../symptom-entry/symptom-entry-list.component';
 import { FooterNavComponent } from '../shared/footer/footer-nav.component';
 import { UiStore } from '../shared/ui-store';
 import { SyncStatusComponent } from '../shared/sync-status.component';
+import { IconComponent } from '../shared/icon.component';
+import { SettingsComponent } from '../settings/settings.component';
 import { NewFoodItemFormComponent } from '../ingredient/new-food-item-form.component';
 import { NewDishFormComponent } from '../dish/new-dish-form.component';
 import { NewMealFormComponent } from '../dish-entry/new-meal-form.component';
@@ -12,6 +15,9 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
 
 @Component({
   imports: [
+    DatePipe,
+    IconComponent,
+    SettingsComponent,
     DishEntryListComponent,
     SymptomEntryListComponent,
     FooterNavComponent,
@@ -45,15 +51,23 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
         @case ('new-symptom') {
           <app-new-symptom-form />
         }
+        @case ('settings') {
+          <app-settings />
+        }
         @default {
+          <div class="day">
+            <span class="day-label">Today</span>
+            <span class="day-date">{{ today | date: 'EEEE, d MMMM' }}</span>
+          </div>
+
           <section>
-            <h2>Meals</h2>
-            <app-dish-entry-list />
+            <h2><app-icon name="meal" /> Meals</h2>
+            <app-dish-entry-list class="card" />
           </section>
 
           <section>
-            <h2>Health</h2>
-            <app-symptom-entry-list />
+            <h2><app-icon name="symptom" /> Health</h2>
+            <app-symptom-entry-list class="card" />
           </section>
         }
       }
@@ -75,43 +89,67 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
         justify-content: space-between;
         position: sticky;
         top: 0;
-        background: #fff;
-        border-bottom: 1px solid #e0e0e0;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
         padding: 12px 16px;
         z-index: 10;
       }
 
       h1 {
         margin: 0;
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #4caf50;
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--primary);
       }
 
       main {
         flex: 1;
-        padding: 16px;
-        padding-bottom: calc(72px + env(safe-area-inset-bottom));
+        padding: 20px 16px;
+        padding-bottom: calc(96px + env(safe-area-inset-bottom));
         display: flex;
         flex-direction: column;
         gap: 24px;
         max-width: 640px;
         width: 100%;
         margin: 0 auto;
-        box-sizing: border-box;
+      }
+
+      .day {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .day-label {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .day-date {
+        font-size: 0.9rem;
+        color: var(--text-muted);
       }
 
       h2 {
-        margin: 0 0 8px;
-        font-size: 1rem;
-        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 0 8px 4px;
+        font-size: 0.8rem;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #888;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+      }
+
+      .card {
+        display: block;
+        overflow: hidden;
       }
     `,
   ],
 })
 export class HomeComponent {
   readonly uiStore = inject(UiStore);
+  protected readonly today = new Date();
 }

@@ -5,35 +5,52 @@ import { IngredientStore } from '../ingredient/ingredient-store';
 import { DishStore } from '../dish/dish-store';
 import { AmountUnitStore } from '../shared/amount-unit-store';
 import { UiStore } from '../shared/ui-store';
+import { IconComponent } from '../shared/icon.component';
 import { QuickAddComponent } from '../shared/quick-add.component';
-import { toDateTimeLocalValue, toPocketBaseDate } from '../shared/date-utils';
+import {
+  fromDateAndTime,
+  toDateInputValue,
+  toPocketBaseDate,
+  toTimeInputValue,
+} from '../shared/date-utils';
 
 type SourceType = 'food-item' | 'dish';
 
+// Most entries are a single piece of something
+const DEFAULT_AMOUNT = '1';
+const DEFAULT_UNIT_CODE = 'piece';
+
 @Component({
   selector: 'app-new-meal-form',
-  imports: [FormsModule, QuickAddComponent],
+  imports: [FormsModule, IconComponent, QuickAddComponent],
   template: `
     <div class="form-header">
-      <button class="back-btn" (click)="cancel()">← Back</button>
+      <button
+        type="button"
+        class="back-btn"
+        (click)="cancel()"
+        aria-label="Back"
+      >
+        <app-icon name="back" />
+      </button>
       <h2>Log Meal</h2>
     </div>
 
-    <form (ngSubmit)="save()">
+    <form class="card" (ngSubmit)="save()">
       <div class="field">
         <span class="label">Type</span>
         <div class="toggle" role="group">
           <button
             type="button"
             [class.active]="sourceType === 'food-item'"
-            (click)="sourceType = 'food-item'; selectedSourceId = ''"
+            (click)="sourceType = 'food-item'; selectedSourceId.set('')"
           >
             Food Item
           </button>
           <button
             type="button"
             [class.active]="sourceType === 'dish'"
-            (click)="sourceType = 'dish'; selectedSourceId = ''"
+            (click)="sourceType = 'dish'; selectedSourceId.set('')"
           >
             Dish
           </button>
@@ -76,12 +93,12 @@ type SourceType = 'food-item' | 'dish';
         }
       </div>
 
-      <div class="field row">
-        <div class="field-inner">
+      <div class="field-row">
+        <div class="field">
           <label for="amount">Amount *</label>
           <input id="amount" name="amount" [(ngModel)]="amount" required />
         </div>
-        <div class="field-inner">
+        <div class="field">
           <label for="unit">Unit *</label>
           <select id="unit" name="unit" [(ngModel)]="amountUnitId" required>
             <option value="">—</option>
@@ -91,22 +108,29 @@ type SourceType = 'food-item' | 'dish';
           </select>
         </div>
       </div>
-      <app-quick-add
-        class="unit-add"
-        label="unit"
-        placeholder="e.g. ml"
-        [create]="addUnit"
-      />
+      <app-quick-add label="unit" placeholder="e.g. ml" [create]="addUnit" />
 
-      <div class="field">
-        <label for="date">Date *</label>
-        <input
-          type="datetime-local"
-          id="date"
-          name="date"
-          [(ngModel)]="date"
-          required
-        />
+      <div class="field-row">
+        <div class="field">
+          <label for="date">Day *</label>
+          <input
+            type="date"
+            id="date"
+            name="date"
+            [(ngModel)]="date"
+            required
+          />
+        </div>
+        <div class="field">
+          <label for="time">Time *</label>
+          <input
+            type="time"
+            id="time"
+            name="time"
+            [(ngModel)]="time"
+            required
+          />
+        </div>
       </div>
 
       @if (error()) {
@@ -123,147 +147,6 @@ type SourceType = 'food-item' | 'dish';
       </div>
     </form>
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-      }
-
-      .form-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 24px;
-      }
-
-      .back-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: #4caf50;
-        font-size: 0.95rem;
-        padding: 0;
-      }
-
-      h2 {
-        margin: 0;
-        font-size: 1.1rem;
-      }
-
-      .field {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin-bottom: 16px;
-      }
-
-      .field.row {
-        flex-direction: row;
-        gap: 12px;
-        align-items: flex-end;
-        margin-bottom: 4px;
-      }
-
-      .unit-add {
-        margin-bottom: 16px;
-      }
-
-      .field-inner {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        flex: 1;
-      }
-
-      label,
-      .label {
-        font-size: 0.85rem;
-        color: #666;
-        font-weight: 500;
-      }
-
-      .label {
-        display: block;
-        margin-bottom: 4px;
-      }
-
-      input,
-      select,
-      textarea {
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 10px 12px;
-        font-size: 1rem;
-        outline: none;
-        font-family: inherit;
-        background: #fff;
-      }
-
-      input:focus,
-      select:focus {
-        border-color: #4caf50;
-      }
-
-      .toggle {
-        display: flex;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        overflow: hidden;
-      }
-
-      .toggle button {
-        flex: 1;
-        padding: 10px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 0.9rem;
-        color: #666;
-      }
-
-      .toggle button.active {
-        background: #4caf50;
-        color: #fff;
-      }
-
-      .error {
-        color: #e53935;
-        font-size: 0.85rem;
-      }
-
-      .actions {
-        display: flex;
-        gap: 12px;
-        margin-top: 24px;
-      }
-
-      button[type='submit'] {
-        flex: 1;
-        padding: 12px;
-        background: #4caf50;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        cursor: pointer;
-      }
-
-      button[type='submit']:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .secondary {
-        flex: 1;
-        padding: 12px;
-        background: none;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 1rem;
-        cursor: pointer;
-      }
-    `,
-  ],
 })
 export class NewMealFormComponent implements OnInit {
   readonly ingredientStore = inject(IngredientStore);
@@ -273,10 +156,12 @@ export class NewMealFormComponent implements OnInit {
   private readonly uiStore = inject(UiStore);
 
   sourceType: SourceType = 'food-item';
-  selectedSourceId = '';
-  amount = '';
-  amountUnitId = '';
-  date = toDateTimeLocalValue(new Date());
+  // Signals, as they are also set after loading and creating options
+  readonly selectedSourceId = signal('');
+  amount = DEFAULT_AMOUNT;
+  readonly amountUnitId = signal('');
+  date = toDateInputValue(new Date());
+  time = toTimeInputValue(new Date());
 
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
@@ -284,31 +169,40 @@ export class NewMealFormComponent implements OnInit {
   ngOnInit(): void {
     this.ingredientStore.loadFoodItems();
     this.dishStore.loadDishes();
-    this.amountUnitStore.loadUnits();
+    void this.selectDefaultUnit();
+  }
+
+  private async selectDefaultUnit(): Promise<void> {
+    await this.amountUnitStore.loadUnits();
+    const unit = this.amountUnitStore
+      .units()
+      .find(({ code }) => code === DEFAULT_UNIT_CODE);
+    if (unit && !this.amountUnitId()) this.amountUnitId.set(unit.id);
   }
 
   isValid(): boolean {
     return (
-      !!this.selectedSourceId &&
+      !!this.selectedSourceId() &&
       !!this.amount.trim() &&
-      !!this.amountUnitId &&
-      !!this.date
+      !!this.amountUnitId() &&
+      !!this.date &&
+      !!this.time
     );
   }
 
   readonly addFoodItem = async (name: string): Promise<void> => {
     const item = await this.ingredientStore.createFoodItem(name, '');
-    this.selectedSourceId = item.id;
+    this.selectedSourceId.set(item.id);
   };
 
   readonly addDish = async (name: string): Promise<void> => {
     const dish = await this.dishStore.createDish(name, '');
-    this.selectedSourceId = dish.id;
+    this.selectedSourceId.set(dish.id);
   };
 
   readonly addUnit = async (name: string): Promise<void> => {
     const unit = await this.amountUnitStore.createUnit(name);
-    this.amountUnitId = unit.id;
+    this.amountUnitId.set(unit.id);
   };
 
   cancel(): void {
@@ -321,12 +215,13 @@ export class NewMealFormComponent implements OnInit {
     this.error.set(null);
     try {
       await this.dishEntryStore.createDishEntry({
-        date: toPocketBaseDate(new Date(this.date)),
+        date: toPocketBaseDate(fromDateAndTime(this.date, this.time)),
         amount: this.amount.trim(),
-        amountUnitId: this.amountUnitId,
+        amountUnitId: this.amountUnitId(),
         foodItemId:
-          this.sourceType === 'food-item' ? this.selectedSourceId : undefined,
-        dishId: this.sourceType === 'dish' ? this.selectedSourceId : undefined,
+          this.sourceType === 'food-item' ? this.selectedSourceId() : undefined,
+        dishId:
+          this.sourceType === 'dish' ? this.selectedSourceId() : undefined,
       });
       this.uiStore.goHome();
     } catch (err) {

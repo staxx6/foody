@@ -1,11 +1,26 @@
 import { DateRange } from '@foody/pocketbase-access';
 
 /**
- * Value for an `<input type="datetime-local">`, which works with local time
+ * Local day as value for an `<input type="date">`
  */
-export function toDateTimeLocalValue(date: Date): string {
+export function toDateInputValue(date: Date): string {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
+  return local.toISOString().slice(0, 10);
+}
+
+/**
+ * Local time as value for an `<input type="time">`
+ */
+export function toTimeInputValue(date: Date): string {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(11, 16);
+}
+
+/**
+ * The point in time of the values of a date and a time input
+ */
+export function fromDateAndTime(date: string, time: string): Date {
+  return new Date(`${date}T${time}`);
 }
 
 /**

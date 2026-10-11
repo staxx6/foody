@@ -7,45 +7,38 @@ import { SymptomEntryStore } from './symptom-entry-store';
   selector: 'app-symptom-entry-list',
   imports: [DatePipe],
   template: `
-    @if (symptomEntryStore.isLoading()) {
-      <p>Lade Symptome...</p>
-    } @else if (symptomEntryStore.error()) {
-      <p>Fehler: {{ symptomEntryStore.error() }}</p>
-    } @else if (symptomEntryStore.entries().length === 0) {
-      <p>Keine Symptome für heute.</p>
-    } @else {
-      <ul>
+    @if (symptomEntryStore.error()) {
+      <p class="list-message error">{{ symptomEntryStore.error() }}</p>
+    } @else if (symptomEntryStore.entries().length > 0) {
+      <ul class="entry-list">
         @for (entry of symptomEntryStore.entries(); track entry.id) {
-          <li>
-            @if (entry.locationImageUrls.length > 0) {
-              <span class="locations">
-                @for (url of entry.locationImageUrls; track url) {
-                  <img [src]="url" alt="Symptom-Location" />
-                }
+          <li class="entry">
+            <span class="time">{{ entry.date | date: 'HH:mm' }}</span>
+            @for (url of entry.locationImageUrls; track url) {
+              <img [src]="url" alt="" />
+            }
+            <span class="name">{{ entry.symptomName }}</span>
+            @if (entry.discomfortLevel !== null) {
+              <span
+                class="chip"
+                [class.medium]="
+                  entry.discomfortLevel > 33 && entry.discomfortLevel <= 66
+                "
+                [class.high]="entry.discomfortLevel > 66"
+                title="Discomfort level"
+              >
+                {{ entry.discomfortLevel }}/100
               </span>
             }
-            {{ entry.symptomName }}
-            @if (entry.discomfortLevel !== null) {
-              – {{ entry.discomfortLevel }}/100
-            }
-            <span>({{ entry.date | date: 'HH:mm' }})</span>
           </li>
         }
       </ul>
+    } @else if (symptomEntryStore.isLoading()) {
+      <p class="list-message">Loading…</p>
+    } @else {
+      <p class="list-message">No symptoms logged today.</p>
     }
   `,
-  styles: [
-    `
-      .locations img {
-        width: 40px;
-        height: 40px;
-        object-fit: cover;
-        border-radius: 4px;
-        vertical-align: middle;
-        margin-left: 4px;
-      }
-    `,
-  ],
 })
 export class SymptomEntryListComponent {
   readonly symptomEntryStore = inject(SymptomEntryStore);

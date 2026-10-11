@@ -1,22 +1,369 @@
-/* You can add global styles to this file, and also import other style files */
+@use 'sass:list';
 
-*, *::before, *::after { box-sizing: border-box; }
+/* Design tokens and the styles shared by all pages */
 
-html, body {
+/*
+ * Theme and accent are selected in the settings (see settings-store.ts),
+ * which sets data-theme and data-accent on the root element.
+ */
+
+:root {
+  color-scheme: light;
+  --bg: #f5f6f8;
+  --surface: #fff;
+  --border: #e3e6eb;
+  --text: #1c2026;
+  --text-muted: #667080;
+  --on-primary: #fff;
+  --danger: #c62828;
+  --danger-soft: #fdecea;
+  --warning: #a85f00;
+  --warning-soft: #fff3e0;
+  --success: #2e7d32;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 2px rgba(20, 24, 31, 0.06), 0 4px 12px rgba(20, 24, 31, 0.05);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #111418;
+  --surface: #1a1e24;
+  --border: #2b313a;
+  --text: #e8eaee;
+  --text-muted: #98a2b0;
+  --on-primary: #12151a;
+  --danger: #ff8a80;
+  --danger-soft: #3a1d1c;
+  --warning: #ffb74d;
+  --warning-soft: #3a2a12;
+  --success: #81c784;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* The accents; elements with data-accent show that accent (color picker) */
+$accents: (
+  'indigo': (
+    #4f46e5,
+    #a5abff,
+  ),
+  'teal': (
+    #0f766e,
+    #4fd1c5,
+  ),
+  'coral': (
+    #d1492e,
+    #ff9580,
+  ),
+  'plum': (
+    #9333a8,
+    #dba3f0,
+  ),
+  'green': (
+    #2e7d32,
+    #81c784,
+  ),
+);
+
+@each $name, $colors in $accents {
+  [data-accent='#{$name}'] {
+    --primary: #{list.nth($colors, 1)};
+  }
+
+  [data-theme='dark'][data-accent='#{$name}'],
+  [data-theme='dark'] [data-accent='#{$name}'] {
+    --primary: #{list.nth($colors, 2)};
+  }
+}
+
+:root,
+[data-accent] {
+  --primary-hover: color-mix(in srgb, var(--primary) 85%, var(--text));
+  --primary-soft: color-mix(in srgb, var(--primary) 12%, var(--surface));
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
   margin: 0;
   padding: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
   font-size: 16px;
-  background: #f5f5f5;
-  color: #222;
+  line-height: 1.4;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
 }
 
-li, ol, ul {
+li,
+ol,
+ul {
   margin: 0;
   padding: 0;
 }
 
-ol, ul {
-	list-style: none;
+ol,
+ul {
+  list-style: none;
 }
 
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Card: the white surface the content sits on */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+/* Lists of the entries of a day */
+
+.entry-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.entry + .entry {
+  border-top: 1px solid var(--border);
+}
+
+.entry .time {
+  flex: none;
+  width: 3rem;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.entry .name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.entry img {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.chip {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip.medium {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.chip.high {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.list-message {
+  margin: 0;
+  padding: 20px 16px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.list-message.error {
+  color: var(--danger);
+}
+
+/* Forms */
+
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.form-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+form.card {
+  padding: 20px 16px;
+}
+
+form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+form .field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+form .field-row .field {
+  margin-bottom: 6px;
+}
+
+form .field-row + app-quick-add {
+  margin-bottom: 18px;
+}
+
+form label,
+form .label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+form input,
+form select,
+form textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+  outline: none;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+form textarea {
+  resize: vertical;
+}
+
+form input:focus,
+form select:focus,
+form textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+form .toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+form .toggle button {
+  min-height: 36px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+form .toggle button.active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+form .error {
+  margin: 0 0 12px;
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+form .actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+form .actions button {
+  min-height: 48px;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+form .actions button[type='submit'] {
+  border: none;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+form .actions button[type='submit']:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+form .actions button[type='submit']:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+form .actions .secondary {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}

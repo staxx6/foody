@@ -3,19 +3,32 @@ import { FormsModule } from '@angular/forms';
 import { SymptomEntryStore } from './symptom-entry-store';
 import { SymptomStore } from './symptom-store';
 import { UiStore } from '../shared/ui-store';
+import { IconComponent } from '../shared/icon.component';
 import { QuickAddComponent } from '../shared/quick-add.component';
-import { toDateTimeLocalValue, toPocketBaseDate } from '../shared/date-utils';
+import {
+  fromDateAndTime,
+  toDateInputValue,
+  toPocketBaseDate,
+  toTimeInputValue,
+} from '../shared/date-utils';
 
 @Component({
   selector: 'app-new-health-entry-form',
-  imports: [FormsModule, QuickAddComponent],
+  imports: [FormsModule, IconComponent, QuickAddComponent],
   template: `
     <div class="form-header">
-      <button class="back-btn" (click)="cancel()">← Back</button>
+      <button
+        type="button"
+        class="back-btn"
+        (click)="cancel()"
+        aria-label="Back"
+      >
+        <app-icon name="back" />
+      </button>
       <h2>Log Symptom</h2>
     </div>
 
-    <form (ngSubmit)="save()">
+    <form class="card" (ngSubmit)="save()">
       <div class="field">
         <label for="symptom">Symptom *</label>
         <select id="symptom" name="symptom" [(ngModel)]="symptomId" required>
@@ -46,12 +59,36 @@ import { toDateTimeLocalValue, toPocketBaseDate } from '../shared/date-utils';
 
       <div class="field">
         <label for="comment">Comment</label>
-        <textarea id="comment" name="comment" [(ngModel)]="comment" rows="3" placeholder="optional"></textarea>
+        <textarea
+          id="comment"
+          name="comment"
+          [(ngModel)]="comment"
+          rows="3"
+          placeholder="optional"
+        ></textarea>
       </div>
 
-      <div class="field">
-        <label for="date">Date *</label>
-        <input type="datetime-local" id="date" name="date" [(ngModel)]="date" required />
+      <div class="field-row">
+        <div class="field">
+          <label for="date">Day *</label>
+          <input
+            type="date"
+            id="date"
+            name="date"
+            [(ngModel)]="date"
+            required
+          />
+        </div>
+        <div class="field">
+          <label for="time">Time *</label>
+          <input
+            type="time"
+            id="time"
+            name="time"
+            [(ngModel)]="time"
+            required
+          />
+        </div>
       </div>
 
       @if (error()) {
@@ -59,96 +96,30 @@ import { toDateTimeLocalValue, toPocketBaseDate } from '../shared/date-utils';
       }
 
       <div class="actions">
-        <button type="button" class="secondary" (click)="cancel()">Cancel</button>
-        <button type="submit" [disabled]="!symptomId || !date || isSaving()">
+        <button type="button" class="secondary" (click)="cancel()">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          [disabled]="!symptomId() || !date || !time || isSaving()"
+        >
           {{ isSaving() ? 'Saving…' : 'Save' }}
         </button>
       </div>
     </form>
   `,
-  styles: [`
-    :host { display: block; }
-
-    .form-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .back-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: #4caf50;
-      font-size: 0.95rem;
-      padding: 0;
-    }
-
-    h2 { margin: 0; font-size: 1.1rem; }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 16px;
-    }
-
-    label { font-size: 0.85rem; color: #666; font-weight: 500; }
-
-    input, select, textarea {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 1rem;
-      outline: none;
-      font-family: inherit;
-      background: #fff;
-    }
-
-    input:focus, select:focus, textarea:focus { border-color: #4caf50; }
-
-    .error { color: #e53935; font-size: 0.85rem; }
-
-    .actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 24px;
-    }
-
-    button[type="submit"] {
-      flex: 1;
-      padding: 12px;
-      background: #4caf50;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-
-    button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .secondary {
-      flex: 1;
-      padding: 12px;
-      background: none;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-  `],
 })
 export class NewHealthEntryFormComponent implements OnInit {
   readonly symptomStore = inject(SymptomStore);
   private readonly symptomEntryStore = inject(SymptomEntryStore);
   private readonly uiStore = inject(UiStore);
 
-  symptomId = '';
+  // Signal, as it is also set after creating a symptom type
+  readonly symptomId = signal('');
   discomfortLevel: number | null = null;
   comment = '';
-  date = toDateTimeLocalValue(new Date());
+  date = toDateInputValue(new Date());
+  time = toTimeInputValue(new Date());
 
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
@@ -159,7 +130,7 @@ export class NewHealthEntryFormComponent implements OnInit {
 
   readonly addSymptom = async (name: string): Promise<void> => {
     const symptom = await this.symptomStore.createSymptom(name, '');
-    this.symptomId = symptom.id;
+    this.symptomId.set(symptom.id);
   };
 
   cancel(): void {
@@ -167,13 +138,15 @@ export class NewHealthEntryFormComponent implements OnInit {
   }
 
   async save(): Promise<void> {
-    if (!this.symptomId || !this.date || this.isSaving()) return;
+    if (!this.symptomId() || !this.date || !this.time || this.isSaving()) {
+      return;
+    }
     this.isSaving.set(true);
     this.error.set(null);
     try {
       await this.symptomEntryStore.createSymptomEntry({
-        date: toPocketBaseDate(new Date(this.date)),
-        symptomId: this.symptomId,
+        date: toPocketBaseDate(fromDateAndTime(this.date, this.time)),
+        symptomId: this.symptomId(),
         discomfortLevel: this.discomfortLevel,
         comment: this.comment.trim() || undefined,
       });

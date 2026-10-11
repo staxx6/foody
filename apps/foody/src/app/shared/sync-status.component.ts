@@ -26,10 +26,11 @@ import { OfflineDataAccessService } from '@foody/pocketbase-access';
         padding: 4px 10px;
         border: none;
         border-radius: 999px;
-        background: #f5f5f5;
-        color: #555;
+        background: var(--bg);
+        color: var(--text-muted);
         font-family: inherit;
         font-size: 0.75rem;
+        font-weight: 600;
         cursor: pointer;
       }
 
@@ -41,20 +42,20 @@ import { OfflineDataAccessService } from '@foody/pocketbase-access';
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: #4caf50;
+        background: var(--success);
       }
 
       .offline .dot {
-        background: #9e9e9e;
+        background: var(--text-muted);
       }
 
       .pending .dot,
       .syncing .dot {
-        background: #ffa000;
+        background: var(--warning);
       }
 
       .error .dot {
-        background: #e53935;
+        background: var(--danger);
       }
     `,
   ],

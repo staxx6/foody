@@ -37,7 +37,9 @@ export const SymptomTypeStore = signalStore(
       // Not loaded yet: the next load fetches the new record anyway
       if (!store.isLoaded()) return type;
       patchState(store, {
-        types: [...store.types(), type].sort((a, b) => a.name.localeCompare(b.name)),
+        types: [...store.types(), type].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
       });
       return type;
     },

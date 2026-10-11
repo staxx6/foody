@@ -52,8 +52,8 @@ import { Component, input, signal } from '@angular/core';
 
       .open {
         padding: 4px 0;
-        color: #4caf50;
-        font-weight: 500;
+        font-weight: 600;
+        color: var(--primary);
       }
 
       .quick-add {
@@ -65,7 +65,7 @@ import { Component, input, signal } from '@angular/core';
       input {
         flex: 1;
         min-width: 0;
-        border: 1px solid #ddd;
+        border: 1px solid var(--border);
         border-radius: 8px;
         padding: 8px 10px;
         font-size: 0.95rem;
@@ -74,14 +74,14 @@ import { Component, input, signal } from '@angular/core';
       }
 
       input:focus {
-        border-color: #4caf50;
+        border-color: var(--primary);
       }
 
       .add {
         padding: 8px 12px;
         border-radius: 8px;
-        background: #4caf50;
-        color: #fff;
+        background: var(--primary);
+        color: var(--on-primary);
       }
 
       .add:disabled {
@@ -90,12 +90,12 @@ import { Component, input, signal } from '@angular/core';
       }
 
       .cancel {
-        color: #666;
+        color: var(--text-muted);
       }
 
       .error {
         margin: 4px 0 0;
-        color: #e53935;
+        color: var(--danger);
         font-size: 0.85rem;
       }
     `,

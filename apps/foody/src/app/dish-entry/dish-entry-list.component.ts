@@ -7,41 +7,31 @@ import { DishEntryStore } from './dish-entry-store';
   selector: 'app-dish-entry-list',
   imports: [DatePipe],
   template: `
-    @if (dishEntryStore.isLoading()) {
-      <p>Lade Einträge...</p>
-    } @else if (dishEntryStore.error()) {
-      <p>Fehler: {{ dishEntryStore.error() }}</p>
-    } @else if (dishEntryStore.entries().length === 0) {
-      <p>Keine Einträge für heute.</p>
-    } @else {
-      <ul>
+    @if (dishEntryStore.error()) {
+      <p class="list-message error">{{ dishEntryStore.error() }}</p>
+    } @else if (dishEntryStore.entries().length > 0) {
+      <ul class="entry-list">
         @for (entry of dishEntryStore.entries(); track entry.id) {
-          <li>
+          <li class="entry">
+            <span class="time">{{ entry.date | date: 'HH:mm' }}</span>
             @if (entry.imageUrl) {
-              <img [src]="entry.imageUrl" [alt]="entry.name" />
+              <img [src]="entry.imageUrl" alt="" />
             }
-            {{ entry.name }}
+            <span class="name">{{ entry.name }}</span>
             @if (entry.amount !== null) {
-              – {{ entry.amount
-              }}{{ entry.amountUnitName ? ' ' + entry.amountUnitName : '' }}
+              <span class="chip">
+                {{ entry.amount }} {{ entry.amountUnitName }}
+              </span>
             }
-            <span>({{ entry.date | date: 'HH:mm' }})</span>
           </li>
         }
       </ul>
+    } @else if (dishEntryStore.isLoading()) {
+      <p class="list-message">Loading…</p>
+    } @else {
+      <p class="list-message">No meals logged today.</p>
     }
   `,
-  styles: [
-    `
-      img {
-        width: 40px;
-        height: 40px;
-        object-fit: cover;
-        border-radius: 4px;
-        vertical-align: middle;
-      }
-    `,
-  ],
 })
 export class DishEntryListComponent {
   readonly dishEntryStore = inject(DishEntryStore);

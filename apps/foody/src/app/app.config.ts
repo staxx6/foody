@@ -12,6 +12,7 @@ import {
 } from '@foody/pocketbase-access';
 import { provideRouter } from '@angular/router';
 import { appRoutes } from './app.routes';
+import { SettingsStore } from './shared/settings-store';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -42,5 +43,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() =>
       inject(OfflineDataAccessService).startAutoSync(),
     ),
+    // Applies theme and accent before the first page is shown
+    provideAppInitializer(() => void inject(SettingsStore)),
   ],
 };

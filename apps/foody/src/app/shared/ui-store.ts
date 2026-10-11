@@ -6,7 +6,8 @@ export type ActiveSite =
   | 'new-dish'
   | 'new-meal'
   | 'new-health-entry'
-  | 'new-symptom';
+  | 'new-symptom'
+  | 'settings';
 
 @Injectable({ providedIn: 'root' })
 export class UiStore {
@@ -20,7 +21,7 @@ export class UiStore {
     this.activeForm.set('today');
   }
 
-	isActive(activeForm: ActiveSite): boolean {
-		return this.activeForm() === activeForm;
-	}
+  isActive(activeForm: ActiveSite): boolean {
+    return this.activeForm() === activeForm;
+  }
 }

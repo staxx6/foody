@@ -1,10 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActiveSite, UiStore } from '../ui-store';
 import { FooterButtonComponent } from './footer-button.component';
+import { IconComponent } from '../icon.component';
 
 @Component({
   selector: 'app-footer-nav',
-  imports: [FooterButtonComponent],
+  imports: [FooterButtonComponent, IconComponent],
   template: `
     @if (showMenu()) {
       <button
@@ -18,12 +19,12 @@ import { FooterButtonComponent } from './footer-button.component';
           <p class="hint">Record what happened, with date and time.</p>
           <div class="tiles">
             <button class="tile" (click)="selectForm('new-meal')">
-              <span class="icon" aria-hidden="true">🍽️</span>
+              <app-icon class="icon" name="meal" />
               <span class="title">Log meal</span>
               <small>I ate or drank something</small>
             </button>
             <button class="tile" (click)="selectForm('new-health-entry')">
-              <span class="icon" aria-hidden="true">🩺</span>
+              <app-icon class="icon" name="symptom" />
               <span class="title">Log symptom</span>
               <small>I noticed a symptom</small>
             </button>
@@ -36,21 +37,21 @@ import { FooterButtonComponent } from './footer-button.component';
             Something missing when logging? Add it once, pick it any time.
           </p>
           <button class="row" (click)="selectForm('new-food-item')">
-            <span class="icon" aria-hidden="true">🍎</span>
+            <app-icon class="icon" name="food" />
             <span>
               <span class="title">New food item</span>
               <small>A single food, e.g. apple or milk</small>
             </span>
           </button>
           <button class="row" (click)="selectForm('new-dish')">
-            <span class="icon" aria-hidden="true">🍲</span>
+            <app-icon class="icon" name="dish" />
             <span>
               <span class="title">New dish</span>
               <small>A prepared meal, e.g. lasagne</small>
             </span>
           </button>
           <button class="row" (click)="selectForm('new-symptom')">
-            <span class="icon" aria-hidden="true">🏷️</span>
+            <app-icon class="icon" name="tag" />
             <span>
               <span class="title">New symptom type</span>
               <small>A kind of symptom, e.g. headache</small>
@@ -62,20 +63,31 @@ import { FooterButtonComponent } from './footer-button.component';
     <nav>
       <app-footer-button
         label="Today"
+        icon="today"
         [active]="uiStore.isActive('today')"
         (clicked)="uiStore.goHome()"
       />
-      <app-footer-button label='Month' [active]="false" />
+      <app-footer-button label="Month" icon="month" [active]="false" disabled />
       <button
         class="add-btn"
         (click)="toggleMenu()"
         [attr.aria-label]="showMenu() ? 'Close menu' : 'Add entry'"
         [attr.aria-expanded]="showMenu()"
       >
-        {{ showMenu() ? '×' : '+' }}
+        <app-icon [name]="showMenu() ? 'close' : 'plus'" />
       </button>
-      <app-footer-button label='Report' [active]='false' />
-      <app-footer-button label='Settings' [active]='false' />
+      <app-footer-button
+        label="Report"
+        icon="report"
+        [active]="false"
+        disabled
+      />
+      <app-footer-button
+        label="Settings"
+        icon="settings"
+        [active]="uiStore.isActive('settings')"
+        (clicked)="selectForm('settings')"
+      />
     </nav>
   `,
   styles: [
@@ -84,7 +96,7 @@ import { FooterButtonComponent } from './footer-button.component';
         position: fixed;
         inset: 0;
         z-index: 20;
-        background: rgba(0, 0, 0, 0.25);
+        background: rgba(0, 0, 0, 0.4);
         border: none;
         cursor: default;
         padding: 0;
@@ -95,8 +107,8 @@ import { FooterButtonComponent } from './footer-button.component';
         bottom: calc(72px + env(safe-area-inset-bottom));
         left: 50%;
         transform: translateX(-50%);
-        background: #fff;
-        border: 1px solid #e0e0e0;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 16px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         display: flex;
@@ -114,7 +126,7 @@ import { FooterButtonComponent } from './footer-button.component';
       }
 
       .menu-popup section + section {
-        border-top: 1px solid #f0f0f0;
+        border-top: 1px solid var(--border);
         padding-top: 16px;
       }
 
@@ -124,19 +136,19 @@ import { FooterButtonComponent } from './footer-button.component';
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: #666;
+        color: var(--text-muted);
       }
 
       .hint {
         margin: 2px 0 10px;
         font-size: 0.75rem;
-        color: #888;
+        color: var(--text-muted);
       }
 
       .menu-popup button {
         border: none;
         cursor: pointer;
-        color: #333;
+        color: var(--text);
         font-family: inherit;
       }
 
@@ -150,7 +162,7 @@ import { FooterButtonComponent } from './footer-button.component';
         display: block;
         margin-top: 2px;
         font-size: 0.75rem;
-        color: #888;
+        color: var(--text-muted);
       }
 
       .tiles {
@@ -161,19 +173,25 @@ import { FooterButtonComponent } from './footer-button.component';
 
       .tile {
         padding: 12px 8px;
-        background: #e8f5e9;
+        background: var(--primary-soft);
         border-radius: 12px;
         text-align: center;
       }
 
+      .tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
       .tile .icon {
-        display: block;
-        font-size: 1.6rem;
-        margin-bottom: 4px;
+        font-size: 1.5rem;
+        margin-bottom: 6px;
+        color: var(--primary);
       }
 
       .tile:hover {
-        background: #d7edd9;
+        background: color-mix(in srgb, var(--primary) 20%, var(--surface));
       }
 
       .row {
@@ -187,13 +205,12 @@ import { FooterButtonComponent } from './footer-button.component';
       }
 
       .row .icon {
-        font-size: 1.2rem;
-        width: 1.5rem;
-        text-align: center;
+        font-size: 1.1rem;
+        color: var(--text-muted);
       }
 
       .row:hover {
-        background: #f5f5f5;
+        background: var(--bg);
       }
 
       nav {
@@ -201,36 +218,36 @@ import { FooterButtonComponent } from './footer-button.component';
         bottom: 0;
         left: 0;
         right: 0;
-        display: flex;
-        justify-content: space-around;
+        display: grid;
+        grid-template-columns: 1fr 1fr auto 1fr 1fr;
         align-items: center;
-        background: #fff;
-        border-top: 1px solid #e0e0e0;
-        padding: 8px 0 max(8px, env(safe-area-inset-bottom));
-        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        padding: 6px 8px max(6px, env(safe-area-inset-bottom));
         z-index: 10;
       }
 
-      nav .add-btn {
-        font-size: 1.8rem;
-        color: #fff;
-        font-weight: bold;
-        background-color: #4caf50;
-        border-radius: 50%;
-        width: 3rem;
-        height: 3rem;
-      }
-
-      nav button {
-        background: none;
+      .add-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        margin: -20px 8px 0;
+        padding: 0;
         border: none;
+        border-radius: 50%;
+        background: var(--primary);
+        color: var(--on-primary);
+        font-size: 24px;
+        box-shadow:
+          0 0 0 4px var(--bg),
+          0 4px 10px rgba(0, 0, 0, 0.2);
         cursor: pointer;
-        color: #666;
-        // padding: 6px 4px;
       }
 
-      nav button:hover {
-        color: #333;
+      .add-btn:hover {
+        background: var(--primary-hover);
       }
     `,
   ],

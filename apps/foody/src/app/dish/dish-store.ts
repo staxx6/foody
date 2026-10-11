@@ -38,7 +38,8 @@ export const DishStore = signalStore(
         });
         patchState(store, { dishes, isLoading: false });
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
         patchState(store, { isLoading: false, error: message });
       }
     },
