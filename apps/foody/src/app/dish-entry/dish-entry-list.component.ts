@@ -21,12 +21,14 @@ import { DishEntry, DishEntryStore } from './dish-entry-store';
             @if (entry.imageUrl) {
               <img [src]="entry.imageUrl" alt="" />
             }
-            <span class="name">{{ entry.name }}</span>
-            @if (entry.amount !== null) {
-              <span class="chip">
-                {{ entry.amount }} {{ i18n.name(entry.amountUnit) }}
-              </span>
-            }
+            <span class="content">
+              <span class="name">{{ entry.name }}</span>
+              @if (entry.amount !== null) {
+                <span class="chip">
+                  {{ entry.amount }} {{ i18n.name(entry.amountUnit) }}
+                </span>
+              }
+            </span>
             <button
               type="button"
               class="icon-btn"
@@ -62,10 +64,11 @@ export class DishEntryListComponent {
   protected readonly uiStore = inject(UiStore);
 
   constructor() {
-    // Loads initially and whenever a synchronization changed the data
+    // Loads initially, for another day and after a synchronization
     effect(() => {
       this.sync.revision();
-      untracked(() => void this.dishEntryStore.loadTodayEntries());
+      const day = this.uiStore.selectedDay();
+      untracked(() => void this.dishEntryStore.loadEntries(day));
     });
   }
 

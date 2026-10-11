@@ -116,6 +116,9 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
             />
           </div>
         </div>
+        <button type="button" class="link" (click)="setNow()">
+          {{ t().setToNow }}
+        </button>
 
         @if (error()) {
           <p class="error">{{ error() }}</p>
@@ -150,7 +153,8 @@ export class NewHealthEntryFormComponent implements OnInit {
   readonly symptomId = signal('');
   discomfortLevel: number | null = null;
   comment = '';
-  date = toDateInputValue(new Date());
+  // A new entry is meant for the day that is shown
+  date = toDateInputValue(this.uiStore.selectedDay());
   time = toTimeInputValue(new Date());
 
   /** The form for a new symptom shown in place of this one */
@@ -181,6 +185,13 @@ export class NewHealthEntryFormComponent implements OnInit {
   protected symptomCreated(id: string): void {
     this.symptomId.set(id);
     this.isCreatingSymptom.set(false);
+  }
+
+  /** Sets day and time to the current moment */
+  protected setNow(): void {
+    const now = new Date();
+    this.date = toDateInputValue(now);
+    this.time = toTimeInputValue(now);
   }
 
   cancel(): void {

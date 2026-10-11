@@ -54,6 +54,47 @@ export class I18n {
     }).format(date);
   }
 
+  /** e.g. "Sunday" */
+  formatWeekday(date: Date): string {
+    return new Intl.DateTimeFormat(this.language(), { weekday: 'long' }).format(
+      date,
+    );
+  }
+
+  /** e.g. "11 October 2026" */
+  formatFullDate(date: Date): string {
+    return new Intl.DateTimeFormat(this.language(), {
+      dateStyle: 'long',
+    }).format(date);
+  }
+
+  /** e.g. "October 2026" */
+  formatMonth(date: Date): string {
+    return new Intl.DateTimeFormat(this.language(), {
+      month: 'long',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  /** The short names of the weekdays, starting with Monday */
+  weekdayNames(): string[] {
+    const format = new Intl.DateTimeFormat(this.language(), {
+      weekday: 'short',
+    });
+    // 5 January 2026 is a Monday
+    return Array.from({ length: 7 }, (_, day) =>
+      format.format(new Date(2026, 0, 5 + day)),
+    );
+  }
+
+  /** The short names of the months, starting with January */
+  monthNames(): string[] {
+    const format = new Intl.DateTimeFormat(this.language(), { month: 'short' });
+    return Array.from({ length: 12 }, (_, month) =>
+      format.format(new Date(2026, month, 1)),
+    );
+  }
+
   formatDateTime(date: Date): string {
     return new Intl.DateTimeFormat(this.language(), {
       dateStyle: 'medium',

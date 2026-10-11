@@ -170,6 +170,21 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+/* Name and value of an entry; the value wraps below a long name */
+.entry .content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.entry .content .name {
+  flex: 0 1 auto;
+  overflow-wrap: break-word;
+}
+
 .entry img {
   flex: none;
   width: 40px;
@@ -261,6 +276,7 @@ form .field-row .field {
   margin-bottom: 6px;
 }
 
+form .field-row + .link,
 form .field-row + app-quick-add {
   margin-bottom: 18px;
 }

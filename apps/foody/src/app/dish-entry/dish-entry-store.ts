@@ -38,14 +38,15 @@ export const DishEntryStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
   withMethods((store, dataAccess = inject(DATA_ACCESS)) => ({
-    async loadTodayEntries() {
+    /** Loads the entries of a day */
+    async loadEntries(day: Date) {
       patchState(store, { isLoading: true, error: null });
 
       try {
         const entries = await dataAccess.list<DishEntry>({
           collectionName: 'dishEntries',
           options: {
-            dateRange: dayRange('date'),
+            dateRange: dayRange('date', day),
             expand: 'to_foodItem,to_dish,to_amountUnit',
             sort: 'date',
           },

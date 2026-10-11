@@ -1,4 +1,5 @@
 import { computed, Injectable, signal } from '@angular/core';
+import { startOfDay } from './date-utils';
 
 export type ActiveSite =
   | 'today'
@@ -8,6 +9,7 @@ export type ActiveSite =
   | 'new-health-entry'
   | 'new-symptom'
   | 'edit-unit'
+  | 'month'
   | 'settings'
   | 'lists';
 
@@ -16,6 +18,8 @@ export class UiStore {
   readonly activeForm = signal<ActiveSite>('today');
   /** The record the active form changes; null if it creates a new one */
   readonly editId = signal<string | null>(null);
+  /** The day the day view shows and new entries are logged for */
+  readonly selectedDay = signal(startOfDay(new Date()));
   /** Counts the pages that were opened */
   private readonly pageKey = signal(0);
 
@@ -46,8 +50,15 @@ export class UiStore {
     this.open(this.returnTo, null, 'today');
   }
 
-  goHome(): void {
+  /** Shows what was logged on a day */
+  showDay(day: Date): void {
+    this.selectedDay.set(startOfDay(day));
     this.open('today', null, 'today');
+  }
+
+  /** Shows today */
+  goHome(): void {
+    this.showDay(new Date());
   }
 
   isActive(activeForm: ActiveSite): boolean {

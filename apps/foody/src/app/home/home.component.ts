@@ -1,11 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
-import { DishEntryListComponent } from '../dish-entry/dish-entry-list.component';
-import { SymptomEntryListComponent } from '../symptom-entry/symptom-entry-list.component';
+import { DayComponent } from './day.component';
+import { MonthComponent } from '../month/month.component';
 import { FooterNavComponent } from '../shared/footer/footer-nav.component';
 import { UiStore } from '../shared/ui-store';
 import { SyncStatusComponent } from '../shared/sync-status.component';
-import { IconComponent } from '../shared/icon.component';
 import { SettingsComponent } from '../settings/settings.component';
 import { ManageListsComponent } from '../lists/manage-lists.component';
 import { EditUnitFormComponent } from '../shared/edit-unit-form.component';
@@ -18,13 +17,12 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
 
 @Component({
   imports: [
-    IconComponent,
     SettingsComponent,
     ManageListsComponent,
     EditUnitFormComponent,
     ConfirmDialogComponent,
-    DishEntryListComponent,
-    SymptomEntryListComponent,
+    DayComponent,
+    MonthComponent,
     FooterNavComponent,
     SyncStatusComponent,
     NewFoodItemFormComponent,
@@ -80,6 +78,9 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
               (cancelled)="uiStore.close()"
             />
           }
+          @case ('month') {
+            <app-month />
+          }
           @case ('lists') {
             <app-manage-lists />
           }
@@ -87,20 +88,7 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
             <app-settings />
           }
           @default {
-            <div class="day">
-              <span class="day-label">{{ t().today }}</span
-              ><span class="day-date">{{ i18n.formatDay(today) }}</span>
-            </div>
-
-            <section>
-              <h2><app-icon name="meal" /> {{ t().meals }}</h2>
-              <app-dish-entry-list class="card" />
-            </section>
-
-            <section>
-              <h2><app-icon name="symptom" /> {{ t().health }}</h2>
-              <app-symptom-entry-list class="card" />
-            </section>
+            <app-day />
           }
         }
       }
@@ -157,44 +145,10 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
         width: 100%;
         margin: 0 auto;
       }
-
-      .day {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .day-label {
-        font-size: 1.5rem;
-        font-weight: 700;
-      }
-
-      .day-date {
-        font-size: 0.9rem;
-        color: var(--text-muted);
-      }
-
-      h2 {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin: 0 0 8px 4px;
-        font-size: 0.8rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--text-muted);
-      }
-
-      .card {
-        display: block;
-        overflow: hidden;
-      }
     `,
   ],
 })
 export class HomeComponent {
-  protected readonly i18n = inject(I18n);
-  protected readonly t = this.i18n.t;
+  protected readonly t = inject(I18n).t;
   readonly uiStore = inject(UiStore);
-  protected readonly today = new Date();
 }

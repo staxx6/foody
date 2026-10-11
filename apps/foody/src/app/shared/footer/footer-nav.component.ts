@@ -78,8 +78,8 @@ import { IconComponent } from '../icon.component';
       <app-footer-button
         [label]="t().month"
         icon="month"
-        [active]="false"
-        disabled
+        [active]="uiStore.isActive('month')"
+        (clicked)="selectForm('month')"
       />
       <button
         class="add-btn"

@@ -21,19 +21,21 @@ import { SymptomEntry, SymptomEntryStore } from './symptom-entry-store';
             @for (url of entry.locationImageUrls; track url) {
               <img [src]="url" alt="" />
             }
-            <span class="name">{{ entry.symptomName }}</span>
-            @if (entry.discomfortLevel !== null) {
-              <span
-                class="chip"
-                [class.medium]="
-                  entry.discomfortLevel > 33 && entry.discomfortLevel <= 66
-                "
-                [class.high]="entry.discomfortLevel > 66"
-                [title]="t().discomfortLevel"
-              >
-                {{ entry.discomfortLevel }}/100
-              </span>
-            }
+            <span class="content">
+              <span class="name">{{ entry.symptomName }}</span>
+              @if (entry.discomfortLevel !== null) {
+                <span
+                  class="chip"
+                  [class.medium]="
+                    entry.discomfortLevel > 33 && entry.discomfortLevel <= 66
+                  "
+                  [class.high]="entry.discomfortLevel > 66"
+                  [title]="t().discomfortLevel"
+                >
+                  {{ entry.discomfortLevel }}/100
+                </span>
+              }
+            </span>
             <button
               type="button"
               class="icon-btn"
@@ -68,10 +70,11 @@ export class SymptomEntryListComponent {
   protected readonly uiStore = inject(UiStore);
 
   constructor() {
-    // Loads initially and whenever a synchronization changed the data
+    // Loads initially, for another day and after a synchronization
     effect(() => {
       this.sync.revision();
-      untracked(() => void this.symptomEntryStore.loadTodayEntries());
+      const day = this.uiStore.selectedDay();
+      untracked(() => void this.symptomEntryStore.loadEntries(day));
     });
   }
 

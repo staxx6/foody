@@ -35,14 +35,15 @@ export const SymptomEntryStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
   withMethods((store, dataAccess = inject(DATA_ACCESS)) => ({
-    async loadTodayEntries() {
+    /** Loads the entries of a day */
+    async loadEntries(day: Date) {
       patchState(store, { isLoading: true, error: null });
 
       try {
         const entries = await dataAccess.list<SymptomEntry>({
           collectionName: 'symptomEntries',
           options: {
-            dateRange: dayRange('date'),
+            dateRange: dayRange('date', day),
             expand: 'to_symptom,to_symptom.to_locations',
             sort: 'date',
           },
