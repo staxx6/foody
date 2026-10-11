@@ -32,6 +32,7 @@ const STEP_LIMITS = [50, 100, 200];
 type DayCell = {
   date: Date;
   meals: number;
+  medications: number;
   complaints: number;
   /** The discomfort levels of the day added up */
   discomfort: number;
@@ -155,7 +156,12 @@ type DayCell = {
                   <app-icon class="good" name="check" />
                 }
               </span>
-              <span class="meals" [class.logged]="cell.meals > 0"></span>
+              <span class="marks">
+                <span class="meals" [class.logged]="cell.meals > 0"></span>
+                @if (cell.medications > 0) {
+                  <span class="medication"></span>
+                }
+              </span>
             </button>
           } @else {
             <span></span>
@@ -175,6 +181,9 @@ type DayCell = {
           ><app-icon class="good" name="check" /> {{ t().noComplaints }}</span
         >
         <span><span class="meals logged"></span> {{ t().mealsLogged }}</span>
+        <span>
+          <span class="medication"></span> {{ t().medicationTaken }}
+        </span>
       </div>
     </section>
 
@@ -421,6 +430,21 @@ type DayCell = {
         font-size: 0.85rem;
       }
 
+      .marks {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        height: 4px;
+      }
+
+      /* Shaped like a pill, to tell it from the dot of the meals */
+      .medication {
+        width: 9px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--primary);
+      }
+
       .meals {
         width: 4px;
         height: 4px;
@@ -571,6 +595,10 @@ export class MonthComponent implements OnInit {
     for (const date of this.monthStore.meals()) {
       meals.set(dayKey(date), (meals.get(dayKey(date)) ?? 0) + 1);
     }
+    const medications = new Map<string, number>();
+    for (const date of this.monthStore.medications()) {
+      medications.set(dayKey(date), (medications.get(dayKey(date)) ?? 0) + 1);
+    }
 
     // Weeks start on Monday
     const leading = (month.getDay() + 6) % 7;
@@ -589,6 +617,7 @@ export class MonthComponent implements OnInit {
         discomfort: 0,
       };
       const mealCount = meals.get(key) ?? 0;
+      const medicationCount = medications.get(key) ?? 0;
       const step =
         count === 0
           ? 0
@@ -597,10 +626,12 @@ export class MonthComponent implements OnInit {
       const facts = [
         ...(count > 0 ? [t.dayComplaints(count, discomfort)] : []),
         ...(mealCount > 0 ? [t.dayMeals(mealCount)] : []),
+        ...(medicationCount > 0 ? [t.dayMedications(medicationCount)] : []),
       ];
       cells.push({
         date,
         meals: mealCount,
+        medications: medicationCount,
         complaints: count,
         discomfort,
         step,

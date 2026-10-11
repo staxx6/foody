@@ -129,6 +129,32 @@ const en = {
   addIngredient: '+ Add ingredient',
   removeIngredient: 'Remove ingredient',
 
+  // Medications
+  medication: 'Medication',
+  medications: 'Medications',
+  noMedications: 'No medication logged.',
+  logMedication: 'Log medication',
+  logMedicationHint: 'I took a medication',
+  editMedicationEntry: 'Edit medication entry',
+  newMedication: 'New medication',
+  newMedicationHint: 'Something you take, e.g. ibuprofen',
+  editMedication: 'Edit medication',
+  createNewMedication: '+ Create new medication',
+  selectMedication: 'Search medication…',
+  medicationPlaceholder: 'e.g. ibuprofen',
+  medicationExists: (name: string) =>
+    `A medication named “${name}” already exists.`,
+  strength: 'Strength',
+  strengthPlaceholder: 'e.g. 400 mg',
+  activeIngredient: 'Active ingredient',
+  usualDose: 'Usual dose',
+  usualDoseHint: 'Suggested when you log that you took it.',
+  medicationDescriptionPlaceholder: 'optional, e.g. what it is for',
+  medicationCommentPlaceholder: 'optional, e.g. why you took it',
+  medicationTaken: 'Medication taken',
+  dayMedications: (count: number) =>
+    `${count} ${count === 1 ? 'medication' : 'medications'}`,
+
   // Settings
   appearance: 'Appearance',
   language: 'Language',
@@ -190,7 +216,8 @@ const en = {
 
   // Managing the lists
   manageLists: 'Manage lists',
-  manageListsHint: 'View, edit and delete foods, dishes, symptoms and units',
+  manageListsHint:
+    'View, edit and delete foods, dishes, symptoms, medications and units',
   foods: 'Foods',
   dishes: 'Dishes',
   symptoms: 'Symptoms',
@@ -316,6 +343,30 @@ const de: Translations = {
   addIngredient: '+ Zutat hinzufügen',
   removeIngredient: 'Zutat entfernen',
 
+  medication: 'Medikament',
+  medications: 'Medikamente',
+  noMedications: 'Kein Medikament eingetragen.',
+  logMedication: 'Medikament eintragen',
+  logMedicationHint: 'Ich habe ein Medikament genommen',
+  editMedicationEntry: 'Medikamenten-Eintrag bearbeiten',
+  newMedication: 'Neues Medikament',
+  newMedicationHint: 'Etwas, das du einnimmst, z. B. Ibuprofen',
+  editMedication: 'Medikament bearbeiten',
+  createNewMedication: '+ Neues Medikament anlegen',
+  selectMedication: 'Medikament suchen…',
+  medicationPlaceholder: 'z. B. Ibuprofen',
+  medicationExists: (name) => `Ein Medikament namens „${name}“ gibt es schon.`,
+  strength: 'Stärke',
+  strengthPlaceholder: 'z. B. 400 mg',
+  activeIngredient: 'Wirkstoff',
+  usualDose: 'Übliche Dosis',
+  usualDoseHint: 'Wird vorgeschlagen, wenn du die Einnahme einträgst.',
+  medicationDescriptionPlaceholder: 'optional, z. B. wofür es ist',
+  medicationCommentPlaceholder: 'optional, z. B. warum du es genommen hast',
+  medicationTaken: 'Medikament genommen',
+  dayMedications: (count) =>
+    `${count} ${count === 1 ? 'Medikament' : 'Medikamente'}`,
+
   appearance: 'Darstellung',
   language: 'Sprache',
   theme: 'Design',
@@ -373,7 +424,7 @@ const de: Translations = {
 
   manageLists: 'Listen verwalten',
   manageListsHint:
-    'Lebensmittel, Gerichte, Symptome und Einheiten ansehen, bearbeiten und löschen',
+    'Lebensmittel, Gerichte, Symptome, Medikamente und Einheiten ansehen, bearbeiten und löschen',
   foods: 'Lebensmittel',
   dishes: 'Gerichte',
   symptoms: 'Symptome',

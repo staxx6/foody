@@ -40,6 +40,17 @@ The collections are created automatically from `apps/pocketbase/pb_migrations` w
 
 The PocketBase URL and port used by the app are configured in `apps/foody/src/app/app.config.ts`.
 
+## What can be logged
+
+| Entry      | Collection          | Picked from                                  |
+| ---------- | ------------------- | -------------------------------------------- |
+| Meal       | `dishEntries`       | `foodItems` or `dishes` (with `ingredients`) |
+| Symptom    | `symptomEntries`    | `symptoms`                                   |
+| Medication | `medicationEntries` | `medications`                                |
+
+Amounts use the units of `amountUnitET`. The day view shows the entries of a day, the month
+view a calendar of the discomfort and of what was logged.
+
 ## Offline use and synchronization
 
 The app works on a local copy of the data in the browser (IndexedDB), see

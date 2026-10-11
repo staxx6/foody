@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DishStore } from '../dish/dish-store';
 import { IngredientStore } from '../ingredient/ingredient-store';
+import { MedicationStore } from '../medication/medication-store';
 import { AmountUnitStore } from '../shared/amount-unit-store';
 import { ConfirmService } from '../shared/confirm/confirm.service';
 import { I18n } from '../shared/i18n/i18n';
@@ -141,6 +142,7 @@ export class ManageListsComponent implements OnInit {
   private readonly foodStore = inject(IngredientStore);
   private readonly dishStore = inject(DishStore);
   private readonly symptomStore = inject(SymptomStore);
+  private readonly medicationStore = inject(MedicationStore);
   private readonly unitStore = inject(AmountUnitStore);
   private readonly i18n = inject(I18n);
   protected readonly confirm = inject(ConfirmService);
@@ -170,6 +172,16 @@ export class ManageListsComponent implements OnInit {
       remove: (id) => this.symptomStore.deleteSymptom(id),
     },
     {
+      title: this.t().medications,
+      icon: 'pill',
+      editForm: 'new-medication',
+      items: this.medicationStore.medications().map((medication) => ({
+        id: medication.id,
+        name: [medication.name, medication.strength].filter(Boolean).join(' '),
+      })),
+      remove: (id) => this.medicationStore.deleteMedication(id),
+    },
+    {
       title: this.t().units,
       icon: 'tag',
       editForm: 'edit-unit',
@@ -194,6 +206,7 @@ export class ManageListsComponent implements OnInit {
     this.foodStore.loadFoodItems();
     this.dishStore.loadDishes();
     this.symptomStore.loadSymptoms();
+    this.medicationStore.loadMedications();
     this.unitStore.loadUnits();
   }
 

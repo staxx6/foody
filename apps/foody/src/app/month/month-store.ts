@@ -20,6 +20,8 @@ export class MonthStore {
   readonly symptomEntries = signal<MonthSymptomEntry[]>([]);
   /** The time of every meal */
   readonly meals = signal<Date[]>([]);
+  /** The time of every medication that was taken */
+  readonly medications = signal<Date[]>([]);
 
   private latestRequest = 0;
 
@@ -27,7 +29,7 @@ export class MonthStore {
     const request = ++this.latestRequest;
     const dateRange = monthRange('date', month);
 
-    const [symptomEntries, meals] = await Promise.all([
+    const [symptomEntries, meals, medications] = await Promise.all([
       this.dataAccess.list<MonthSymptomEntry>({
         collectionName: 'symptomEntries',
         options: { dateRange, expand: 'to_symptom' },
@@ -49,11 +51,18 @@ export class MonthStore {
         map: (record) =>
           fromPocketBaseDate(String(record['date'] ?? record.created)),
       }),
+      this.dataAccess.list<Date>({
+        collectionName: 'medicationEntries',
+        options: { dateRange },
+        map: (record) =>
+          fromPocketBaseDate(String(record['date'] ?? record.created)),
+      }),
     ]);
 
     // A month that was requested later must not be overwritten by this one
     if (request !== this.latestRequest) return;
     this.symptomEntries.set(symptomEntries);
     this.meals.set(meals);
+    this.medications.set(medications);
   }
 }

@@ -8,6 +8,8 @@ export type ActiveSite =
   | 'new-meal'
   | 'new-health-entry'
   | 'new-symptom'
+  | 'new-medication'
+  | 'new-medication-entry'
   | 'edit-unit'
   | 'month'
   | 'settings'

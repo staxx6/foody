@@ -36,6 +36,8 @@ export const appConfig: ApplicationConfig = {
           'symptomLocationET',
           'symptoms',
           'symptomEntries',
+          'medications',
+          'medicationEntries',
         ],
       },
     },

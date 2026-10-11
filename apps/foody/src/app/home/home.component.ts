@@ -14,6 +14,8 @@ import { NewDishFormComponent } from '../dish/new-dish-form.component';
 import { NewMealFormComponent } from '../dish-entry/new-meal-form.component';
 import { NewHealthEntryFormComponent } from '../symptom-entry/new-health-entry-form.component';
 import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.component';
+import { NewMedicationFormComponent } from '../medication/new-medication-form.component';
+import { LogMedicationFormComponent } from '../medication/log-medication-form.component';
 
 @Component({
   imports: [
@@ -30,6 +32,8 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
     NewMealFormComponent,
     NewHealthEntryFormComponent,
     NewSymptomFormComponent,
+    NewMedicationFormComponent,
+    LogMedicationFormComponent,
   ],
   template: `
     <header>
@@ -70,6 +74,16 @@ import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.compo
               (saved)="uiStore.close()"
               (cancelled)="uiStore.close()"
             />
+          }
+          @case ('new-medication') {
+            <app-new-medication-form
+              [editId]="page.editId"
+              (saved)="uiStore.close()"
+              (cancelled)="uiStore.close()"
+            />
+          }
+          @case ('new-medication-entry') {
+            <app-log-medication-form [editId]="page.editId" />
           }
           @case ('edit-unit') {
             <app-edit-unit-form

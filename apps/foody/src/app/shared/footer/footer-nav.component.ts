@@ -31,6 +31,11 @@ import { IconComponent } from '../icon.component';
               }}</span
               ><small>{{ t().logSymptomHint }}</small>
             </button>
+            <button class="tile" (click)="selectForm('new-medication-entry')">
+              <app-icon class="icon" name="pill" />
+              <span class="title">{{ t().logMedication }}</span>
+              <small>{{ t().logMedicationHint }}</small>
+            </button>
           </div>
         </section>
 
@@ -57,6 +62,13 @@ import { IconComponent } from '../icon.component';
               ><span class="title">{{ t().newSymptom }}</span
               ><small>{{ t().newSymptomHint }}</small></span
             >
+          </button>
+          <button class="row" (click)="selectForm('new-medication')">
+            <app-icon class="icon" name="pill" />
+            <span>
+              <span class="title">{{ t().newMedication }}</span>
+              <small>{{ t().newMedicationHint }}</small>
+            </span>
           </button>
           <button class="row" (click)="selectForm('lists')">
             <app-icon class="icon" name="list" />
@@ -129,7 +141,9 @@ import { IconComponent } from '../icon.component';
         gap: 16px;
         padding: 16px;
         z-index: 30;
-        width: min(360px, calc(100vw - 32px));
+        width: min(420px, calc(100vw - 32px));
+        max-height: calc(100dvh - 120px - env(safe-area-inset-bottom));
+        overflow-y: auto;
         box-sizing: border-box;
       }
 
@@ -180,7 +194,7 @@ import { IconComponent } from '../icon.component';
 
       .tiles {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, 1fr);
         gap: 8px;
       }
 

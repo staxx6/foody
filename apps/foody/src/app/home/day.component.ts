@@ -8,6 +8,7 @@ import {
 import { DishEntryListComponent } from '../dish-entry/dish-entry-list.component';
 import { addDays, isSameDay, toDateInputValue } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
+import { MedicationEntryListComponent } from '../medication/medication-entry-list.component';
 import { IconComponent } from '../shared/icon.component';
 import { UiStore } from '../shared/ui-store';
 import { SymptomEntryListComponent } from '../symptom-entry/symptom-entry-list.component';
@@ -21,7 +22,12 @@ const SWIPE_MAX_DRIFT = 50;
  */
 @Component({
   selector: 'app-day',
-  imports: [DishEntryListComponent, SymptomEntryListComponent, IconComponent],
+  imports: [
+    DishEntryListComponent,
+    SymptomEntryListComponent,
+    MedicationEntryListComponent,
+    IconComponent,
+  ],
   host: {
     '(touchstart)': 'onTouchStart($event)',
     '(touchend)': 'onTouchEnd($event)',
@@ -79,6 +85,11 @@ const SWIPE_MAX_DRIFT = 50;
     <section>
       <h2><app-icon name="symptom" /> {{ t().health }}</h2>
       <app-symptom-entry-list class="card" />
+    </section>
+
+    <section>
+      <h2><app-icon name="pill" /> {{ t().medications }}</h2>
+      <app-medication-entry-list class="card" />
     </section>
   `,
   styles: [
