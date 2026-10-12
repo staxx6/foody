@@ -354,13 +354,14 @@ export class DayComponent {
 
   protected pick(value: string): void {
     // Clearing the field in the picker keeps the day
-    if (value) this.day.set(new Date(`${value}T00:00`));
+    if (value) this.uiStore.showDay(new Date(`${value}T00:00`), true);
   }
 
   private touchStart: { x: number; y: number } | null = null;
 
   protected shift(days: number): void {
-    this.day.update((day) => addDays(day, days));
+    // Paging through the days is not a way one wants to go back step by step
+    this.uiStore.showDay(addDays(this.day(), days), true);
   }
 
   protected onTouchStart(event: TouchEvent): void {

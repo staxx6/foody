@@ -29,9 +29,16 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
 
 ## Architecture
 
-- One route. `HomeComponent` switches the pages by `UiStore.activeForm` (`ActiveSite`), not by
-  the router. `showForm()` opens a page and returns to today on close, `edit(form, id)` returns
-  to the page it was opened from. Every page change recreates the page component.
+- One wildcard route. `HomeComponent` switches the pages by `UiStore.activeForm` (`ActiveSite`).
+  The address is the source of the state: `UiStore` (`shared/ui-store.ts`) maps every page to
+  an address (`/month`, `/meal/new`, `/food/<id>/edit`, `/day/2026-10-11`, ...), its methods
+  navigate, and it reads the page from every navigation. A new page needs an entry in the
+  tables there, or its address leads to the start page.
+- `close()` is the back button of the browser, so a form returns to where it was opened from.
+  Paging through days replaces the address instead of adding steps to go back.
+- Every page change recreates the page component, except the day view when its day changes.
+- Forms shown in place of another form (a new symptom while logging one, a follow-up while
+  editing an entry) have no address; the back button leaves the whole form.
 - Pages whose name starts with `new-` or `edit-` are forms (`UiStore.isEditing`).
 - Stores are NgRx signal stores or services with signals, one per collection, next to their
   components. They use `DATA_ACCESS`, which is the offline copy (`OfflineDataAccessService`):
