@@ -24,7 +24,9 @@ import { DishEntry, DishEntryStore } from './dish-entry-store';
           <li
             class="entry clickable"
             appRow
+            [rowId]="entry.id"
             (rowOpen)="menu.open()"
+            (rowCopy)="uiStore.copy('new-meal', entry.id)"
             (rowClick)="menu.toggle()"
             (rowEdit)="uiStore.edit('new-meal', entry.id)"
             (rowDelete)="remove(entry)"
@@ -78,6 +80,7 @@ export class DishEntryListComponent {
     const id = entry.dishId || entry.foodItemId;
     return entryActions(this.t(), {
       edit: () => this.uiStore.edit('new-meal', entry.id),
+      copy: () => this.uiStore.copy('new-meal', entry.id),
       details: id
         ? () => this.uiStore.edit(entry.dishId ? 'view-dish' : 'view-food', id)
         : null,

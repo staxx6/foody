@@ -150,8 +150,11 @@ export class OfflineDataAccessService implements DataAccess {
   readonly lastSyncedAt = signal<Date | null>(null);
   /** The server rejected a record, e.g. because of invalid data */
   readonly syncError = signal<string | null>(null);
-  /** Increases whenever a synchronization changed the local copy */
+  /** Increases whenever what the local copy shows changed without the app */
   readonly revision = signal(0);
+
+  /** Records that are treated as deleted, see `hide` */
+  private readonly hidden = new Set<string>();
 
   private readonly ready = this.init();
 
@@ -187,7 +190,9 @@ export class OfflineDataAccessService implements DataAccess {
     await this.ready;
 
     let records = [...this.records.values()].filter(
-      (record) => record['collectionName'] === collectionName,
+      (record) =>
+        record['collectionName'] === collectionName &&
+        !this.hidden.has(record.id),
     );
     if (records.length === 0 && !this.lastSyncedAt()) {
       throw new Error(
@@ -240,6 +245,7 @@ export class OfflineDataAccessService implements DataAccess {
 
     const record = this.records.get(id);
     if (record?.['collectionName'] !== collectionName) return null;
+    if (this.hidden.has(id)) return null;
     const paths = expand?.split(',').map((path) => path.trim()) ?? [];
     return map(this.expand(record, paths));
   }
@@ -315,6 +321,7 @@ export class OfflineDataAccessService implements DataAccess {
       isKnownToServer ? [{ collectionName, data: { id }, delete: true }] : [],
     );
     this.records.delete(id);
+    this.hidden.delete(id);
     this.outbox = [
       ...this.outbox.filter((item) => !unsent.includes(item)),
       ...added,
@@ -335,6 +342,7 @@ export class OfflineDataAccessService implements DataAccess {
 
     return [...this.records.values()].filter(
       (record) =>
+        !this.hidden.has(record.id) &&
         !ignoreCollections.includes(String(record['collectionName'])) &&
         Object.entries(record).some(
           ([field, value]) =>
@@ -342,6 +350,20 @@ export class OfflineDataAccessService implements DataAccess {
             (value === id || (Array.isArray(value) && value.includes(id))),
         ),
     ).length;
+  }
+
+  /**
+   * Treats records as deleted without deleting them yet, so deleting can be
+   * undone for a moment: `unhide` brings them back, `delete` makes it final
+   */
+  hide(ids: string[]): void {
+    ids.forEach((id) => this.hidden.add(id));
+    this.revision.update((revision) => revision + 1);
+  }
+
+  unhide(ids: string[]): void {
+    ids.forEach((id) => this.hidden.delete(id));
+    this.revision.update((revision) => revision + 1);
   }
 
   getFileUrl(record: DataRecord, fileName: string): string {

@@ -101,7 +101,7 @@ export const DishEntryStore = signalStore(
       amountUnitId: string;
       foodItemId?: string;
       dishId?: string;
-    }): Promise<void> {
+    }): Promise<string> {
       const data: Record<string, unknown> = {
         date: payload.date,
         amount: payload.amount,
@@ -110,7 +110,7 @@ export const DishEntryStore = signalStore(
       if (payload.foodItemId) data['to_foodItem'] = payload.foodItemId;
       if (payload.dishId) data['to_dish'] = payload.dishId;
 
-      await dataAccess.create<DishEntry>({
+      const entry = await dataAccess.create<DishEntry>({
         collectionName: 'dishEntries',
         data,
         map: (record) => ({
@@ -124,6 +124,7 @@ export const DishEntryStore = signalStore(
           date: record['date'] ? String(record['date']) : record.created,
         }),
       });
+      return entry.id;
     },
 
     async deleteDishEntry(id: string): Promise<void> {

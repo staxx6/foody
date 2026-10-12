@@ -19,7 +19,7 @@ import { ConfirmService } from './confirm.service';
         <div class="actions">
           @if (request.confirmLabel) {
             <button type="button" (click)="confirm.answer(false)">
-              {{ t().cancel }}
+              {{ request.cancelLabel ?? t().cancel }}
             </button>
             <button type="button" class="danger" (click)="confirm.answer(true)">
               {{ request.confirmLabel }}

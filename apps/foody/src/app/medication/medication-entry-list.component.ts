@@ -27,7 +27,9 @@ import {
           <li
             class="entry clickable"
             appRow
+            [rowId]="entry.id"
             (rowOpen)="menu.open()"
+            (rowCopy)="uiStore.copy('new-medication-entry', entry.id)"
             (rowClick)="menu.toggle()"
             (rowEdit)="uiStore.edit('new-medication-entry', entry.id)"
             (rowDelete)="remove(entry)"
@@ -103,6 +105,7 @@ export class MedicationEntryListComponent {
   protected actions(entry: MedicationEntry): MenuAction[] {
     return entryActions(this.t(), {
       edit: () => this.uiStore.edit('new-medication-entry', entry.id),
+      copy: () => this.uiStore.copy('new-medication-entry', entry.id),
       details: entry.medicationId
         ? () => this.uiStore.edit('view-medication', entry.medicationId)
         : null,

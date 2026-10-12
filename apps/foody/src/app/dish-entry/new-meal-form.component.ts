@@ -1,11 +1,12 @@
 import {
-  computed,
+  ChangeDetectorRef,
   Component,
+  computed,
+  ElementRef,
   inject,
+  input,
   OnInit,
   signal,
-  ChangeDetectorRef,
-  input,
 } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
@@ -17,6 +18,7 @@ import { NewDishFormComponent } from '../dish/new-dish-form.component';
 import { NewFoodItemFormComponent } from '../ingredient/new-food-item-form.component';
 import { AmountUnitStore } from '../shared/amount-unit-store';
 import { UiStore } from '../shared/ui-store';
+import { RecentUse, recentFirst } from '../shared/recent-use';
 import { IconComponent } from '../shared/icon.component';
 import { QuickAddComponent } from '../shared/quick-add.component';
 import {
@@ -28,6 +30,22 @@ import {
 } from '../shared/date-utils';
 
 type SourceType = 'food-item' | 'dish';
+
+/** The forms that are shown in place of this one, see UiStore.nested */
+const NESTED: Record<SourceType, string> = {
+  'food-item': 'food',
+  dish: 'dish',
+};
+
+/** A food or dish of a meal, with how much of it was eaten */
+type MealItem = {
+  sourceType: SourceType;
+  sourceId: string;
+  name: string;
+  amount: string;
+  amountUnitId: string;
+  unitName: string;
+};
 
 // Most entries are a single piece of something
 const DEFAULT_AMOUNT = '1';
@@ -50,13 +68,13 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
       @case ('food-item') {
         <app-new-food-item-form
           (saved)="created($event.id)"
-          (cancelled)="creating.set(null)"
+          (cancelled)="uiStore.closeNested()"
         />
       }
       @case ('dish') {
         <app-new-dish-form
           (saved)="created($event.id)"
-          (cancelled)="creating.set(null)"
+          (cancelled)="uiStore.closeNested()"
         />
       }
     }
@@ -76,8 +94,34 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
       </div>
 
       <form class="card" (ngSubmit)="save()">
+        @if (items().length > 0) {
+          <div class="field">
+            <span class="label">{{ t().partOfMeal }}</span>
+            <ul class="items">
+              @for (item of items(); track $index) {
+                <li>
+                  <span class="name">{{ item.name }}</span>
+                  <span class="chip"
+                    >{{ item.amount }} {{ item.unitName }}</span
+                  >
+                  <button
+                    type="button"
+                    class="icon-btn danger"
+                    (click)="removeItem($index)"
+                    [attr.aria-label]="t().removeNamed(item.name)"
+                  >
+                    <app-icon name="close" />
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
         <div class="field">
-          <span class="label">{{ t().whatDidYouEat }} *</span>
+          <span class="label">
+            {{ items().length > 0 ? t().whatElse : t().whatDidYouEat }} *
+          </span>
           <div class="toggle" role="group">
             <button
               type="button"
@@ -95,11 +139,9 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
             </button>
           </div>
           <app-search-select
-            [appAutofocus]="!editId()"
+            [appAutofocus]="!editId() && !copyId()"
             [options]="
-              sourceType === 'food-item'
-                ? ingredientStore.foodItems()
-                : dishStore.dishes()
+              sourceType === 'food-item' ? foodOptions() : dishOptions()
             "
             [value]="selectedSourceId()"
             (valueChange)="select($event)"
@@ -108,7 +150,11 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
             "
             [ariaLabel]="sourceType === 'food-item' ? t().food : t().dish"
           />
-          <button type="button" class="link" (click)="creating.set(sourceType)">
+          <button
+            type="button"
+            class="link"
+            (click)="uiStore.openNested(nestedName[sourceType])"
+          >
             {{
               sourceType === 'food-item' ? t().createNewFood : t().createNewDish
             }}
@@ -135,6 +181,18 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
           [placeholder]="t().unitPlaceholder"
           [create]="addUnit"
         />
+        <!-- Several things eaten together are logged in one go; an entry
+             that is changed stays the one thing it is -->
+        @if (!editId()) {
+          <button
+            type="button"
+            class="link another"
+            [disabled]="!isItemValid()"
+            (click)="addItem()"
+          >
+            {{ t().addAnother }}
+          </button>
+        }
         <div class="field-row">
           <div class="field">
             <label for="date">{{ t().day }} *</label
@@ -176,6 +234,44 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
       </form>
     </div>
   `,
+  styles: [
+    `
+      .items {
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+
+      .items li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+      }
+
+      .items li + li {
+        border-top: 1px solid var(--border);
+      }
+
+      .items .name {
+        flex: 1;
+        min-width: 0;
+        font-weight: 500;
+        overflow-wrap: anywhere;
+      }
+
+      .another {
+        display: block;
+        margin-bottom: 18px;
+      }
+
+      .another:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+    `,
+  ],
 })
 export class NewMealFormComponent implements OnInit {
   protected readonly i18n = inject(I18n);
@@ -191,10 +287,13 @@ export class NewMealFormComponent implements OnInit {
       .map((unit) => ({ id: unit.id, name: this.i18n.name(unit) })),
   );
   private readonly dishEntryStore = inject(DishEntryStore);
-  private readonly uiStore = inject(UiStore);
+  protected readonly uiStore = inject(UiStore);
+  private readonly recentUse = inject(RecentUse);
 
   /** The record to change; without it a new one is created */
   readonly editId = input<string | null>(null);
+  /** The entry a new one starts as a copy of: the same meal, eaten now */
+  readonly copyId = input<string | null>(null);
   private readonly changes = inject(ChangeDetectorRef);
 
   sourceType: SourceType = 'food-item';
@@ -207,7 +306,27 @@ export class NewMealFormComponent implements OnInit {
   time = toTimeInputValue(new Date());
 
   /** The form for a new food or dish shown in place of this one */
-  protected readonly creating = signal<SourceType | null>(null);
+  protected readonly creating = computed<SourceType | null>(() =>
+    this.uiStore.isNested(NESTED.dish)
+      ? 'dish'
+      : this.uiStore.isNested(NESTED['food-item'])
+        ? 'food-item'
+        : null,
+  );
+  protected readonly nestedName = NESTED;
+
+  /** What was eaten lately comes first in the search */
+  private readonly recentFoods = signal<string[]>([]);
+  private readonly recentDishes = signal<string[]>([]);
+  protected readonly foodOptions = computed(() =>
+    recentFirst(this.ingredientStore.foodItems(), this.recentFoods()),
+  );
+  protected readonly dishOptions = computed(() =>
+    recentFirst(this.dishStore.dishes(), this.recentDishes()),
+  );
+  /** What else was eaten at the same time, added before the current choice */
+  protected readonly items = signal<MealItem[]>([]);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
 
@@ -215,21 +334,34 @@ export class NewMealFormComponent implements OnInit {
     this.ingredientStore.loadFoodItems();
     this.dishStore.loadDishes();
     void this.selectDefaultUnit();
+    void this.loadRecent();
     void this.loadRecord();
+  }
+
+  private async loadRecent(): Promise<void> {
+    this.recentFoods.set(
+      await this.recentUse.ids('dishEntries', 'to_foodItem'),
+    );
+    this.recentDishes.set(await this.recentUse.ids('dishEntries', 'to_dish'));
   }
 
   private async loadRecord(): Promise<void> {
     const id = this.editId();
-    const entry = id ? await this.dishEntryStore.getDishEntry(id) : null;
+    const entry = await this.dishEntryStore.getDishEntry(
+      id ?? this.copyId() ?? '',
+    );
     if (!entry) return;
 
-    const date = fromPocketBaseDate(entry.date);
     this.sourceType = entry.dishId ? 'dish' : 'food-item';
     this.selectedSourceId.set(entry.dishId ?? entry.foodItemId ?? '');
     this.amount = entry.amount;
     this.amountUnitId.set(entry.amountUnitId);
-    this.date = toDateInputValue(date);
-    this.time = toTimeInputValue(date);
+    // A copy is eaten now, not when the original was
+    if (id) {
+      const date = fromPocketBaseDate(entry.date);
+      this.date = toDateInputValue(date);
+      this.time = toTimeInputValue(date);
+    }
     this.changes.markForCheck();
   }
 
@@ -241,20 +373,66 @@ export class NewMealFormComponent implements OnInit {
     if (unit && !this.amountUnitId()) this.amountUnitId.set(unit.id);
   }
 
-  isValid(): boolean {
+  /** Whether what is entered for one food or dish is complete */
+  protected isItemValid(): boolean {
     return (
-      !!this.selectedSourceId() &&
-      !!this.amount.trim() &&
-      !!this.amountUnitId() &&
-      !!this.date &&
-      !!this.time
+      !!this.selectedSourceId() && !!this.amount.trim() && !!this.amountUnitId()
     );
+  }
+
+  isValid(): boolean {
+    // With items added before, nothing further has to be chosen
+    const isComplete =
+      this.isItemValid() ||
+      (this.items().length > 0 && !this.selectedSourceId());
+    return isComplete && !!this.date && !!this.time;
+  }
+
+  /** What is entered for the food or dish that is chosen */
+  private currentItem(): MealItem {
+    const id = this.selectedSourceId();
+    const options =
+      this.sourceType === 'dish'
+        ? this.dishStore.dishes()
+        : this.ingredientStore.foodItems();
+    return {
+      sourceType: this.sourceType,
+      sourceId: id,
+      name: options.find((option) => option.id === id)?.name ?? '',
+      amount: this.amount.trim(),
+      amountUnitId: this.amountUnitId(),
+      unitName:
+        this.unitOptions().find((unit) => unit.id === this.amountUnitId())
+          ?.name ?? '',
+    };
+  }
+
+  /** Keeps what is entered as part of the meal and starts the next one */
+  protected addItem(): void {
+    if (!this.isItemValid()) return;
+    this.items.update((items) => [...items, this.currentItem()]);
+
+    this.selectedSourceId.set('');
+    this.amount = DEFAULT_AMOUNT;
+    // Back to the usual unit; without one, the unit used last stays
+    const unit = this.amountUnitStore
+      .units()
+      .find(({ code }) => code === DEFAULT_UNIT_CODE);
+    if (unit) this.amountUnitId.set(unit.id);
+    // On to choosing the next one
+    this.host.nativeElement
+      .querySelector<HTMLElement>('form app-search-select input')
+      ?.focus();
+  }
+
+  protected removeItem(index: number): void {
+    this.items.update((items) => items.filter((_, i) => i !== index));
   }
 
   /** A food or dish that was created from here is selected right away */
   protected created(id: string): void {
     this.select(id);
-    this.creating.set(null);
+    this.uiStore.closeNested();
   }
 
   /** Choosing a food suggests the amount it is usually eaten in */
@@ -298,19 +476,33 @@ export class NewMealFormComponent implements OnInit {
     this.error.set(null);
     try {
       const id = this.editId();
-      const entry = {
-        date: toPocketBaseDate(fromDateAndTime(this.date, this.time)),
-        amount: this.amount.trim(),
-        amountUnitId: this.amountUnitId(),
-        foodItemId:
-          this.sourceType === 'food-item' ? this.selectedSourceId() : undefined,
-        dishId:
-          this.sourceType === 'dish' ? this.selectedSourceId() : undefined,
-      };
-      await (id
-        ? this.dishEntryStore.updateDishEntry(id, entry)
-        : this.dishEntryStore.createDishEntry(entry));
-      this.uiStore.close();
+      const date = toPocketBaseDate(fromDateAndTime(this.date, this.time));
+      const toEntry = (item: MealItem) => ({
+        date,
+        amount: item.amount,
+        amountUnitId: item.amountUnitId,
+        foodItemId: item.sourceType === 'food-item' ? item.sourceId : undefined,
+        dishId: item.sourceType === 'dish' ? item.sourceId : undefined,
+      });
+
+      let savedId = id ?? undefined;
+      if (id) {
+        await this.dishEntryStore.updateDishEntry(
+          id,
+          toEntry(this.currentItem()),
+        );
+      } else {
+        // Everything eaten together becomes an entry of its own, all at the
+        // same time
+        const items = [
+          ...this.items(),
+          ...(this.isItemValid() ? [this.currentItem()] : []),
+        ];
+        for (const item of items) {
+          savedId = await this.dishEntryStore.createDishEntry(toEntry(item));
+        }
+      }
+      this.uiStore.done(savedId);
     } catch (err) {
       this.error.set(
         err instanceof Error ? err.message : this.t().savingFailed,

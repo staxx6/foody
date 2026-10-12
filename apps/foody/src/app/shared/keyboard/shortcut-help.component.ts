@@ -182,6 +182,7 @@ export class ShortcutHelpComponent {
           { keys: ['?'], label: keys.help },
           { keys: ['1', '2', '3', '4', '5'], label: keys.pages },
           { keys: ['Esc'], label: keys.escape },
+          { keys: [`${t.keyCtrl} + Z`], label: keys.undo },
         ],
       },
       {
@@ -204,6 +205,7 @@ export class ShortcutHelpComponent {
           { keys: ['T'], label: t.backToToday },
           ...rows,
           { keys: ['Enter'], label: keys.openMenu },
+          { keys: ['D'], label: t.logAgain },
           { keys: ['F'], label: keys.followUp },
         ],
       },
@@ -218,7 +220,11 @@ export class ShortcutHelpComponent {
       },
       {
         title: t.lists,
-        shortcuts: [{ keys: ['/'], label: keys.search }, ...rows],
+        shortcuts: [
+          { keys: ['/'], label: keys.search },
+          ...rows,
+          { keys: ['Enter'], label: keys.openMenu },
+        ],
       },
       {
         title: t.report,
@@ -230,6 +236,7 @@ export class ShortcutHelpComponent {
           { keys: [`${t.keyCtrl} + Enter`], label: t.save },
           { keys: ['Esc'], label: keys.cancelForm },
           { keys: ['↑', '↓', 'Enter'], label: keys.pickOption },
+          { keys: ['1', '…', '0'], label: keys.level },
         ],
       },
     ];

@@ -23,7 +23,16 @@ export type ActiveSite =
   | 'settings'
   | 'lists';
 
-type Page = { form: ActiveSite; id: string | null; day?: Date };
+type Page = {
+  form: ActiveSite;
+  /** The record that is shown or changed */
+  id: string | null;
+  /** The record a new one starts as a copy of */
+  copyId?: string | null;
+  day?: Date;
+  /** The forms opened from the form, see `nested` */
+  nested?: string[];
+};
 
 /** The pages without a record, with their address */
 const PLAIN: Partial<Record<ActiveSite, string>> = {
@@ -32,7 +41,10 @@ const PLAIN: Partial<Record<ActiveSite, string>> = {
   lists: 'lists',
   settings: 'settings',
 };
-/** The forms: `<name>/new` creates a record, `<name>/<id>/edit` changes it */
+/**
+ * The forms: `<name>/new` creates a record, `<name>/<id>/edit` changes it
+ * and `<name>/<id>/copy` creates one that starts as a copy
+ */
 const FORMS: Partial<Record<ActiveSite, string>> = {
   'new-meal': 'meal',
   'new-health-entry': 'symptom-entry',
@@ -53,6 +65,8 @@ const VIEWS: Partial<Record<ActiveSite, string>> = {
 /** A follow-up is added to a symptom entry: `symptom-entry/<id>/follow-up` */
 const FOLLOW_UP = 'follow-up';
 const DAY = 'day';
+/** The forms opened from a form, e.g. `?with=dish,dish-food` */
+const NESTED = 'with';
 
 function siteOf(
   names: Partial<Record<ActiveSite, string>>,
@@ -63,24 +77,44 @@ function siteOf(
   );
 }
 
+/** The address without what follows the path */
+export function pathOf(url: string): string {
+  return url.split(/[?#]/)[0];
+}
+
 /** The address of a page; the day view of today is the start page */
-function toUrl({ form, id, day }: Page): string {
-  if (form === 'today') {
-    return !day || isSameDay(day, new Date())
-      ? '/'
-      : `/${DAY}/${toDateInputValue(day)}`;
-  }
-  if (form === 'new-follow-up')
-    return `/${FORMS['new-health-entry']}/${id}/${FOLLOW_UP}`;
-  if (PLAIN[form]) return `/${PLAIN[form]}`;
-  if (VIEWS[form]) return `/${VIEWS[form]}/${id}`;
-  return id ? `/${FORMS[form]}/${id}/edit` : `/${FORMS[form]}/new`;
+function toUrl({ form, id, copyId, day, nested }: Page): string {
+  const path = () => {
+    if (form === 'today') {
+      return !day || isSameDay(day, new Date())
+        ? '/'
+        : `/${DAY}/${toDateInputValue(day)}`;
+    }
+    if (form === 'new-follow-up') {
+      return `/${FORMS['new-health-entry']}/${id}/${FOLLOW_UP}`;
+    }
+    if (PLAIN[form]) return `/${PLAIN[form]}`;
+    if (VIEWS[form]) return `/${VIEWS[form]}/${id}`;
+    if (copyId) return `/${FORMS[form]}/${copyId}/copy`;
+    return id ? `/${FORMS[form]}/${id}/edit` : `/${FORMS[form]}/new`;
+  };
+  return nested?.length
+    ? `${path()}?${NESTED}=${nested.map(encodeURIComponent).join(',')}`
+    : path();
 }
 
 /** The page of an address, or null if there is no such page */
 function toPage(url: string): Page | null {
-  const [name, second, third, ...rest] = url
-    .split(/[?#]/)[0]
+  const page = toPageOfPath(pathOf(url));
+  if (!page) return null;
+
+  const query = new URLSearchParams(url.split('#')[0].split('?')[1] ?? '');
+  const nested = (query.get(NESTED) ?? '').split(',').filter(Boolean);
+  return { ...page, nested };
+}
+
+function toPageOfPath(path: string): Page | null {
+  const [name, second, third, ...rest] = path
     .split('/')
     .filter(Boolean)
     .map(decodeURIComponent);
@@ -103,6 +137,7 @@ function toPage(url: string): Page | null {
   const form = siteOf(FORMS, name);
   if (form && second === 'new' && !third) return { form, id: null };
   if (form && third === 'edit') return { form, id: second };
+  if (form && third === 'copy') return { form, id: null, copyId: second };
   if (form === 'new-health-entry' && third === FOLLOW_UP) {
     return { form: 'new-follow-up', id: second };
   }
@@ -123,10 +158,32 @@ export class UiStore {
   readonly activeForm = signal<ActiveSite>('today');
   /** The record the active form changes; null if it creates a new one */
   readonly editId = signal<string | null>(null);
+  /** The record the new one of the active form starts as a copy of */
+  readonly copyId = signal<string | null>(null);
   /** The day the day view shows and new entries are logged for */
   readonly selectedDay = signal(startOfDay(new Date()));
+  /**
+   * The forms that are shown in place of the form they were opened from,
+   * e.g. the one for a new symptom while logging a symptom; the last one is
+   * the one on top. They are part of the address, so the back button closes
+   * them one by one.
+   */
+  readonly nested = signal<string[]>([]);
   /** Changes whenever another page is opened */
   private readonly pageKey = signal('');
+  /** The path of the address that is shown */
+  private path = '';
+
+  /**
+   * The form has input that is not saved. Leaving it asks first, see
+   * `confirmLeaving`.
+   */
+  readonly isDirty = signal(false);
+  /**
+   * The row that gets the focus when its list is shown again, e.g. the entry
+   * that was just edited (see row.directive)
+   */
+  readonly focusRowId = signal<string | null>(null);
 
   /**
    * The page that is shown. Its key changes whenever a page is opened, so a
@@ -136,6 +193,7 @@ export class UiStore {
     key: this.pageKey(),
     form: this.activeForm(),
     editId: this.editId(),
+    copyId: this.copyId(),
   }));
 
   /** A form is open, which entered data would be lost by leaving */
@@ -149,6 +207,11 @@ export class UiStore {
     });
     // The first navigation may be over already
     this.show(this.location.path(), 0);
+
+    // Closing or reloading the app would lose the input as well
+    window.addEventListener('beforeunload', (event) => {
+      if (this.isDirty()) event.preventDefault();
+    });
   }
 
   showForm(form: ActiveSite): void {
@@ -158,25 +221,44 @@ export class UiStore {
 
   /** Opens the form or the details of a record */
   edit(form: ActiveSite, id: string): void {
+    this.focusRowId.set(id);
     this.open({ form, id });
+  }
+
+  /** Opens the form for a new record that starts as a copy of a record */
+  copy(form: ActiveSite, id: string): void {
+    this.open({ form, id: null, copyId: id });
   }
 
   /** Leaves a form or the details: back to where they were opened from */
   close(): void {
-    // Opened by its address, there is no page of the app to go back to
-    if (this.canGoBack()) this.location.back();
-    else void this.router.navigateByUrl('/', { replaceUrl: true });
+    this.back('/');
   }
 
-  /** Whether the page before this one is a page of the app */
-  private canGoBack(): boolean {
-    // Knows it also after a reload, where the router starts counting anew
-    const { navigation } = window as { navigation?: { canGoBack?: boolean } };
-    if (typeof navigation?.canGoBack === 'boolean') return navigation.canGoBack;
+  /**
+   * Leaves a form whose input was saved
+   * @param id the record that was saved, whose row gets the focus
+   */
+  done(id?: string): void {
+    this.isDirty.set(false);
+    if (id) this.focusRowId.set(id);
+    this.close();
+  }
 
-    // Browsers without it: the router numbers its navigations
-    const state = this.location.getState() as { navigationId?: number } | null;
-    return (state?.navigationId ?? 1) > 1;
+  /** Whether the form is shown in place of the form it was opened from */
+  isNested(name: string): boolean {
+    return this.nested().includes(name);
+  }
+
+  /** Shows a form in place of the current one, see `nested` */
+  openNested(name: string): void {
+    this.open({ ...this.current(), nested: [...this.nested(), name] });
+  }
+
+  /** Closes the form that was opened last in place of another */
+  closeNested(): void {
+    if (this.nested().length === 0) return;
+    this.back(toUrl({ ...this.current(), nested: this.nested().slice(0, -1) }));
   }
 
   /**
@@ -190,12 +272,6 @@ export class UiStore {
     this.open({ form: 'today', id: null, day }, replace);
   }
 
-  private selectDay(day: Date): void {
-    if (!isSameDay(day, this.selectedDay())) {
-      this.selectedDay.set(startOfDay(day));
-    }
-  }
-
   /** Shows today */
   goHome(): void {
     this.showDay(new Date());
@@ -205,8 +281,44 @@ export class UiStore {
     return this.activeForm() === activeForm;
   }
 
+  private selectDay(day: Date): void {
+    if (!isSameDay(day, this.selectedDay())) {
+      this.selectedDay.set(startOfDay(day));
+    }
+  }
+
+  private current(): Page {
+    return {
+      form: this.activeForm(),
+      id: this.editId(),
+      copyId: this.copyId(),
+      day: this.selectedDay(),
+    };
+  }
+
   private open(page: Page, replaceUrl = false): void {
     void this.router.navigateByUrl(toUrl(page), { replaceUrl });
+  }
+
+  /**
+   * One step back
+   * @param fallback where to go if the page was opened by its address, so
+   *   there is no page of the app to go back to
+   */
+  private back(fallback: string): void {
+    if (this.canGoBack()) this.location.back();
+    else void this.router.navigateByUrl(fallback, { replaceUrl: true });
+  }
+
+  /** Whether the page before this one is a page of the app */
+  private canGoBack(): boolean {
+    // Knows it also after a reload, where the router starts counting anew
+    const { navigation } = window as { navigation?: { canGoBack?: boolean } };
+    if (typeof navigation?.canGoBack === 'boolean') return navigation.canGoBack;
+
+    // Browsers without it: the router numbers its navigations
+    const state = this.location.getState() as { navigationId?: number } | null;
+    return (state?.navigationId ?? 1) > 1;
   }
 
   /** Takes over the page of an address */
@@ -218,8 +330,19 @@ export class UiStore {
       return;
     }
 
+    // Only a form was opened or closed in place of the form that is shown
+    const isSamePage =
+      page.form !== 'today' &&
+      this.pageKey() !== '' &&
+      pathOf(url) === this.path;
+    this.path = pathOf(url);
+    this.nested.set(page.nested ?? []);
+    if (isSamePage) return;
+
     if (page.day) this.selectDay(page.day);
+    this.isDirty.set(false);
     this.editId.set(page.id);
+    this.copyId.set(page.copyId ?? null);
     this.activeForm.set(page.form);
     // The day view stays while its day changes; anything else starts fresh
     this.pageKey.set(page.form === 'today' ? 'today' : `${navigationId}`);

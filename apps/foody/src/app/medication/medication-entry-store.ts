@@ -109,12 +109,14 @@ export const MedicationEntryStore = signalStore(
       });
     },
 
-    async createEntry(input: MedicationEntryInput): Promise<void> {
-      await dataAccess.create({
+    /** @returns the id of the new entry */
+    async createEntry(input: MedicationEntryInput): Promise<string> {
+      const entry = await dataAccess.create({
         collectionName: 'medicationEntries',
         data: toData(input),
         map: (record) => record,
       });
+      return entry.id;
     },
 
     async updateEntry(id: string, input: MedicationEntryInput): Promise<void> {

@@ -59,7 +59,7 @@ const en = {
   filterBySymptom: 'Show only this symptom',
   discomfort: 'Discomfort',
   discomfortHint:
-    'The discomfort levels of the entries added up. An entry without a level counts as 50.',
+    'The discomfort levels of the entries added up. An entry without a level counts as 5.',
   less: 'less',
   more: 'more',
   noComplaints: 'No complaints',
@@ -103,6 +103,10 @@ const en = {
 
   // Log meal
   whatDidYouEat: 'What did you eat or drink?',
+  whatElse: 'What else?',
+  partOfMeal: 'Part of this meal',
+  addAnother: '+ Add another food or dish',
+  removeNamed: (name: string) => `Remove ${name}`,
   singleFood: 'Single food',
   selectFood: 'Search food…',
   selectDish: 'Search dish…',
@@ -117,7 +121,7 @@ const en = {
   // Log symptom
   selectSymptom: 'Search symptom…',
   createNewSymptom: '+ Create new symptom',
-  discomfortLevelRange: 'Discomfort level (1–100)',
+  discomfortLevelRange: 'Discomfort level (1–10)',
 
   // Creating foods, dishes and symptoms
   foodPlaceholder: 'e.g. apple',
@@ -247,9 +251,15 @@ const en = {
   ok: 'OK',
   delete: 'Delete',
   deleteNamed: (name: string) => `Delete ${name}`,
-  deleteTitle: 'Delete permanently?',
-  deleteMessage: (name: string) =>
-    `“${name}” will be deleted on all your devices. This cannot be undone.`,
+  deletedNamed: (name: string) => `“${name}” deleted`,
+  undo: 'Undo',
+
+  // Leaving a form with input
+  discardTitle: 'Discard your input?',
+  discardMessage: 'What you entered in this form is not saved yet.',
+  discard: 'Discard',
+  keepEditing: 'Keep editing',
+  logAgain: 'Log again',
   cannotDeleteTitle: 'Cannot be deleted',
   stillUsed: (name: string, count: number) =>
     `“${name}” is still used by ${count} ${count === 1 ? 'entry' : 'entries'}. Delete ${count === 1 ? 'it' : 'them'} first.`,
@@ -323,6 +333,8 @@ const en = {
     search: 'Search',
     cancelForm: 'Cancel',
     pickOption: 'Choose in a search field',
+    undo: 'Undo deleting',
+    level: 'Choose the discomfort level (0 for 10)',
   },
 };
 
@@ -380,7 +392,7 @@ const de: Translations = {
   filterBySymptom: 'Nur dieses Symptom anzeigen',
   discomfort: 'Beschwerden',
   discomfortHint:
-    'Die Beschwerdegrade der Einträge zusammengezählt. Ein Eintrag ohne Grad zählt als 50.',
+    'Die Beschwerdegrade der Einträge zusammengezählt. Ein Eintrag ohne Grad zählt als 5.',
   less: 'weniger',
   more: 'mehr',
   noComplaints: 'Keine Beschwerden',
@@ -420,6 +432,10 @@ const de: Translations = {
   newSymptomHint: 'Etwas, das du spürst, z. B. Kopfschmerzen',
 
   whatDidYouEat: 'Was hast du gegessen oder getrunken?',
+  whatElse: 'Was noch?',
+  partOfMeal: 'Gehört zu dieser Mahlzeit',
+  addAnother: '+ Weiteres Lebensmittel oder Gericht',
+  removeNamed: (name) => `${name} entfernen`,
   singleFood: 'Lebensmittel',
   selectFood: 'Lebensmittel suchen…',
   selectDish: 'Gericht suchen…',
@@ -433,7 +449,7 @@ const de: Translations = {
 
   selectSymptom: 'Symptom suchen…',
   createNewSymptom: '+ Neues Symptom anlegen',
-  discomfortLevelRange: 'Beschwerdegrad (1–100)',
+  discomfortLevelRange: 'Beschwerdegrad (1–10)',
 
   foodPlaceholder: 'z. B. Apfel',
   dishPlaceholder: 'z. B. Lasagne',
@@ -551,9 +567,15 @@ const de: Translations = {
   ok: 'OK',
   delete: 'Löschen',
   deleteNamed: (name) => `${name} löschen`,
-  deleteTitle: 'Endgültig löschen?',
-  deleteMessage: (name) =>
-    `„${name}“ wird auf allen deinen Geräten gelöscht. Das lässt sich nicht rückgängig machen.`,
+  deletedNamed: (name) => `„${name}“ gelöscht`,
+  undo: 'Rückgängig',
+
+  discardTitle: 'Eingaben verwerfen?',
+  discardMessage:
+    'Was du in diesem Formular eingetragen hast, ist noch nicht gespeichert.',
+  discard: 'Verwerfen',
+  keepEditing: 'Weiter bearbeiten',
+  logAgain: 'Nochmal eintragen',
   cannotDeleteTitle: 'Löschen nicht möglich',
   stillUsed: (name, count) =>
     `„${name}“ wird noch von ${count} ${count === 1 ? 'Eintrag' : 'Einträgen'} verwendet. Lösche ${count === 1 ? 'ihn' : 'sie'} zuerst.`,
@@ -623,6 +645,8 @@ const de: Translations = {
     search: 'Suchen',
     cancelForm: 'Abbrechen',
     pickOption: 'In einem Suchfeld auswählen',
+    undo: 'Löschen rückgängig machen',
+    level: 'Beschwerdegrad wählen (0 für 10)',
   },
 };
 

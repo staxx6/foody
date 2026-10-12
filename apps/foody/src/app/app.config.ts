@@ -10,14 +10,19 @@ import {
   DATA_ACCESS_CONFIG,
   OfflineDataAccessService,
 } from '@foody/pocketbase-access';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withRouterConfig } from '@angular/router';
 import { appRoutes } from './app.routes';
 import { SettingsStore } from './shared/settings-store';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(appRoutes),
+    provideRouter(
+      appRoutes,
+      // A navigation that is not confirmed (see confirmLeaving) leaves the
+      // history of the browser as it was, also after its back button
+      withRouterConfig({ canceledNavigationResolution: 'computed' }),
+    ),
     {
       provide: DATA_ACCESS_CONFIG,
       useValue: {

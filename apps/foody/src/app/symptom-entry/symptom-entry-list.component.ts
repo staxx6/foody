@@ -9,6 +9,7 @@ import {
   MenuAction,
 } from '../shared/entry-menu.component';
 import { RowDirective } from '../shared/keyboard/row.directive';
+import { LevelChipComponent } from '../shared/level.component';
 import { UiStore } from '../shared/ui-store';
 import { FollowUpSummaryComponent } from './follow-up-summary.component';
 import {
@@ -24,6 +25,7 @@ import {
     RowDirective,
     EntryMenuComponent,
     FollowUpSummaryComponent,
+    LevelChipComponent,
   ],
   template: `
     @if (symptomEntryStore.error()) {
@@ -34,7 +36,8 @@ import {
           <li
             class="entry clickable"
             appRow
-            [attr.data-entry-id]="entry.id"
+            [rowId]="entry.id"
+            (rowCopy)="uiStore.copy('new-health-entry', entry.id)"
             (rowOpen)="menu.open()"
             (rowClick)="menu.toggle()"
             (rowEdit)="uiStore.edit('new-health-entry', entry.id)"
@@ -46,17 +49,8 @@ import {
             }
             <span class="content">
               <span class="name">{{ entry.symptomName }}</span>
-              @if (entry.discomfortLevel !== null) {
-                <span
-                  class="chip"
-                  [class.medium]="
-                    entry.discomfortLevel > 33 && entry.discomfortLevel <= 66
-                  "
-                  [class.high]="entry.discomfortLevel > 66"
-                  [title]="t().discomfortLevel"
-                >
-                  {{ entry.discomfortLevel }}/100
-                </span>
+              @if (entry.discomfortLevel; as level) {
+                <app-level-chip [level]="level" [title]="t().discomfortLevel" />
               }
             </span>
             <app-entry-menu
@@ -129,6 +123,7 @@ export class SymptomEntryListComponent {
       },
       ...entryActions(t, {
         edit: () => this.uiStore.edit('new-health-entry', entry.id),
+        copy: () => this.uiStore.copy('new-health-entry', entry.id),
         details: entry.symptomId
           ? () => this.uiStore.edit('view-symptom', entry.symptomId)
           : null,

@@ -12,6 +12,7 @@ import { addDays, dayKey, toDateInputValue } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
 import { IconComponent } from '../shared/icon.component';
 import { Keyboard } from '../shared/keyboard/keyboard';
+import { levelStep } from '../shared/level.component';
 import { SearchSelectComponent } from '../shared/search/search-select.component';
 import { UiStore } from '../shared/ui-store';
 import { SymptomStore } from '../symptom-entry/symptom-store';
@@ -697,7 +698,7 @@ export class ReportComponent implements OnInit {
         cells: [
           time(entry.time),
           entry.name,
-          entry.level,
+          entry.level && levelStep(entry.level),
           entry.comment,
         ] as Cell[],
       })),
@@ -707,7 +708,7 @@ export class ReportComponent implements OnInit {
         cells: [
           time(followUp.time),
           `↳ ${followUp.name}: ${t.courses[followUp.course]}`,
-          followUp.level,
+          followUp.level && levelStep(followUp.level),
           followUp.comment,
         ] as Cell[],
       })),

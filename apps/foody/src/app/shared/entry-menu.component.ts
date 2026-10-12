@@ -23,17 +23,34 @@ export type MenuAction = {
 };
 
 /**
- * The actions every entry has: edit, show what it is an entry of (unless
- * that was deleted) and delete
+ * The actions every entry has: edit, log it once more, show what it is an
+ * entry of (unless that was deleted) and delete
  */
 export function entryActions(
   t: Translations,
-  run: { edit: () => void; details: (() => void) | null; remove: () => void },
+  run: {
+    edit: () => void;
+    copy?: () => void;
+    details: (() => void) | null;
+    remove: () => void;
+  },
 ): MenuAction[] {
+  const { copy, details } = run;
   return [
     { label: t.edit, icon: 'edit', key: 'e', keyLabel: 'E', run: run.edit },
-    ...(run.details
-      ? [{ label: t.showDetails, icon: 'info' as const, run: run.details }]
+    ...(copy
+      ? [
+          {
+            label: t.logAgain,
+            icon: 'copy' as const,
+            key: 'd',
+            keyLabel: 'D',
+            run: copy,
+          },
+        ]
+      : []),
+    ...(details
+      ? [{ label: t.showDetails, icon: 'info' as const, run: details }]
       : []),
     {
       label: t.delete,
@@ -192,6 +209,7 @@ export class EntryMenuComponent implements OnDestroy {
         ArrowUp: () => this.move(-1),
         e: runByKey,
         f: runByKey,
+        d: runByKey,
         Delete: runByKey,
       },
       { when: () => this.isOpen(), exclusive: true },

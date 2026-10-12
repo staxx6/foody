@@ -448,6 +448,45 @@ describe('OfflineDataAccessService', () => {
     expect(await service.usages('food', ['dishEntries'])).toBe(0);
   });
 
+  it('should treat hidden records as deleted until they are shown again', async () => {
+    server.records.push(
+      { id: 'food', collectionName: 'foodItems', created: '', updated: '1' },
+      {
+        id: 'e1',
+        collectionName: 'dishEntries',
+        to_foodItem: 'food',
+        created: '',
+        updated: '1',
+      },
+    );
+    const service = createService();
+    const entries = () =>
+      service.list({ collectionName: 'dishEntries', map: identity });
+    await service.sync();
+    const revision = service.revision();
+
+    service.hide(['e1']);
+
+    expect(await entries()).toEqual([]);
+    expect(
+      await service.getOne({
+        collectionName: 'dishEntries',
+        id: 'e1',
+        map: identity,
+      }),
+    ).toBeNull();
+    expect(await service.usages('food')).toBe(0);
+    expect(service.revision()).toBeGreaterThan(revision);
+    // Nothing was deleted on the server
+    await service.sync();
+    expect(server.deleteCalls).toEqual([]);
+
+    service.unhide(['e1']);
+
+    expect(await entries()).toHaveLength(1);
+    expect(await service.usages('food')).toBe(1);
+  });
+
   it('should send queued records in the order of creation', async () => {
     const service = createService();
     await service.sync();

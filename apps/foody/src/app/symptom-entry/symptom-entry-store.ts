@@ -164,7 +164,7 @@ export const SymptomEntryStore = signalStore(
         symptomId: string;
         discomfortLevel?: number | null;
         comment?: string;
-      }): Promise<void> {
+      }): Promise<string> {
         const data: Record<string, unknown> = {
           date: payload.date,
           to_symptom: payload.symptomId,
@@ -173,7 +173,7 @@ export const SymptomEntryStore = signalStore(
           data['discomfortLevel'] = payload.discomfortLevel;
         if (payload.comment) data['comment'] = payload.comment;
 
-        await dataAccess.create<SymptomEntry>({
+        const entry = await dataAccess.create<SymptomEntry>({
           collectionName: 'symptomEntries',
           data,
           map: (record) => ({
@@ -189,6 +189,7 @@ export const SymptomEntryStore = signalStore(
             followUps: [],
           }),
         });
+        return entry.id;
       },
 
       /** Deletes the entry together with its follow-ups */

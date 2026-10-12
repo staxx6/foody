@@ -331,7 +331,7 @@ export class DayComponent {
   private followUp(): boolean {
     const entry = 'app-symptom-entry-list li.entry';
     const selected = document.activeElement?.closest<HTMLElement>(entry);
-    const id = selected?.dataset['entryId'];
+    const id = selected?.dataset['rowId'];
     if (id) {
       this.uiStore.edit('new-follow-up', id);
       return true;

@@ -1,10 +1,11 @@
 import {
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
-  OnInit,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { Keyboard } from '../shared/keyboard/keyboard';
@@ -13,7 +14,13 @@ import { DishStore } from '../dish/dish-store';
 import { IngredientStore } from '../ingredient/ingredient-store';
 import { MedicationStore } from '../medication/medication-store';
 import { AmountUnitStore } from '../shared/amount-unit-store';
+import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { ConfirmService } from '../shared/confirm/confirm.service';
+import {
+  entryActions,
+  EntryMenuComponent,
+  MenuAction,
+} from '../shared/entry-menu.component';
 import { I18n } from '../shared/i18n/i18n';
 import { IconComponent, IconName } from '../shared/icon.component';
 import { fuzzyFilter } from '../shared/search/fuzzy';
@@ -26,6 +33,8 @@ type List = {
   icon: IconName;
   /** The form that changes an item of the list */
   editForm: ActiveSite;
+  /** The page that shows an item with when it was logged, if there is one */
+  viewForm?: ActiveSite;
   items: ListItem[];
   remove: (id: string) => Promise<void>;
 };
@@ -35,7 +44,7 @@ type List = {
  */
 @Component({
   selector: 'app-manage-lists',
-  imports: [IconComponent, RowDirective],
+  imports: [IconComponent, RowDirective, EntryMenuComponent],
   template: `
     <h2 class="page-title">{{ t().manageLists }}</h2>
 
@@ -63,29 +72,20 @@ type List = {
             <ul class="entry-list">
               @for (item of list.items; track item.id) {
                 <li
-                  class="entry"
+                  class="entry clickable"
                   appRow
-                  (rowOpen)="uiStore.edit(list.editForm, item.id)"
+                  [rowId]="item.id"
+                  (rowOpen)="menu.open()"
+                  (rowClick)="menu.toggle()"
                   (rowEdit)="uiStore.edit(list.editForm, item.id)"
                   (rowDelete)="confirm.delete(item, bind(list, item))"
                 >
                   <span class="name">{{ item.name }}</span>
-                  <button
-                    type="button"
-                    class="icon-btn"
-                    (click)="uiStore.edit(list.editForm, item.id)"
-                    [attr.aria-label]="t().editNamed(item.name)"
-                  >
-                    <app-icon name="edit" />
-                  </button>
-                  <button
-                    type="button"
-                    class="icon-btn danger"
-                    (click)="confirm.delete(item, bind(list, item))"
-                    [attr.aria-label]="t().deleteNamed(item.name)"
-                  >
-                    <app-icon name="trash" />
-                  </button>
+                  <app-entry-menu
+                    #menu
+                    [label]="item.name"
+                    [actions]="actions(list, item)"
+                  />
                 </li>
               }
             </ul>
@@ -190,7 +190,7 @@ type List = {
     `,
   ],
 })
-export class ManageListsComponent implements OnInit {
+export class ManageListsComponent {
   private readonly foodStore = inject(IngredientStore);
   private readonly dishStore = inject(DishStore);
   private readonly symptomStore = inject(SymptomStore);
@@ -206,6 +206,7 @@ export class ManageListsComponent implements OnInit {
       title: this.t().foods,
       icon: 'food',
       editForm: 'new-food-item',
+      viewForm: 'view-food',
       items: this.foodStore.foodItems(),
       remove: (id) => this.foodStore.deleteFoodItem(id),
     },
@@ -213,6 +214,7 @@ export class ManageListsComponent implements OnInit {
       title: this.t().dishes,
       icon: 'dish',
       editForm: 'new-dish',
+      viewForm: 'view-dish',
       items: this.dishStore.dishes(),
       remove: (id) => this.dishStore.deleteDish(id),
     },
@@ -220,6 +222,7 @@ export class ManageListsComponent implements OnInit {
       title: this.t().symptoms,
       icon: 'symptom',
       editForm: 'new-symptom',
+      viewForm: 'view-symptom',
       items: this.symptomStore.symptoms(),
       remove: (id) => this.symptomStore.deleteSymptom(id),
     },
@@ -227,6 +230,7 @@ export class ManageListsComponent implements OnInit {
       title: this.t().medications,
       icon: 'pill',
       editForm: 'new-medication',
+      viewForm: 'view-medication',
       items: this.medicationStore.medications().map((medication) => ({
         id: medication.id,
         name: [medication.name, medication.strength].filter(Boolean).join(' '),
@@ -261,14 +265,29 @@ export class ManageListsComponent implements OnInit {
     inject(Keyboard).bind({
       '/': () => this.searchField().nativeElement.focus(),
     });
+
+    // Loads initially, after a synchronization and when deleting was undone
+    const sync = inject(OfflineDataAccessService);
+    effect(() => {
+      sync.revision();
+      untracked(() => {
+        this.foodStore.loadFoodItems();
+        this.dishStore.loadDishes();
+        this.symptomStore.loadSymptoms();
+        this.medicationStore.loadMedications();
+        this.unitStore.loadUnits();
+      });
+    });
   }
 
-  ngOnInit(): void {
-    this.foodStore.loadFoodItems();
-    this.dishStore.loadDishes();
-    this.symptomStore.loadSymptoms();
-    this.medicationStore.loadMedications();
-    this.unitStore.loadUnits();
+  /** What the menu of an item offers */
+  protected actions(list: List, item: ListItem): MenuAction[] {
+    const { viewForm } = list;
+    return entryActions(this.t(), {
+      edit: () => this.uiStore.edit(list.editForm, item.id),
+      details: viewForm ? () => this.uiStore.edit(viewForm, item.id) : null,
+      remove: () => void this.confirm.delete(item, this.bind(list, item)),
+    });
   }
 
   protected bind(list: List, item: ListItem): () => Promise<void> {

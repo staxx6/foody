@@ -25,6 +25,7 @@ import { ReportComponent } from '../report/report.component';
 import { ItemDetailsComponent } from '../details/item-details.component';
 import { EditUnitFormComponent } from '../shared/edit-unit-form.component';
 import { ConfirmDialogComponent } from '../shared/confirm/confirm-dialog.component';
+import { UndoToastComponent } from '../shared/confirm/undo-toast.component';
 import { NewFoodItemFormComponent } from '../ingredient/new-food-item-form.component';
 import { NewDishFormComponent } from '../dish/new-dish-form.component';
 import { NewMealFormComponent } from '../dish-entry/new-meal-form.component';
@@ -41,6 +42,7 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
     ItemDetailsComponent,
     EditUnitFormComponent,
     ConfirmDialogComponent,
+    UndoToastComponent,
     DayComponent,
     MonthComponent,
     FooterNavComponent,
@@ -56,6 +58,12 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
     KeyHintsComponent,
     ShortcutHelpComponent,
   ],
+  host: {
+    // What is entered or chosen in a form is input that can get lost
+    '(input)': 'markDirty($event)',
+    '(change)': 'markDirty($event)',
+    '(click)': 'markDirtyByToggle($event)',
+  },
   template: `
     <header>
       <h1>
@@ -73,39 +81,48 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
             @case ('new-food-item') {
               <app-new-food-item-form
                 [editId]="page.editId"
-                (saved)="uiStore.close()"
+                (saved)="uiStore.done($event.id)"
                 (cancelled)="uiStore.close()"
               />
             }
             @case ('new-dish') {
               <app-new-dish-form
                 [editId]="page.editId"
-                (saved)="uiStore.close()"
+                (saved)="uiStore.done($event.id)"
                 (cancelled)="uiStore.close()"
               />
             }
             @case ('new-meal') {
-              <app-new-meal-form [editId]="page.editId" />
+              <app-new-meal-form
+                [editId]="page.editId"
+                [copyId]="page.copyId"
+              />
             }
             @case ('new-health-entry') {
-              <app-new-health-entry-form [editId]="page.editId" />
+              <app-new-health-entry-form
+                [editId]="page.editId"
+                [copyId]="page.copyId"
+              />
             }
             @case ('new-symptom') {
               <app-new-symptom-form
                 [editId]="page.editId"
-                (saved)="uiStore.close()"
+                (saved)="uiStore.done($event.id)"
                 (cancelled)="uiStore.close()"
               />
             }
             @case ('new-medication') {
               <app-new-medication-form
                 [editId]="page.editId"
-                (saved)="uiStore.close()"
+                (saved)="uiStore.done($event.id)"
                 (cancelled)="uiStore.close()"
               />
             }
             @case ('new-medication-entry') {
-              <app-log-medication-form [editId]="page.editId" />
+              <app-log-medication-form
+                [editId]="page.editId"
+                [copyId]="page.copyId"
+              />
             }
             @case ('view-food') {
               <app-item-details kind="food" [id]="page.editId ?? ''" />
@@ -122,13 +139,14 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
             @case ('new-follow-up') {
               <app-symptom-follow-up-form
                 [entryId]="page.editId"
-                (closed)="uiStore.close()"
+                (saved)="uiStore.done(page.editId ?? undefined)"
+                (cancelled)="uiStore.close()"
               />
             }
             @case ('edit-unit') {
               <app-edit-unit-form
                 [editId]="page.editId"
-                (saved)="uiStore.close()"
+                (saved)="uiStore.done(page.editId ?? undefined)"
                 (cancelled)="uiStore.close()"
               />
             }
@@ -156,6 +174,7 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
     </div>
 
     <app-footer-nav />
+    <app-undo-toast />
     <app-confirm-dialog />
     <app-shortcut-help />
   `,
@@ -291,6 +310,7 @@ export class HomeComponent {
           { keys: ['T'], label: t.today },
           ...rows,
           { keys: ['Enter'], label: t.actions },
+          { keys: ['D'], label: t.logAgain },
           { keys: ['F'], label: t.followUp },
           help,
         ];
@@ -303,7 +323,12 @@ export class HomeComponent {
           help,
         ];
       case 'lists':
-        return [{ keys: ['/'], label: keys.search }, ...rows, help];
+        return [
+          { keys: ['/'], label: keys.search },
+          ...rows,
+          { keys: ['Enter'], label: t.actions },
+          help,
+        ];
       case 'report':
         return [{ keys: ['X'], label: t.exportExcel }, help];
       case 'view-food':
@@ -339,6 +364,25 @@ export class HomeComponent {
       ArrowDown: () => this.moveToRow(1),
       ArrowUp: () => this.moveToRow(-1),
     });
+  }
+
+  /** Input into a form of the page: leaving it asks first (see UiStore) */
+  protected markDirty(event: Event): void {
+    const target = event.target as HTMLElement;
+    // A field reports typing as input. Its change follows when it loses the
+    // focus, which can be after its form was saved and closed.
+    const isLate =
+      event.type === 'change' &&
+      target.matches('input:not([type=file]), textarea');
+    if (isLate || !target.closest('main form')) return;
+    if (this.uiStore.isEditing()) this.uiStore.isDirty.set(true);
+  }
+
+  /** The buttons to choose one of several options do not report a change */
+  protected markDirtyByToggle(event: Event): void {
+    if ((event.target as HTMLElement).closest('.toggle button')) {
+      this.markDirty(event);
+    }
   }
 
   /** Escape leaves the field that is typed into, otherwise the page */

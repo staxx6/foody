@@ -7,12 +7,22 @@ export type ConfirmRequest = {
   message: string;
   /** Without it the dialog only informs and has a single OK button */
   confirmLabel?: string;
+  /** What the button that does not confirm says; "Cancel" by default */
+  cancelLabel?: string;
   resolve: (confirmed: boolean) => void;
 };
 
+/** A record that looks deleted but can still be brought back */
+type PendingDelete = { id: string; name: string; remove: () => Promise<void> };
+
+/** How long deleting can be undone */
+const UNDO_MS = 7000;
+
 /**
- * Asks the user before something that cannot be undone. The dialog itself
- * is the ConfirmDialogComponent, which is part of the page once.
+ * Asks the user before something that cannot be undone, and lets deleting
+ * be undone for a moment instead of asking. The dialog is the
+ * ConfirmDialogComponent, the offer to undo the UndoToastComponent; both are
+ * part of the page once.
  */
 @Injectable({ providedIn: 'root' })
 export class ConfirmService {
@@ -20,6 +30,17 @@ export class ConfirmService {
   private readonly i18n = inject(I18n);
 
   readonly request = signal<ConfirmRequest | null>(null);
+  /** What was deleted last, as long as that can be undone */
+  readonly deleted = signal<PendingDelete | null>(null);
+  private timer: ReturnType<typeof setTimeout> | undefined;
+
+  constructor() {
+    // Nobody can undo anymore once the app is left
+    window.addEventListener('pagehide', () => void this.finishDelete());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') void this.finishDelete();
+    });
+  }
 
   ask(request: Omit<ConfirmRequest, 'resolve'>): Promise<boolean> {
     return new Promise((resolve) => this.request.set({ ...request, resolve }));
@@ -31,8 +52,9 @@ export class ConfirmService {
   }
 
   /**
-   * Deletes after the user confirmed it. Records that are still referred to
-   * by others are not deleted, as those would be left incomplete.
+   * Deletes a record without asking: it disappears at once, but is only
+   * deleted when the time to undo is over. Records that are still referred
+   * to by others are not deleted, as those would be left incomplete.
    * @param deletedWith collections whose records `remove` deletes together
    *   with the record, so they do not stand in the way
    */
@@ -52,20 +74,54 @@ export class ConfirmService {
       return;
     }
 
-    const confirmed = await this.ask({
-      title: t.deleteTitle,
-      message: t.deleteMessage(record.name),
-      confirmLabel: t.delete,
-    });
-    if (!confirmed) return;
+    // Only the last one can be undone
+    await this.finishDelete();
+    this.keepFocusInList(record.id);
+    this.dataAccess.hide([record.id]);
+    this.deleted.set({ ...record, remove });
+    this.timer = setTimeout(() => void this.finishDelete(), UNDO_MS);
+  }
 
+  /** Brings back what was deleted last */
+  undoDelete(): void {
+    const deleted = this.deleted();
+    if (!deleted) return;
+
+    clearTimeout(this.timer);
+    this.deleted.set(null);
+    this.dataAccess.unhide([deleted.id]);
+  }
+
+  /** Really deletes what could be undone until now */
+  private async finishDelete(): Promise<void> {
+    const deleted = this.deleted();
+    if (!deleted) return;
+
+    clearTimeout(this.timer);
+    this.deleted.set(null);
     try {
-      await remove();
+      await deleted.remove();
     } catch (error) {
+      this.dataAccess.unhide([deleted.id]);
       await this.ask({
-        title: t.deletingFailed,
+        title: this.i18n.t().deletingFailed,
         message: error instanceof Error ? error.message : '',
       });
     }
+  }
+
+  /**
+   * Moves the focus from the row that is deleted to the one after it, so
+   * the list can be gone on with by keyboard (see row.directive)
+   */
+  private keepFocusInList(id: string): void {
+    const row = document.querySelector(`[data-row-id="${id}"]`);
+    if (!row?.contains(document.activeElement)) return;
+
+    const others = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-row]'),
+    ).filter((other) => other === row || !row.contains(other));
+    const index = others.indexOf(row as HTMLElement);
+    (others[index + 1] ?? others[index - 1])?.focus();
   }
 }

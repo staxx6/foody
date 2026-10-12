@@ -22,6 +22,13 @@ import {
 } from '../shared/image-picker.component';
 import { findByName } from '../shared/name-utils';
 import { SearchSelectComponent } from '../shared/search/search-select.component';
+import { UiStore } from '../shared/ui-store';
+
+/**
+ * The form shown in place of this one, see UiStore.nested. Named after this
+ * form, which can be shown in place of the one for a meal itself.
+ */
+const NESTED_FOOD = 'dish-food';
 
 @Component({
   selector: 'app-new-dish-form',
@@ -37,7 +44,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
     @if (isCreatingFood()) {
       <app-new-food-item-form
         (saved)="foodCreated($event.id)"
-        (cancelled)="isCreatingFood.set(false)"
+        (cancelled)="uiStore.closeNested()"
       />
     }
 
@@ -141,7 +148,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
             <button
               type="button"
               class="link"
-              (click)="isCreatingFood.set(true)"
+              (click)="uiStore.openNested(nestedFood)"
             >
               {{ t().createNewFood }}
             </button>
@@ -247,7 +254,10 @@ export class NewDishFormComponent implements OnInit {
   /** The photos the dish has, minus the ones removed in the form */
   readonly existingImages = signal<ExistingImage[]>([]);
   private originalImages: ExistingImage[] = [];
-  readonly isCreatingFood = signal(false);
+  protected readonly uiStore = inject(UiStore);
+  /** The form for a new food shown in place of this one */
+  protected readonly nestedFood = NESTED_FOOD;
+  readonly isCreatingFood = computed(() => this.uiStore.isNested(NESTED_FOOD));
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
 
@@ -315,7 +325,7 @@ export class NewDishFormComponent implements OnInit {
 
   protected foodCreated(foodItemId: string): void {
     this.add(foodItemId);
-    this.isCreatingFood.set(false);
+    this.uiStore.closeNested();
   }
 
   /** A record with the entered name, to warn about the duplicate */

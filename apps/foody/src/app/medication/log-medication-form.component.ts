@@ -20,10 +20,14 @@ import { I18n } from '../shared/i18n/i18n';
 import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import { IconComponent } from '../shared/icon.component';
 import { SearchSelectComponent } from '../shared/search/search-select.component';
+import { RecentUse, recentFirst } from '../shared/recent-use';
 import { UiStore } from '../shared/ui-store';
 import { MedicationEntryStore } from './medication-entry-store';
 import { MedicationStore } from './medication-store';
 import { NewMedicationFormComponent } from './new-medication-form.component';
+
+/** The form shown in place of this one, see UiStore.nested */
+const NESTED = 'medication';
 
 /**
  * Logs that a medication was taken
@@ -41,7 +45,7 @@ import { NewMedicationFormComponent } from './new-medication-form.component';
     @if (isCreating()) {
       <app-new-medication-form
         (saved)="created($event.id)"
-        (cancelled)="isCreating.set(false)"
+        (cancelled)="uiStore.closeNested()"
       />
     }
 
@@ -64,13 +68,17 @@ import { NewMedicationFormComponent } from './new-medication-form.component';
           <label for="medication">{{ t().medication }} *</label>
           <app-search-select
             inputId="medication"
-            [appAutofocus]="!editId()"
+            [appAutofocus]="!editId() && !copyId()"
             [options]="medicationOptions()"
             [value]="medicationId()"
             (valueChange)="select($event)"
             [placeholder]="t().selectMedication"
           />
-          <button type="button" class="link" (click)="isCreating.set(true)">
+          <button
+            type="button"
+            class="link"
+            (click)="uiStore.openNested(nested)"
+          >
             {{ t().createNewMedication }}
           </button>
         </div>
@@ -155,6 +163,7 @@ export class LogMedicationFormComponent implements OnInit {
   private readonly i18n = inject(I18n);
   protected readonly t = this.i18n.t;
   protected readonly uiStore = inject(UiStore);
+  private readonly recentUse = inject(RecentUse);
   private readonly medicationStore = inject(MedicationStore);
   private readonly entryStore = inject(MedicationEntryStore);
   private readonly unitStore = inject(AmountUnitStore);
@@ -162,14 +171,21 @@ export class LogMedicationFormComponent implements OnInit {
 
   /** The record to change; without it a new one is created */
   readonly editId = input<string | null>(null);
+  /** The entry a new one starts as a copy of: the same dose, taken now */
+  readonly copyId = input<string | null>(null);
 
   /** The medications, with their strength to tell them apart */
   protected readonly medicationOptions = computed(() =>
-    this.medicationStore.medications().map((medication) => ({
-      id: medication.id,
-      name: [medication.name, medication.strength].filter(Boolean).join(' '),
-    })),
+    recentFirst(
+      this.medicationStore.medications().map((medication) => ({
+        id: medication.id,
+        name: [medication.name, medication.strength].filter(Boolean).join(' '),
+      })),
+      // What was taken lately comes first in the search
+      this.recent(),
+    ),
   );
+  private readonly recent = signal<string[]>([]);
   protected readonly unitOptions = computed(() =>
     this.unitStore
       .units()
@@ -186,7 +202,8 @@ export class LogMedicationFormComponent implements OnInit {
   time = toTimeInputValue(new Date());
 
   /** The form for a new medication shown in place of this one */
-  protected readonly isCreating = signal(false);
+  protected readonly nested = NESTED;
+  protected readonly isCreating = computed(() => this.uiStore.isNested(NESTED));
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
 
@@ -197,16 +214,22 @@ export class LogMedicationFormComponent implements OnInit {
     ]);
 
     const id = this.editId();
-    const entry = id ? await this.entryStore.getEntry(id) : null;
+    const entry = await this.entryStore.getEntry(id ?? this.copyId() ?? '');
     if (entry) {
-      const date = fromPocketBaseDate(entry.date);
       this.medicationId.set(entry.medicationId);
       this.amount = entry.amount;
       this.amountUnitId.set(entry.amountUnitId);
-      this.comment = entry.comment;
-      this.date = toDateInputValue(date);
-      this.time = toTimeInputValue(date);
+      // A copy is taken now, for a reason of its own
+      if (id) {
+        const date = fromPocketBaseDate(entry.date);
+        this.comment = entry.comment;
+        this.date = toDateInputValue(date);
+        this.time = toTimeInputValue(date);
+      }
     }
+    this.recent.set(
+      await this.recentUse.ids('medicationEntries', 'to_medication'),
+    );
     this.changes.markForCheck();
   }
 
@@ -225,7 +248,7 @@ export class LogMedicationFormComponent implements OnInit {
   /** A medication that was created from here is selected right away */
   protected created(id: string): void {
     this.select(id);
-    this.isCreating.set(false);
+    this.uiStore.closeNested();
   }
 
   /** Sets day and time to the current moment */
@@ -252,10 +275,10 @@ export class LogMedicationFormComponent implements OnInit {
         amountUnitId: this.amountUnitId(),
         comment: this.comment.trim(),
       };
-      await (id
-        ? this.entryStore.updateEntry(id, entry)
-        : this.entryStore.createEntry(entry));
-      this.uiStore.close();
+      const savedId = id
+        ? (await this.entryStore.updateEntry(id, entry), id)
+        : await this.entryStore.createEntry(entry);
+      this.uiStore.done(savedId);
     } catch (err) {
       this.error.set(
         err instanceof Error ? err.message : this.t().savingFailed,

@@ -1,14 +1,18 @@
 import {
+  ChangeDetectorRef,
   Component,
+  computed,
+  effect,
   inject,
+  input,
   OnInit,
   signal,
-  ChangeDetectorRef,
-  input,
+  untracked,
 } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
 import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import { FormsModule } from '@angular/forms';
+import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { ConfirmService } from '../shared/confirm/confirm.service';
 import { RowDirective } from '../shared/keyboard/row.directive';
 import {
@@ -20,6 +24,8 @@ import { SymptomFollowUpFormComponent } from './symptom-follow-up-form.component
 import { SymptomStore } from './symptom-store';
 import { UiStore } from '../shared/ui-store';
 import { IconComponent } from '../shared/icon.component';
+import { LevelPickerComponent } from '../shared/level.component';
+import { RecentUse, recentFirst } from '../shared/recent-use';
 import { NewSymptomFormComponent } from './new-symptom-form.component';
 import {
   fromDateAndTime,
@@ -29,6 +35,11 @@ import {
   toTimeInputValue,
 } from '../shared/date-utils';
 import { SearchSelectComponent } from '../shared/search/search-select.component';
+
+/** The forms that are shown in place of this one, see UiStore.nested */
+const NESTED_SYMPTOM = 'symptom';
+/** Followed by `:<id>` to change a follow-up */
+const NESTED_FOLLOW_UP = 'follow-up';
 
 @Component({
   selector: 'app-new-health-entry-form',
@@ -41,12 +52,13 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
     SymptomFollowUpFormComponent,
     FollowUpSummaryComponent,
     RowDirective,
+    LevelPickerComponent,
   ],
   template: `
     @if (isCreatingSymptom()) {
       <app-new-symptom-form
         (saved)="symptomCreated($event.id)"
-        (cancelled)="isCreatingSymptom.set(false)"
+        (cancelled)="uiStore.closeNested()"
       />
     }
 
@@ -54,7 +66,8 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
       <app-symptom-follow-up-form
         [entryId]="editId()"
         [editId]="form.editId"
-        (closed)="followUpClosed()"
+        (saved)="uiStore.closeNested()"
+        (cancelled)="uiStore.closeNested()"
       />
     }
 
@@ -77,30 +90,27 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
           <label for="symptom">{{ t().symptom }} *</label
           ><app-search-select
             inputId="symptom"
-            [appAutofocus]="!editId()"
-            [options]="symptomStore.symptoms()"
+            [appAutofocus]="!editId() && !copyId()"
+            [options]="symptomOptions()"
             [(value)]="symptomId"
             [placeholder]="t().selectSymptom"
           />
           <button
             type="button"
             class="link"
-            (click)="isCreatingSymptom.set(true)"
+            (click)="uiStore.openNested(nestedSymptom)"
           >
             {{ t().createNewSymptom }}
           </button>
         </div>
 
         <div class="field">
-          <label for="discomfort">{{ t().discomfortLevelRange }}</label
-          ><input
-            type="number"
-            id="discomfort"
-            name="discomfort"
-            [(ngModel)]="discomfortLevel"
-            min="1"
-            max="100"
-            [placeholder]="t().optional"
+          <span class="label" id="discomfort-label">
+            {{ t().discomfortLevelRange }}
+          </span>
+          <app-level-picker
+            labelledBy="discomfort-label"
+            [(value)]="discomfortLevel"
           />
         </div>
 
@@ -170,8 +180,9 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
                   <li
                     class="entry"
                     appRow
-                    (rowOpen)="followUpForm.set({ editId: followUp.id })"
-                    (rowEdit)="followUpForm.set({ editId: followUp.id })"
+                    [rowId]="followUp.id"
+                    (rowOpen)="openFollowUp(followUp.id)"
+                    (rowEdit)="openFollowUp(followUp.id)"
                     (rowDelete)="removeFollowUp(followUp)"
                   >
                     <app-follow-up-summary
@@ -182,7 +193,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
                     <button
                       type="button"
                       class="icon-btn"
-                      (click)="followUpForm.set({ editId: followUp.id })"
+                      (click)="openFollowUp(followUp.id)"
                       [attr.aria-label]="t().editNamed(name(followUp))"
                     >
                       <app-icon name="edit" />
@@ -201,11 +212,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
             } @else {
               <p class="list-message">{{ t().noFollowUps }}</p>
             }
-            <button
-              type="button"
-              class="add"
-              (click)="followUpForm.set({ editId: null })"
-            >
+            <button type="button" class="add" (click)="openFollowUp(null)">
               <app-icon name="plus" /> {{ t().addFollowUp }}
             </button>
           </div>
@@ -263,10 +270,14 @@ export class NewHealthEntryFormComponent implements OnInit {
   private readonly confirm = inject(ConfirmService);
   readonly symptomStore = inject(SymptomStore);
   private readonly symptomEntryStore = inject(SymptomEntryStore);
-  private readonly uiStore = inject(UiStore);
+  protected readonly uiStore = inject(UiStore);
+  private readonly recentUse = inject(RecentUse);
+  private readonly sync = inject(OfflineDataAccessService);
 
   /** The record to change; without it a new one is created */
   readonly editId = input<string | null>(null);
+  /** The entry a new one starts as a copy of: the same symptom, now */
+  readonly copyId = input<string | null>(null);
   private readonly changes = inject(ChangeDetectorRef);
 
   // Signal, as it is also set after creating a symptom
@@ -277,8 +288,17 @@ export class NewHealthEntryFormComponent implements OnInit {
   date = toDateInputValue(this.uiStore.selectedDay());
   time = toTimeInputValue(new Date());
 
+  /** The symptoms that were logged lately come first in the search */
+  private readonly recent = signal<string[]>([]);
+  protected readonly symptomOptions = computed(() =>
+    recentFirst(this.symptomStore.symptoms(), this.recent()),
+  );
+
   /** The form for a new symptom shown in place of this one */
-  protected readonly isCreatingSymptom = signal(false);
+  protected readonly nestedSymptom = NESTED_SYMPTOM;
+  protected readonly isCreatingSymptom = computed(() =>
+    this.uiStore.isNested(NESTED_SYMPTOM),
+  );
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
 
@@ -290,14 +310,38 @@ export class NewHealthEntryFormComponent implements OnInit {
    * The form for a follow-up shown in place of this one, for a new one if
    * `editId` is null
    */
-  protected readonly followUpForm = signal<{ editId: string | null } | null>(
-    null,
-  );
+  protected readonly followUpForm = computed(() => {
+    const nested = this.uiStore
+      .nested()
+      .find((name) => name.split(':')[0] === NESTED_FOLLOW_UP);
+    return nested ? { editId: nested.split(':')[1] ?? null } : null;
+  });
+  /** Whether this form had input before the one for a follow-up opened */
+  private wasDirty = false;
+  private wasOpen = false;
+
+  constructor() {
+    // The follow-ups are saved on their own. They are loaded initially,
+    // after their form was closed and when deleting one was undone.
+    effect(() => {
+      const isOpen = !!this.followUpForm();
+      this.sync.revision();
+      untracked(() => {
+        // What was typed into the form of the follow-up is not input of
+        // this form
+        if (!isOpen && this.wasOpen) this.uiStore.isDirty.set(this.wasDirty);
+        this.wasOpen = isOpen;
+        if (!isOpen) void this.loadFollowUps();
+      });
+    });
+  }
 
   ngOnInit(): void {
     this.symptomStore.loadSymptoms();
     void this.loadRecord();
-    void this.loadFollowUps();
+    void this.recentUse
+      .ids('symptomEntries', 'to_symptom')
+      .then((ids) => this.recent.set(ids));
   }
 
   private async loadFollowUps(): Promise<void> {
@@ -305,12 +349,15 @@ export class NewHealthEntryFormComponent implements OnInit {
     if (id) this.followUps.set(await this.symptomEntryStore.getFollowUps(id));
   }
 
-  protected followUpClosed(): void {
-    this.followUpForm.set(null);
-    void this.loadFollowUps();
+  /** @param id the follow-up to change, null for a new one */
+  protected openFollowUp(id: string | null): void {
+    this.wasDirty = this.uiStore.isDirty();
+    this.uiStore.openNested(
+      id ? `${NESTED_FOLLOW_UP}:${id}` : NESTED_FOLLOW_UP,
+    );
   }
 
-  /** What a follow-up is called, e.g. when asking whether to delete it */
+  /** What a follow-up is called, e.g. when it was deleted */
   protected name(followUp: SymptomFollowUp): string {
     const time = followUpTime(
       this.i18n,
@@ -320,33 +367,37 @@ export class NewHealthEntryFormComponent implements OnInit {
     return `${this.t().followUp} (${time})`;
   }
 
-  protected async removeFollowUp(followUp: SymptomFollowUp): Promise<void> {
-    await this.confirm.delete(
+  protected removeFollowUp(followUp: SymptomFollowUp): Promise<void> {
+    return this.confirm.delete(
       { id: followUp.id, name: this.name(followUp) },
       () => this.symptomEntryStore.deleteFollowUp(followUp.id),
     );
-    await this.loadFollowUps();
   }
 
   private async loadRecord(): Promise<void> {
     const id = this.editId();
-    const entry = id ? await this.symptomEntryStore.getSymptomEntry(id) : null;
+    const entry = await this.symptomEntryStore.getSymptomEntry(
+      id ?? this.copyId() ?? '',
+    );
     if (!entry) return;
 
-    this.entryDate.set(entry.date);
-    const date = fromPocketBaseDate(entry.date);
     this.symptomId.set(entry.symptomId);
     this.discomfortLevel = entry.discomfortLevel ?? null;
-    this.comment = entry.comment ?? '';
-    this.date = toDateInputValue(date);
-    this.time = toTimeInputValue(date);
+    // A copy is noticed now, with a comment of its own
+    if (id) {
+      const date = fromPocketBaseDate(entry.date);
+      this.entryDate.set(entry.date);
+      this.comment = entry.comment ?? '';
+      this.date = toDateInputValue(date);
+      this.time = toTimeInputValue(date);
+    }
     this.changes.markForCheck();
   }
 
   /** A symptom that was created from here is selected right away */
   protected symptomCreated(id: string): void {
     this.symptomId.set(id);
-    this.isCreatingSymptom.set(false);
+    this.uiStore.closeNested();
   }
 
   /** Sets day and time to the current moment */
@@ -374,10 +425,10 @@ export class NewHealthEntryFormComponent implements OnInit {
         discomfortLevel: this.discomfortLevel,
         comment: this.comment.trim() || undefined,
       };
-      await (id
-        ? this.symptomEntryStore.updateSymptomEntry(id, entry)
-        : this.symptomEntryStore.createSymptomEntry(entry));
-      this.uiStore.close();
+      const savedId = id
+        ? (await this.symptomEntryStore.updateSymptomEntry(id, entry), id)
+        : await this.symptomEntryStore.createSymptomEntry(entry);
+      this.uiStore.done(savedId);
     } catch (err) {
       this.error.set(
         err instanceof Error ? err.message : this.t().savingFailed,

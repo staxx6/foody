@@ -19,6 +19,10 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
 
 - The user usually has `pnpm run serve` running. The dev server hot-reloads every edit, so a
   half-finished change is visible to them at once.
+- The dev server can get stuck on an old state after files were changed by `sed -i` or copied
+  over: it then reports errors that the production build does not have, or serves old code.
+  After such changes, check `http://localhost:4200/main.js` for something new and restart the
+  dev server if it is missing.
 - Do not stop, restart or migrate the user's PocketBase (port 8090, `apps/pocketbase/pb_data`)
   without being asked. For testing, start a second instance with its own data folder:
   `pocketbase serve --http=127.0.0.1:8191 --dir=<temp> --migrationsDir=apps/pocketbase/pb_migrations`
@@ -38,8 +42,19 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
   Paging through days replaces the address instead of adding steps to go back.
 - Every page change recreates the page component, except the day view when its day changes.
 - Forms shown in place of another form (a new symptom while logging one, a follow-up while
-  editing an entry) have no address; the back button leaves the whole form.
+  editing an entry) are part of the address as `?with=<name>`: `UiStore.openNested()`,
+  `closeNested()`, `isNested()`. The outer form stays alive and keeps its input. A name must be
+  unique along a chain of forms (the dish form uses `dish-food`, as it can itself be nested).
 - Pages whose name starts with `new-` or `edit-` are forms (`UiStore.isEditing`).
+- Input in a form sets `UiStore.isDirty` (noticed by `HomeComponent` from `input`/`change`
+  events; own controls have to dispatch a bubbling `change`). Leaving a dirty form asks first
+  (`confirm-leaving.ts`, a guard that runs on every navigation). A form that saved calls
+  `uiStore.done(id)` instead of `close()`, which also gives the focus to the row of that record.
+- Deleting does not ask: `ConfirmService.delete` hides the record in the offline copy and only
+  deletes it when the time to undo is over. Lists have to reload on `sync.revision()`, or they
+  neither lose the record nor get it back on undo.
+- A discomfort level is stored as 1-100 but entered and shown in ten steps
+  (`shared/level.component.ts`); never show the stored number.
 - Stores are NgRx signal stores or services with signals, one per collection, next to their
   components. They use `DATA_ACCESS`, which is the offline copy (`OfflineDataAccessService`):
   `list` only filters by a date range, everything else is filtered in memory.
@@ -79,15 +94,18 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
   key to the browser. Keys typed into fields are ignored, except `Escape` and `ctrl+enter`.
 - Global keys are bound in `HomeComponent` (Esc, Ctrl+Enter, arrow keys for rows, `?`) and
   `FooterNavComponent` (pages, add menu). While a form is open only Esc, Ctrl+Enter and `?` work.
-- List rows get `appRow` (`rowOpen`, `rowEdit`, `rowDelete`, `rowClick`); `data-row` alone makes
+- List rows get `appRow` (`rowOpen`, `rowEdit`, `rowCopy`, `rowDelete`, `rowClick`) and
+  `[rowId]`, the id of their record, which the focus handling relies on; `data-row` alone makes
   an element reachable with the arrow keys.
-- The entries of the day view have no buttons but one menu (`shared/entry-menu.component.ts`),
+- The entries of the day view and the lists have no buttons but one menu
+  (`shared/entry-menu.component.ts`),
   opened by a click on the row, its three dots or Enter. A new action of an entry goes into
   the `actions()` of its list, not into the row as another icon.
 - A symptom entry and its follow-ups are one unit: the day view shows the follow-ups as part of
   the entry, they are changed in the form of the entry (`new-health-entry-form`), which shows
   the follow-up form in place of itself, like the forms that create a missing option.
-- `appAutofocus` on the first field of a form; `[appAutofocus]="!editId()"` on search selects.
+- `appAutofocus` on the first field of a form; only for new records on search selects, as the
+  focus opens their list.
 - Hints are `<kbd class="kbd">`, hidden below 1024px by the global styles. The line of hints
   below a page and the help window (`shortcut-help.component.ts`) are maintained by hand: a new
   key has to be added to `keyHints` in `HomeComponent` and to the help window.

@@ -2,7 +2,7 @@ import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 
 /**
  * What the keys do. A key is named as in `KeyboardEvent.key`, letters in
- * lower case; `ctrl+enter` stands for Enter with Ctrl or Cmd. A handler that
+ * lower case; `ctrl+enter` and `ctrl+z` stand for the key with Ctrl or Cmd. A handler that
  * returns false did nothing, so the browser handles the key.
  */
 export type KeyBindings = Record<
@@ -91,7 +91,10 @@ export class Keyboard {
     if (event.altKey) return null;
     if (event.ctrlKey || event.metaKey) {
       // The other combinations belong to the browser
-      return event.key === 'Enter' ? 'ctrl+enter' : null;
+      if (event.key === 'Enter') return 'ctrl+enter';
+      return event.key.toLowerCase() === 'z' && !event.shiftKey
+        ? 'ctrl+z'
+        : null;
     }
     return event.key.length === 1 ? event.key.toLowerCase() : event.key;
   }

@@ -12,7 +12,12 @@ import { I18n } from '../i18n/i18n';
 import { IconComponent } from '../icon.component';
 import { fuzzyFilter } from './fuzzy';
 
-export type SelectOption = { id: string; name: string };
+export type SelectOption = {
+  id: string;
+  name: string;
+  /** Used lately: such options come first and are set apart */
+  recent?: boolean;
+};
 
 let nextId = 0;
 
@@ -64,6 +69,12 @@ let nextId = 0;
             role="option"
             [class.active]="$index === activeIndex()"
             [class.selected]="option.id === value()"
+            [class.last-recent]="
+              !isSearching() &&
+              option.recent &&
+              !$last &&
+              !matches()[$index + 1]?.recent
+            "
             [attr.aria-selected]="option.id === value()"
             tabindex="-1"
             (click)="select(option)"
@@ -135,6 +146,7 @@ let nextId = 0;
       }
 
       li {
+        position: relative;
         padding: 10px 12px;
         border-radius: 8px;
         cursor: pointer;
@@ -148,6 +160,20 @@ let nextId = 0;
 
       li.active {
         background: var(--primary-soft);
+      }
+
+      /* The options used lately are set apart from all the others */
+      li.last-recent {
+        margin-bottom: 9px;
+      }
+
+      li.last-recent::after {
+        content: '';
+        position: absolute;
+        right: 4px;
+        bottom: -5px;
+        left: 4px;
+        border-bottom: 1px solid var(--border);
       }
 
       li.none {
@@ -185,6 +211,8 @@ export class SearchSelectComponent {
       this.options().find((option) => option.id === this.value())?.name ??
       '',
   );
+  /** While searching, the best matches come first, used lately or not */
+  protected readonly isSearching = computed(() => !!this.query()?.trim());
   protected readonly matches = computed(() =>
     fuzzyFilter(this.options(), this.query() ?? ''),
   );
@@ -215,10 +243,19 @@ export class SearchSelectComponent {
   protected select(option: SelectOption): void {
     this.value.set(option.id);
     this.close();
+    this.reportChange();
+  }
+
+  /** Like a field of the browser, so a form notices that it has input */
+  private reportChange(): void {
+    this.host.nativeElement.dispatchEvent(
+      new Event('change', { bubbles: true }),
+    );
   }
 
   protected clear(): void {
     this.value.set('');
+    this.reportChange();
     this.query.set(null);
     this.field().nativeElement.focus();
   }
@@ -243,7 +280,8 @@ export class SearchSelectComponent {
         break;
       }
       case 'Enter': {
-        if (!this.isOpen()) return;
+        // With Ctrl it saves the form, see home.component
+        if (!this.isOpen() || event.ctrlKey || event.metaKey) return;
         // Selects the option instead of submitting the form
         event.preventDefault();
         const option = matches[this.activeIndex()];

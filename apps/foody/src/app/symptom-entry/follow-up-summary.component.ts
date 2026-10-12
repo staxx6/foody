@@ -1,6 +1,7 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { elapsed, fromPocketBaseDate, isSameDay } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
+import { LevelChipComponent } from '../shared/level.component';
 import { SymptomFollowUp } from './symptom-entry-store';
 
 /**
@@ -25,19 +26,14 @@ export function followUpTime(i18n: I18n, start: Date, date: Date): string {
  */
 @Component({
   selector: 'app-follow-up-summary',
+  imports: [LevelChipComponent],
   template: `
     <span class="when">{{ when() }}</span>
     <span class="chip" [attr.data-course]="followUp().course">
       {{ t().courses[followUp().course] }}
     </span>
     @if (followUp().discomfortLevel; as level) {
-      <span
-        class="chip"
-        [class.medium]="level > 33 && level <= 66"
-        [class.high]="level > 66"
-      >
-        {{ level }}/100
-      </span>
+      <app-level-chip [level]="level" />
     }
     @if (followUp().comment) {
       <span class="comment">{{ followUp().comment }}</span>

@@ -19,6 +19,11 @@ import {
 } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
 import { IconComponent } from '../shared/icon.component';
+import {
+  LevelChipComponent,
+  LevelPickerComponent,
+  levelStep,
+} from '../shared/level.component';
 import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import {
   FOLLOW_UP_COURSES,
@@ -32,13 +37,19 @@ import {
  */
 @Component({
   selector: 'app-symptom-follow-up-form',
-  imports: [FormsModule, IconComponent, AutofocusDirective],
+  imports: [
+    FormsModule,
+    IconComponent,
+    AutofocusDirective,
+    LevelChipComponent,
+    LevelPickerComponent,
+  ],
   template: `
     <div class="form-header">
       <button
         type="button"
         class="back-btn"
-        (click)="closed.emit()"
+        (click)="cancelled.emit()"
         [attr.aria-label]="t().back"
       >
         <app-icon name="back" />
@@ -52,8 +63,8 @@ import {
           <app-icon name="symptom" />
           <strong>{{ entry.name }}</strong>
           <span>{{ i18n.formatDateTime(entry.date) }}</span>
-          @if (entry.level !== null) {
-            <span class="chip">{{ entry.level }}/100</span>
+          @if (entry.level; as level) {
+            <app-level-chip [level]="level" />
           }
         </p>
       }
@@ -83,18 +94,15 @@ import {
 
       @if (course() !== 'gone') {
         <div class="field">
-          <label for="follow-up-level">{{ t().discomfortLevelRange }}</label>
-          <input
-            type="number"
-            id="follow-up-level"
-            name="level"
-            [(ngModel)]="discomfortLevel"
-            min="1"
-            max="100"
-            [placeholder]="t().optional"
+          <span class="label" id="follow-up-level-label">
+            {{ t().discomfortLevelRange }}
+          </span>
+          <app-level-picker
+            labelledBy="follow-up-level-label"
+            [(value)]="discomfortLevel"
           />
           @if (entry()?.level; as level) {
-            <span class="note">{{ t().levelAtStart(level) }}</span>
+            <span class="note">{{ t().levelAtStart(step(level)) }}</span>
           }
         </div>
       }
@@ -151,7 +159,7 @@ import {
       }
 
       <div class="actions">
-        <button type="button" class="secondary" (click)="closed.emit()">
+        <button type="button" class="secondary" (click)="cancelled.emit()">
           {{ t().cancel }}
         </button>
         <button type="submit" [disabled]="!isValid() || isSaving()">
@@ -209,10 +217,12 @@ export class SymptomFollowUpFormComponent implements OnInit {
   readonly entryId = input<string | null>(null);
   /** The follow-up to change; without it a new one is created */
   readonly editId = input<string | null>(null);
-  /** Saved or cancelled; whoever shows the form takes it away */
-  readonly closed = output<void>();
+  /** Whoever shows the form takes it away after one of them */
+  readonly saved = output<void>();
+  readonly cancelled = output<void>();
 
   protected readonly courses = FOLLOW_UP_COURSES;
+  protected readonly step = levelStep;
 
   /** The symptom entry the follow-up belongs to */
   protected readonly entry = signal<{
@@ -247,7 +257,7 @@ export class SymptomFollowUpFormComponent implements OnInit {
     const entryId = followUp?.entryId ?? this.entryId();
     const entry = entryId ? await this.store.getSymptomEntry(entryId) : null;
     // Deleted in the meantime, e.g. on another device
-    if (!entryId || !entry) return this.closed.emit();
+    if (!entryId || !entry) return this.cancelled.emit();
 
     this.entry.set({
       id: entryId,
@@ -326,7 +336,7 @@ export class SymptomFollowUpFormComponent implements OnInit {
       await (id
         ? this.store.updateFollowUp(id, followUp)
         : this.store.createFollowUp(followUp));
-      this.closed.emit();
+      this.saved.emit();
     } catch (err) {
       this.error.set(
         err instanceof Error ? err.message : this.t().savingFailed,

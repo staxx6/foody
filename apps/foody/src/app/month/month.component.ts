@@ -31,6 +31,9 @@ const DEFAULT_LEVEL = 50;
  */
 const STEP_LIMITS = [50, 100, 200];
 
+/** Levels are stored as 1-100 and shown in steps of ten, also added up */
+const steps = (discomfort: number) => Math.round(discomfort / 10);
+
 type DayCell = {
   date: Date;
   meals: number;
@@ -214,7 +217,7 @@ type DayCell = {
             <span class="name">{{ symptom.name }}</span>
             <span class="count">{{ t().entriesCount(symptom.count) }}</span>
             <span class="total" [title]="t().discomfortHint">
-              {{ t().discomfortSum(symptom.discomfort) }}
+              {{ t().discomfortSum(steps(symptom.discomfort)) }}
             </span>
             <span class="bar">
               <span [style.width.%]="symptom.share"></span>
@@ -700,6 +703,7 @@ export class MonthComponent implements OnInit {
 
   protected readonly weekdays = computed(() => this.i18n.weekdayNames());
   protected readonly monthNames = computed(() => this.i18n.monthNames());
+  protected readonly steps = steps;
 
   /** The panel to jump to any month */
   protected readonly isPickerOpen = signal(false);
@@ -764,7 +768,7 @@ export class MonthComponent implements OnInit {
           : STEP_LIMITS.filter((limit) => discomfort > limit).length + 1;
 
       const facts = [
-        ...(count > 0 ? [t.dayComplaints(count, discomfort)] : []),
+        ...(count > 0 ? [t.dayComplaints(count, steps(discomfort))] : []),
         ...(mealCount > 0 ? [t.dayMeals(mealCount)] : []),
         ...(medicationCount > 0 ? [t.dayMedications(medicationCount)] : []),
       ];
