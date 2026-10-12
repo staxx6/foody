@@ -1,24 +1,31 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
-import { DATA_ACCESS } from '@foody/pocketbase-access';
+import { DATA_ACCESS, DataRecord } from '@foody/pocketbase-access';
 import { ExistingImage } from '../shared/image-picker.component';
 
 type FoodItem = {
   id: string;
   name: string;
   description?: string;
+  /** The amount that is suggested when the food is logged */
+  defaultAmount: string;
+  defaultUnitId: string;
   imageNames: string[];
   imageUrl?: string;
   created: string;
   updated: string;
 };
 
-/** Everything of a food that can be edited */
-export type FoodDetails = {
+/** What is entered for a food */
+export type FoodInput = {
   name: string;
   description: string;
-  images: ExistingImage[];
+  defaultAmount: string;
+  defaultUnitId: string;
 };
+
+/** Everything of a food that can be edited */
+export type FoodDetails = FoodInput & { images: ExistingImage[] };
 
 type IngredientState = {
   foodItems: FoodItem[];
@@ -33,6 +40,24 @@ const initialIngredientState: IngredientState = {
   error: null,
   filter: { query: '', order: 'asc' },
 };
+
+function toInput(record: DataRecord): FoodInput {
+  return {
+    name: String(record['name'] ?? ''),
+    description: String(record['description'] ?? ''),
+    defaultAmount: String(record['defaultAmount'] ?? ''),
+    defaultUnitId: String(record['to_defaultUnit'] ?? ''),
+  };
+}
+
+function toData(input: FoodInput): Record<string, unknown> {
+  return {
+    name: input.name,
+    description: input.description,
+    defaultAmount: input.defaultAmount,
+    to_defaultUnit: input.defaultUnitId,
+  };
+}
 
 export const IngredientStore = signalStore(
   { providedIn: 'root' },
@@ -50,9 +75,8 @@ export const IngredientStore = signalStore(
             const images = (record['images'] as string[] | undefined) ?? [];
 
             return {
+              ...toInput(record),
               id: record.id,
-              name: String(record['name'] ?? ''),
-              description: String(record['description'] ?? ''),
               imageNames: images,
               imageUrl:
                 images.length > 0
@@ -72,17 +96,15 @@ export const IngredientStore = signalStore(
     },
 
     async createFoodItem(
-      name: string,
-      description: string,
+      input: FoodInput,
       images: File[] = [],
     ): Promise<FoodItem> {
       const item = await dataAccess.create<FoodItem>({
         collectionName: 'foodItems',
-        data: { name, description, images },
+        data: { ...toData(input), images },
         map: (record) => ({
+          ...toInput(record),
           id: record.id,
-          name: String(record['name'] ?? ''),
-          description: String(record['description'] ?? ''),
           imageNames: [],
           imageUrl: undefined,
           created: record.created,
@@ -109,8 +131,7 @@ export const IngredientStore = signalStore(
         collectionName: 'foodItems',
         id,
         map: (record) => ({
-          name: String(record['name'] ?? ''),
-          description: String(record['description'] ?? ''),
+          ...toInput(record),
           images: ((record['images'] as string[] | undefined) ?? []).map(
             (name) => ({ name, url: dataAccess.getFileUrl(record, name) }),
           ),
@@ -120,21 +141,13 @@ export const IngredientStore = signalStore(
 
     async updateFoodItem(
       id: string,
-      changes: {
-        name: string;
-        description: string;
-        addedImages: File[];
-        removedImages: string[];
-      },
+      input: FoodInput,
+      addedImages: File[],
+      removedImages: string[],
     ): Promise<{ id: string }> {
-      const data: Record<string, unknown> = {
-        name: changes.name,
-        description: changes.description,
-      };
-      if (changes.addedImages.length > 0) data['images+'] = changes.addedImages;
-      if (changes.removedImages.length > 0) {
-        data['images-'] = changes.removedImages;
-      }
+      const data = toData(input);
+      if (addedImages.length > 0) data['images+'] = addedImages;
+      if (removedImages.length > 0) data['images-'] = removedImages;
       await dataAccess.update({
         collectionName: 'foodItems',
         id,

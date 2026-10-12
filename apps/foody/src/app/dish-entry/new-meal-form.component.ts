@@ -101,7 +101,8 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
                 ? ingredientStore.foodItems()
                 : dishStore.dishes()
             "
-            [(value)]="selectedSourceId"
+            [value]="selectedSourceId()"
+            (valueChange)="select($event)"
             [placeholder]="
               sourceType === 'food-item' ? t().selectFood : t().selectDish
             "
@@ -252,8 +253,22 @@ export class NewMealFormComponent implements OnInit {
 
   /** A food or dish that was created from here is selected right away */
   protected created(id: string): void {
-    this.selectedSourceId.set(id);
+    this.select(id);
     this.creating.set(null);
+  }
+
+  /** Choosing a food suggests the amount it is usually eaten in */
+  protected select(id: string): void {
+    this.selectedSourceId.set(id);
+    const food =
+      this.sourceType === 'food-item'
+        ? this.ingredientStore.foodItems().find((other) => other.id === id)
+        : undefined;
+    // A food without a usual amount leaves what is entered
+    if (!food?.defaultAmount) return;
+
+    this.amount = food.defaultAmount;
+    if (food.defaultUnitId) this.amountUnitId.set(food.defaultUnitId);
   }
 
   readonly addUnit = async (name: string): Promise<void> => {

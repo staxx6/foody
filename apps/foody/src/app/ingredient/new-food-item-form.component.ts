@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   inject,
   OnInit,
   output,
@@ -10,13 +11,19 @@ import {
 import { I18n } from '../shared/i18n/i18n';
 import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import { FormsModule } from '@angular/forms';
-import { IngredientStore } from './ingredient-store';
+import { AmountUnitStore } from '../shared/amount-unit-store';
+import { FoodInput, IngredientStore } from './ingredient-store';
 import { IconComponent } from '../shared/icon.component';
 import {
   ExistingImage,
   ImagePickerComponent,
 } from '../shared/image-picker.component';
 import { findByName } from '../shared/name-utils';
+import { SearchSelectComponent } from '../shared/search/search-select.component';
+
+// Most foods are eaten as a single piece
+const DEFAULT_AMOUNT = '1';
+const DEFAULT_UNIT_CODE = 'piece';
 
 @Component({
   selector: 'app-new-food-item-form',
@@ -25,6 +32,7 @@ import { findByName } from '../shared/name-utils';
     AutofocusDirective,
     IconComponent,
     ImagePickerComponent,
+    SearchSelectComponent,
   ],
   template: `
     <div class="form-header">
@@ -60,6 +68,27 @@ import { findByName } from '../shared/name-utils';
         }
       </div>
 
+      <div class="field-row">
+        <div class="field">
+          <label for="food-amount">{{ t().usualAmount }}</label>
+          <input
+            id="food-amount"
+            name="defaultAmount"
+            [(ngModel)]="defaultAmount"
+          />
+        </div>
+        <div class="field">
+          <label for="food-unit">{{ t().unit }}</label>
+          <app-search-select
+            inputId="food-unit"
+            [options]="unitOptions()"
+            [(value)]="defaultUnitId"
+            [placeholder]="t().search"
+          />
+        </div>
+      </div>
+      <p class="hint">{{ t().usualAmountHint }}</p>
+
       <div class="field">
         <label for="food-description">{{ t().description }}</label
         ><textarea
@@ -90,10 +119,25 @@ import { findByName } from '../shared/name-utils';
       </div>
     </form>
   `,
+  styles: [
+    `
+      .field-row .field {
+        margin-bottom: 0;
+      }
+
+      .hint {
+        margin: 6px 0 18px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+    `,
+  ],
 })
 export class NewFoodItemFormComponent implements OnInit {
-  protected readonly t = inject(I18n).t;
+  private readonly i18n = inject(I18n);
+  protected readonly t = this.i18n.t;
   private readonly ingredientStore = inject(IngredientStore);
+  private readonly unitStore = inject(AmountUnitStore);
 
   /** The created food */
   readonly saved = output<{ id: string }>();
@@ -103,8 +147,18 @@ export class NewFoodItemFormComponent implements OnInit {
   readonly editId = input<string | null>(null);
   private readonly changes = inject(ChangeDetectorRef);
 
+  /** The units with their names in the current language */
+  protected readonly unitOptions = computed(() =>
+    this.unitStore
+      .units()
+      .map((unit) => ({ id: unit.id, name: this.i18n.name(unit) })),
+  );
+
   name = '';
   description = '';
+  defaultAmount = DEFAULT_AMOUNT;
+  // Signal, as it is also set after loading
+  readonly defaultUnitId = signal('');
   readonly images = signal<File[]>([]);
   /** The photos the food has, minus the ones removed in the form */
   readonly existingImages = signal<ExistingImage[]>([]);
@@ -118,14 +172,23 @@ export class NewFoodItemFormComponent implements OnInit {
   }
 
   private async loadRecord(): Promise<void> {
+    await this.unitStore.loadUnits();
+
     const id = this.editId();
     const food = id ? await this.ingredientStore.getFoodItem(id) : null;
-    if (!food) return;
-
-    this.name = food.name;
-    this.description = food.description;
-    this.originalImages = food.images;
-    this.existingImages.set(food.images);
+    if (food) {
+      this.name = food.name;
+      this.description = food.description;
+      this.defaultAmount = food.defaultAmount;
+      this.defaultUnitId.set(food.defaultUnitId);
+      this.originalImages = food.images;
+      this.existingImages.set(food.images);
+    } else {
+      const unit = this.unitStore
+        .units()
+        .find(({ code }) => code === DEFAULT_UNIT_CODE);
+      this.defaultUnitId.set(unit?.id ?? '');
+    }
     this.changes.markForCheck();
   }
 
@@ -144,21 +207,23 @@ export class NewFoodItemFormComponent implements OnInit {
     this.isSaving.set(true);
     this.error.set(null);
     try {
+      const input: FoodInput = {
+        name: this.name.trim(),
+        description: this.description.trim(),
+        defaultAmount: this.defaultAmount.trim(),
+        defaultUnitId: this.defaultUnitId(),
+      };
       const id = this.editId();
       const food = id
-        ? await this.ingredientStore.updateFoodItem(id, {
-            name: this.name.trim(),
-            description: this.description.trim(),
-            addedImages: this.images(),
-            removedImages: this.originalImages
+        ? await this.ingredientStore.updateFoodItem(
+            id,
+            input,
+            this.images(),
+            this.originalImages
               .filter((image) => !this.existingImages().includes(image))
               .map((image) => image.name),
-          })
-        : await this.ingredientStore.createFoodItem(
-            this.name.trim(),
-            this.description.trim(),
-            this.images(),
-          );
+          )
+        : await this.ingredientStore.createFoodItem(input, this.images());
       this.saved.emit(food);
     } catch (err) {
       this.error.set(

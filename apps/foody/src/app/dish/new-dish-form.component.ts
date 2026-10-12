@@ -99,7 +99,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
                 class="food"
                 [options]="ingredientStore.foodItems()"
                 [value]="ingredient.foodItemId"
-                (valueChange)="update($index, { foodItemId: $event })"
+                (valueChange)="selectFood($index, $event)"
                 [placeholder]="t().selectFood"
                 [ariaLabel]="t().food"
               />
@@ -276,6 +276,27 @@ export class NewDishFormComponent implements OnInit {
       ...ingredients,
       { foodItemId, amount: '', amountUnitId: '' },
     ]);
+    if (foodItemId) this.selectFood(this.ingredients().length - 1, foodItemId);
+  }
+
+  /**
+   * Choosing the food of an ingredient suggests the amount it is usually
+   * eaten in, unless an amount was entered already
+   */
+  protected selectFood(index: number, foodItemId: string): void {
+    const food = this.ingredientStore
+      .foodItems()
+      .find((other) => other.id === foodItemId);
+    const isEmpty = !this.ingredients()[index]?.amount;
+    this.update(index, {
+      foodItemId,
+      ...(food?.defaultAmount && isEmpty
+        ? {
+            amount: food.defaultAmount,
+            amountUnitId: food.defaultUnitId,
+          }
+        : {}),
+    });
   }
 
   protected update(index: number, change: Partial<NewIngredient>): void {

@@ -148,6 +148,8 @@ const en = {
   strength: 'Strength',
   strengthPlaceholder: 'e.g. 400 mg',
   activeIngredient: 'Active ingredient',
+  usualAmount: 'Usual amount',
+  usualAmountHint: 'Suggested when you log the food or add it to a dish.',
   usualDose: 'Usual dose',
   usualDoseHint: 'Suggested when you log that you took it.',
   medicationDescriptionPlaceholder: 'optional, e.g. what it is for',
@@ -459,6 +461,9 @@ const de: Translations = {
   strength: 'Stärke',
   strengthPlaceholder: 'z. B. 400 mg',
   activeIngredient: 'Wirkstoff',
+  usualAmount: 'Übliche Menge',
+  usualAmountHint:
+    'Wird vorgeschlagen, wenn du das Lebensmittel einträgst oder einem Gericht hinzufügst.',
   usualDose: 'Übliche Dosis',
   usualDoseHint: 'Wird vorgeschlagen, wenn du die Einnahme einträgst.',
   medicationDescriptionPlaceholder: 'optional, z. B. wofür es ist',

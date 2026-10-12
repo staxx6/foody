@@ -27,6 +27,7 @@ const KINDS: Record<
 > = {
   food: {
     collection: 'foodItems',
+    expand: 'to_defaultUnit',
     entryCollection: 'dishEntries',
     entryField: 'to_foodItem',
     editForm: 'new-food-item',
@@ -418,21 +419,20 @@ export class ItemDetailsComponent {
     const t = this.t();
     const name = (item: DataRecord) => this.i18n.name(toLocalizedName(item));
     const text = (field: string) => String(record[field] ?? '');
+    // The amount a food or medication is usually taken in, with its unit
+    const usual = [
+      text('defaultAmount'),
+      ...this.expanded(record, 'to_defaultUnit').map(name),
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     const facts =
       kind === 'medication'
         ? [
             { label: t.strength, value: text('strength') },
             { label: t.activeIngredient, value: text('activeIngredient') },
-            {
-              label: t.usualDose,
-              value: [
-                text('defaultAmount'),
-                ...this.expanded(record, 'to_defaultUnit').map(name),
-              ]
-                .filter(Boolean)
-                .join(' '),
-            },
+            { label: t.usualDose, value: usual },
           ]
         : kind === 'symptom'
           ? [
@@ -447,7 +447,9 @@ export class ItemDetailsComponent {
                   .join(', '),
               },
             ]
-          : [];
+          : kind === 'food'
+            ? [{ label: t.usualAmount, value: usual }]
+            : [];
     return facts.filter((fact) => fact.value);
   }
 
