@@ -233,19 +233,18 @@ type DayCell = {
         flex-direction: column;
         gap: 16px;
 
-        /* One hue, light to dark: the more discomfort, the darker */
-        --step-1: #eda284;
-        --step-2: #e27a50;
-        --step-3: #bd4a22;
-        --step-4: #7e2a0f;
+        /* One color that gets stronger: little discomfort is faint, almost
+           transparent, a lot of it is the full color */
+        --discomfort: #d2401a;
+        --step-1: color-mix(in srgb, var(--discomfort) 22%, transparent);
+        --step-2: color-mix(in srgb, var(--discomfort) 45%, transparent);
+        --step-3: color-mix(in srgb, var(--discomfort) 72%, transparent);
+        --step-4: var(--discomfort);
       }
 
-      /* On the dark surface the scale runs the other way: more is lighter */
+      /* Brighter, to be strong on the dark surface as well */
       :host-context([data-theme='dark']) {
-        --step-1: #8f3414;
-        --step-2: #c2532b;
-        --step-3: #e58460;
-        --step-4: #f6bca6;
+        --discomfort: #ff6a3d;
       }
 
       .month {
@@ -553,7 +552,7 @@ type DayCell = {
         height: 100%;
         min-width: 4px;
         border-radius: 3px;
-        background: var(--step-2);
+        background: var(--step-3);
       }
 
       .facts {

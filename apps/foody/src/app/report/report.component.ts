@@ -203,11 +203,11 @@ const TIME_SPANS = [6, 12, 24, 48];
         gap: 16px;
 
         /* The hue of the discomfort scale of the month view */
-        --discomfort: #e27a50;
+        --discomfort: #d2401a;
       }
 
       :host-context([data-theme='dark']) {
-        --discomfort: #c2532b;
+        --discomfort: #ff6a3d;
       }
 
       .page-title {
