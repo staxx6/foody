@@ -203,7 +203,7 @@ export class ShortcutHelpComponent {
           { keys: ['←', '→'], label: keys.changeDay },
           { keys: ['T'], label: t.backToToday },
           ...rows,
-          { keys: ['Enter'], label: t.showDetails },
+          { keys: ['Enter'], label: keys.openMenu },
           { keys: ['F'], label: keys.followUp },
         ],
       },

@@ -120,10 +120,10 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
               <app-item-details kind="medication" [id]="page.editId ?? ''" />
             }
             @case ('new-follow-up') {
-              <app-symptom-follow-up-form [entryId]="page.editId" />
-            }
-            @case ('edit-follow-up') {
-              <app-symptom-follow-up-form [editId]="page.editId" />
+              <app-symptom-follow-up-form
+                [entryId]="page.editId"
+                (closed)="uiStore.close()"
+              />
             }
             @case ('edit-unit') {
               <app-edit-unit-form
@@ -290,7 +290,7 @@ export class HomeComponent {
           { keys: ['←', '→'], label: keys.changeDay },
           { keys: ['T'], label: t.today },
           ...rows,
-          { keys: ['Enter'], label: t.showDetails },
+          { keys: ['Enter'], label: t.actions },
           { keys: ['F'], label: t.followUp },
           help,
         ];

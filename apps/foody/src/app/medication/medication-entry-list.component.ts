@@ -3,7 +3,11 @@ import { Component, effect, inject, untracked } from '@angular/core';
 import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { ConfirmService } from '../shared/confirm/confirm.service';
 import { I18n } from '../shared/i18n/i18n';
-import { IconComponent } from '../shared/icon.component';
+import {
+  entryActions,
+  EntryMenuComponent,
+  MenuAction,
+} from '../shared/entry-menu.component';
 import { RowDirective } from '../shared/keyboard/row.directive';
 import { UiStore } from '../shared/ui-store';
 import {
@@ -13,7 +17,7 @@ import {
 
 @Component({
   selector: 'app-medication-entry-list',
-  imports: [DatePipe, IconComponent, RowDirective],
+  imports: [DatePipe, RowDirective, EntryMenuComponent],
   template: `
     @if (store.error()) {
       <p class="list-message error">{{ store.error() }}</p>
@@ -21,9 +25,10 @@ import {
       <ul class="entry-list">
         @for (entry of store.entries(); track entry.id) {
           <li
-            class="entry"
+            class="entry clickable"
             appRow
-            (rowOpen)="showDetails(entry)"
+            (rowOpen)="menu.open()"
+            (rowClick)="menu.toggle()"
             (rowEdit)="uiStore.edit('new-medication-entry', entry.id)"
             (rowDelete)="remove(entry)"
           >
@@ -32,18 +37,12 @@ import {
               <img [src]="entry.imageUrl" alt="" />
             }
             <span class="content">
-              <button
-                type="button"
-                class="name"
-                [disabled]="!entry.medicationId"
-                (click)="showDetails(entry)"
-                [title]="t().showDetails"
-              >
+              <span class="name">
                 {{ entry.name }}
                 @if (entry.strength) {
                   <span class="strength">{{ entry.strength }}</span>
                 }
-              </button>
+              </span>
               @if (entry.amount !== null) {
                 <span class="chip">
                   {{ entry.amount }} {{ i18n.name(entry.amountUnit) }}
@@ -53,22 +52,11 @@ import {
                 <span class="comment">{{ entry.comment }}</span>
               }
             </span>
-            <button
-              type="button"
-              class="icon-btn"
-              (click)="uiStore.edit('new-medication-entry', entry.id)"
-              [attr.aria-label]="t().editNamed(entry.name)"
-            >
-              <app-icon name="edit" />
-            </button>
-            <button
-              type="button"
-              class="icon-btn danger"
-              (click)="remove(entry)"
-              [attr.aria-label]="t().deleteNamed(entry.name)"
-            >
-              <app-icon name="trash" />
-            </button>
+            <app-entry-menu
+              #menu
+              [label]="entry.name"
+              [actions]="actions(entry)"
+            />
           </li>
         }
       </ul>
@@ -111,10 +99,15 @@ export class MedicationEntryListComponent {
     });
   }
 
-  protected showDetails(entry: MedicationEntry): void {
-    if (entry.medicationId) {
-      this.uiStore.edit('view-medication', entry.medicationId);
-    }
+  /** What the menu of an entry offers */
+  protected actions(entry: MedicationEntry): MenuAction[] {
+    return entryActions(this.t(), {
+      edit: () => this.uiStore.edit('new-medication-entry', entry.id),
+      details: entry.medicationId
+        ? () => this.uiStore.edit('view-medication', entry.medicationId)
+        : null,
+      remove: () => void this.remove(entry),
+    });
   }
 
   protected remove(entry: MedicationEntry): Promise<void> {

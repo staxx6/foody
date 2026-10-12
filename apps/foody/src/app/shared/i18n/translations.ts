@@ -277,10 +277,13 @@ const en = {
   emptyList: 'Nothing here yet.',
 
   // Follow-up of a symptom entry
+  actions: 'Actions',
+  actionsFor: (name: string) => `Actions for ${name}`,
   followUp: 'Follow-up',
   addFollowUp: 'Add follow-up',
   addFollowUpFor: (name: string) => `Add follow-up for ${name}`,
   editFollowUp: 'Edit follow-up',
+  noFollowUps: 'No follow-up yet.',
   followUpQuestion: 'How is it now?',
   courses: {
     better: 'Better',
@@ -310,6 +313,7 @@ const en = {
     changeDay: 'Previous / next day',
     changeMonth: 'Previous / next month',
     selectEntry: 'Select an entry',
+    openMenu: 'Open the menu of the entry',
     followUp:
       'Add a follow-up to the selected symptom; without a selection: go to the symptoms',
     calendar: 'Move through the days',
@@ -571,10 +575,13 @@ const de: Translations = {
   units: 'Einheiten',
   emptyList: 'Noch nichts vorhanden.',
 
+  actions: 'Aktionen',
+  actionsFor: (name) => `Aktionen für ${name}`,
   followUp: 'Verlauf',
   addFollowUp: 'Verlauf eintragen',
   addFollowUpFor: (name) => `Verlauf für ${name} eintragen`,
   editFollowUp: 'Verlauf bearbeiten',
+  noFollowUps: 'Noch kein Verlauf eingetragen.',
   followUpQuestion: 'Wie ist es jetzt?',
   courses: {
     better: 'Besser',
@@ -603,6 +610,7 @@ const de: Translations = {
     changeDay: 'Vorheriger / nächster Tag',
     changeMonth: 'Vorheriger / nächster Monat',
     selectEntry: 'Eintrag auswählen',
+    openMenu: 'Menü des Eintrags öffnen',
     followUp:
       'Verlauf zum ausgewählten Symptom eintragen; ohne Auswahl: zu den Symptomen springen',
     calendar: 'Durch die Tage bewegen',

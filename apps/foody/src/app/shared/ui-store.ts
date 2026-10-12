@@ -11,7 +11,6 @@ export type ActiveSite =
   | 'new-medication'
   | 'new-medication-entry'
   | 'new-follow-up'
-  | 'edit-follow-up'
   | 'edit-unit'
   | 'view-food'
   | 'view-dish'

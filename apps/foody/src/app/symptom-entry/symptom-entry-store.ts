@@ -247,6 +247,12 @@ export const SymptomEntryStore = signalStore(
         });
       },
 
+      /** The follow-ups of an entry, in the order of their time */
+      async getFollowUps(entryId: string): Promise<SymptomFollowUp[]> {
+        const followUps = await listFollowUps();
+        return followUps.filter((followUp) => followUp.entryId === entryId);
+      },
+
       getFollowUp(id: string): Promise<SymptomFollowUp | null> {
         return dataAccess.getOne({
           collectionName: FOLLOW_UP_COLLECTION,

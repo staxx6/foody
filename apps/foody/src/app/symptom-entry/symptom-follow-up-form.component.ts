@@ -5,6 +5,7 @@ import {
   inject,
   input,
   OnInit,
+  output,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -19,7 +20,6 @@ import {
 import { I18n } from '../shared/i18n/i18n';
 import { IconComponent } from '../shared/icon.component';
 import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
-import { UiStore } from '../shared/ui-store';
 import {
   FOLLOW_UP_COURSES,
   FollowUpCourse,
@@ -38,7 +38,7 @@ import {
       <button
         type="button"
         class="back-btn"
-        (click)="uiStore.close()"
+        (click)="closed.emit()"
         [attr.aria-label]="t().back"
       >
         <app-icon name="back" />
@@ -151,7 +151,7 @@ import {
       }
 
       <div class="actions">
-        <button type="button" class="secondary" (click)="uiStore.close()">
+        <button type="button" class="secondary" (click)="closed.emit()">
           {{ t().cancel }}
         </button>
         <button type="submit" [disabled]="!isValid() || isSaving()">
@@ -201,7 +201,6 @@ import {
 export class SymptomFollowUpFormComponent implements OnInit {
   protected readonly i18n = inject(I18n);
   protected readonly t = this.i18n.t;
-  protected readonly uiStore = inject(UiStore);
   private readonly store = inject(SymptomEntryStore);
   private readonly changes = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -210,6 +209,8 @@ export class SymptomFollowUpFormComponent implements OnInit {
   readonly entryId = input<string | null>(null);
   /** The follow-up to change; without it a new one is created */
   readonly editId = input<string | null>(null);
+  /** Saved or cancelled; whoever shows the form takes it away */
+  readonly closed = output<void>();
 
   protected readonly courses = FOLLOW_UP_COURSES;
 
@@ -246,7 +247,7 @@ export class SymptomFollowUpFormComponent implements OnInit {
     const entryId = followUp?.entryId ?? this.entryId();
     const entry = entryId ? await this.store.getSymptomEntry(entryId) : null;
     // Deleted in the meantime, e.g. on another device
-    if (!entryId || !entry) return this.uiStore.close();
+    if (!entryId || !entry) return this.closed.emit();
 
     this.entry.set({
       id: entryId,
@@ -325,7 +326,7 @@ export class SymptomFollowUpFormComponent implements OnInit {
       await (id
         ? this.store.updateFollowUp(id, followUp)
         : this.store.createFollowUp(followUp));
-      this.uiStore.close();
+      this.closed.emit();
     } catch (err) {
       this.error.set(
         err instanceof Error ? err.message : this.t().savingFailed,

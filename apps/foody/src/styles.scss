@@ -528,3 +528,12 @@ form .warning {
     content: 'Strg ↵';
   }
 }
+
+/* A row that opens something when it is clicked, e.g. its menu */
+.clickable {
+  cursor: pointer;
+}
+
+.entry.clickable:hover:not(:has(.clickable:hover)) {
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
+}

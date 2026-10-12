@@ -9,7 +9,14 @@ import {
 import { I18n } from '../shared/i18n/i18n';
 import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import { FormsModule } from '@angular/forms';
-import { SymptomEntryStore } from './symptom-entry-store';
+import { ConfirmService } from '../shared/confirm/confirm.service';
+import { RowDirective } from '../shared/keyboard/row.directive';
+import {
+  FollowUpSummaryComponent,
+  followUpTime,
+} from './follow-up-summary.component';
+import { SymptomEntryStore, SymptomFollowUp } from './symptom-entry-store';
+import { SymptomFollowUpFormComponent } from './symptom-follow-up-form.component';
 import { SymptomStore } from './symptom-store';
 import { UiStore } from '../shared/ui-store';
 import { IconComponent } from '../shared/icon.component';
@@ -31,6 +38,9 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
     SearchSelectComponent,
     IconComponent,
     NewSymptomFormComponent,
+    SymptomFollowUpFormComponent,
+    FollowUpSummaryComponent,
+    RowDirective,
   ],
   template: `
     @if (isCreatingSymptom()) {
@@ -40,8 +50,16 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
       />
     }
 
+    @if (followUpForm(); as form) {
+      <app-symptom-follow-up-form
+        [entryId]="editId()"
+        [editId]="form.editId"
+        (closed)="followUpClosed()"
+      />
+    }
+
     <!-- Hidden instead of removed, so the input is kept while creating -->
-    <div [hidden]="isCreatingSymptom()">
+    <div [hidden]="isCreatingSymptom() || !!followUpForm()">
       <div class="form-header">
         <button
           type="button"
@@ -139,11 +157,110 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
           </button>
         </div>
       </form>
+
+      <!-- How the symptom went on belongs to the entry, so it is changed
+           here. A new entry has to be saved first. -->
+      @if (editId()) {
+        <section class="follow-ups">
+          <h3><app-icon name="history" /> {{ t().followUp }}</h3>
+          <div class="card">
+            @if (followUps().length > 0) {
+              <ul class="entry-list">
+                @for (followUp of followUps(); track followUp.id) {
+                  <li
+                    class="entry"
+                    appRow
+                    (rowOpen)="followUpForm.set({ editId: followUp.id })"
+                    (rowEdit)="followUpForm.set({ editId: followUp.id })"
+                    (rowDelete)="removeFollowUp(followUp)"
+                  >
+                    <app-follow-up-summary
+                      class="content"
+                      [followUp]="followUp"
+                      [start]="entryDate()"
+                    />
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      (click)="followUpForm.set({ editId: followUp.id })"
+                      [attr.aria-label]="t().editNamed(name(followUp))"
+                    >
+                      <app-icon name="edit" />
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn danger"
+                      (click)="removeFollowUp(followUp)"
+                      [attr.aria-label]="t().deleteNamed(name(followUp))"
+                    >
+                      <app-icon name="trash" />
+                    </button>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="list-message">{{ t().noFollowUps }}</p>
+            }
+            <button
+              type="button"
+              class="add"
+              (click)="followUpForm.set({ editId: null })"
+            >
+              <app-icon name="plus" /> {{ t().addFollowUp }}
+            </button>
+          </div>
+        </section>
+      }
     </div>
   `,
+  styles: [
+    `
+      .follow-ups {
+        margin-top: 24px;
+      }
+
+      h3 {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 0 8px 4px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+      }
+
+      .card {
+        overflow: hidden;
+      }
+
+      .add {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 48px;
+        border: none;
+        border-top: 1px solid var(--border);
+        background: none;
+        color: var(--primary);
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .add:hover {
+        background: var(--primary-soft);
+      }
+    `,
+  ],
 })
 export class NewHealthEntryFormComponent implements OnInit {
-  protected readonly t = inject(I18n).t;
+  private readonly i18n = inject(I18n);
+  protected readonly t = this.i18n.t;
+  private readonly confirm = inject(ConfirmService);
   readonly symptomStore = inject(SymptomStore);
   private readonly symptomEntryStore = inject(SymptomEntryStore);
   private readonly uiStore = inject(UiStore);
@@ -165,9 +282,50 @@ export class NewHealthEntryFormComponent implements OnInit {
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);
 
+  /** How the symptom went on; only an entry that exists has follow-ups */
+  protected readonly followUps = signal<SymptomFollowUp[]>([]);
+  /** The time of the entry as it is stored, which the follow-ups refer to */
+  protected readonly entryDate = signal('');
+  /**
+   * The form for a follow-up shown in place of this one, for a new one if
+   * `editId` is null
+   */
+  protected readonly followUpForm = signal<{ editId: string | null } | null>(
+    null,
+  );
+
   ngOnInit(): void {
     this.symptomStore.loadSymptoms();
     void this.loadRecord();
+    void this.loadFollowUps();
+  }
+
+  private async loadFollowUps(): Promise<void> {
+    const id = this.editId();
+    if (id) this.followUps.set(await this.symptomEntryStore.getFollowUps(id));
+  }
+
+  protected followUpClosed(): void {
+    this.followUpForm.set(null);
+    void this.loadFollowUps();
+  }
+
+  /** What a follow-up is called, e.g. when asking whether to delete it */
+  protected name(followUp: SymptomFollowUp): string {
+    const time = followUpTime(
+      this.i18n,
+      fromPocketBaseDate(this.entryDate()),
+      fromPocketBaseDate(followUp.date),
+    );
+    return `${this.t().followUp} (${time})`;
+  }
+
+  protected async removeFollowUp(followUp: SymptomFollowUp): Promise<void> {
+    await this.confirm.delete(
+      { id: followUp.id, name: this.name(followUp) },
+      () => this.symptomEntryStore.deleteFollowUp(followUp.id),
+    );
+    await this.loadFollowUps();
   }
 
   private async loadRecord(): Promise<void> {
@@ -175,6 +333,7 @@ export class NewHealthEntryFormComponent implements OnInit {
     const entry = id ? await this.symptomEntryStore.getSymptomEntry(id) : null;
     if (!entry) return;
 
+    this.entryDate.set(entry.date);
     const date = fromPocketBaseDate(entry.date);
     this.symptomId.set(entry.symptomId);
     this.discomfortLevel = entry.discomfortLevel ?? null;

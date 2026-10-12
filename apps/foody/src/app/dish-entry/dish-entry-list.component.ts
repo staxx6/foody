@@ -3,14 +3,18 @@ import { I18n } from '../shared/i18n/i18n';
 import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { DatePipe } from '@angular/common';
 import { ConfirmService } from '../shared/confirm/confirm.service';
-import { IconComponent } from '../shared/icon.component';
+import {
+  entryActions,
+  EntryMenuComponent,
+  MenuAction,
+} from '../shared/entry-menu.component';
 import { RowDirective } from '../shared/keyboard/row.directive';
 import { UiStore } from '../shared/ui-store';
 import { DishEntry, DishEntryStore } from './dish-entry-store';
 
 @Component({
   selector: 'app-dish-entry-list',
-  imports: [DatePipe, IconComponent, RowDirective],
+  imports: [DatePipe, RowDirective, EntryMenuComponent],
   template: `
     @if (dishEntryStore.error()) {
       <p class="list-message error">{{ dishEntryStore.error() }}</p>
@@ -18,9 +22,10 @@ import { DishEntry, DishEntryStore } from './dish-entry-store';
       <ul class="entry-list">
         @for (entry of dishEntryStore.entries(); track entry.id) {
           <li
-            class="entry"
+            class="entry clickable"
             appRow
-            (rowOpen)="showDetails(entry)"
+            (rowOpen)="menu.open()"
+            (rowClick)="menu.toggle()"
             (rowEdit)="uiStore.edit('new-meal', entry.id)"
             (rowDelete)="remove(entry)"
           >
@@ -29,37 +34,18 @@ import { DishEntry, DishEntryStore } from './dish-entry-store';
               <img [src]="entry.imageUrl" alt="" />
             }
             <span class="content">
-              <button
-                type="button"
-                class="name"
-                [disabled]="!entry.dishId && !entry.foodItemId"
-                (click)="showDetails(entry)"
-                [title]="t().showDetails"
-              >
-                {{ entry.name }}
-              </button>
+              <span class="name">{{ entry.name }}</span>
               @if (entry.amount !== null) {
                 <span class="chip">
                   {{ entry.amount }} {{ i18n.name(entry.amountUnit) }}
                 </span>
               }
             </span>
-            <button
-              type="button"
-              class="icon-btn"
-              (click)="uiStore.edit('new-meal', entry.id)"
-              [attr.aria-label]="t().editNamed(entry.name)"
-            >
-              <app-icon name="edit" />
-            </button>
-            <button
-              type="button"
-              class="icon-btn danger"
-              (click)="remove(entry)"
-              [attr.aria-label]="t().deleteNamed(entry.name)"
-            >
-              <app-icon name="trash" />
-            </button>
+            <app-entry-menu
+              #menu
+              [label]="entry.name"
+              [actions]="actions(entry)"
+            />
           </li>
         }
       </ul>
@@ -87,9 +73,16 @@ export class DishEntryListComponent {
     });
   }
 
-  protected showDetails(entry: DishEntry): void {
+  /** What the menu of an entry offers */
+  protected actions(entry: DishEntry): MenuAction[] {
     const id = entry.dishId || entry.foodItemId;
-    if (id) this.uiStore.edit(entry.dishId ? 'view-dish' : 'view-food', id);
+    return entryActions(this.t(), {
+      edit: () => this.uiStore.edit('new-meal', entry.id),
+      details: id
+        ? () => this.uiStore.edit(entry.dishId ? 'view-dish' : 'view-food', id)
+        : null,
+      remove: () => void this.remove(entry),
+    });
   }
 
   protected remove(entry: DishEntry): Promise<void> {

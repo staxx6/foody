@@ -72,8 +72,14 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
   key to the browser. Keys typed into fields are ignored, except `Escape` and `ctrl+enter`.
 - Global keys are bound in `HomeComponent` (Esc, Ctrl+Enter, arrow keys for rows, `?`) and
   `FooterNavComponent` (pages, add menu). While a form is open only Esc, Ctrl+Enter and `?` work.
-- List rows get `appRow` (`rowOpen`, `rowEdit`, `rowDelete`); `data-row` alone makes an element
-  reachable with the arrow keys.
+- List rows get `appRow` (`rowOpen`, `rowEdit`, `rowDelete`, `rowClick`); `data-row` alone makes
+  an element reachable with the arrow keys.
+- The entries of the day view have no buttons but one menu (`shared/entry-menu.component.ts`),
+  opened by a click on the row, its three dots or Enter. A new action of an entry goes into
+  the `actions()` of its list, not into the row as another icon.
+- A symptom entry and its follow-ups are one unit: the day view shows the follow-ups as part of
+  the entry, they are changed in the form of the entry (`new-health-entry-form`), which shows
+  the follow-up form in place of itself, like the forms that create a missing option.
 - `appAutofocus` on the first field of a form; `[appAutofocus]="!editId()"` on search selects.
 - Hints are `<kbd class="kbd">`, hidden below 1024px by the global styles. The line of hints
   below a page and the help window (`shortcut-help.component.ts`) are maintained by hand: a new
