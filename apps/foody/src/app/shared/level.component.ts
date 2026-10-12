@@ -79,9 +79,9 @@ export class LevelChipComponent {
         min-width: 0;
         min-height: 44px;
         padding: 0;
-        border: 1px solid var(--border);
+        border: 1px solid transparent;
         border-radius: 10px;
-        background: var(--surface);
+        background: var(--field);
         color: var(--text-muted);
         font-size: 0.95rem;
         font-weight: 600;
@@ -90,7 +90,7 @@ export class LevelChipComponent {
       }
 
       button:hover {
-        border-color: var(--primary);
+        border-color: var(--border);
         color: var(--text);
       }
 

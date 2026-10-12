@@ -1,4 +1,4 @@
-import { inject, Component, input, signal } from '@angular/core';
+import { Component, ElementRef, inject, input, signal } from '@angular/core';
 import { I18n } from './i18n/i18n';
 
 /**
@@ -33,8 +33,8 @@ import { I18n } from './i18n/i18n';
       @if (error()) {
         <p class="error">{{ error() }}</p>
       }
-    } @else {
-      <button type="button" class="open" (click)="isOpen.set(true)">
+    } @else if (trigger()) {
+      <button type="button" class="open" (click)="open()">
         {{ label() }}
       </button>
     }
@@ -68,7 +68,7 @@ import { I18n } from './i18n/i18n';
       input {
         flex: 1;
         min-width: 0;
-        border: 1px solid var(--border);
+        border: 1px solid transparent;
         border-radius: 8px;
         padding: 8px 10px;
         font-size: 0.95rem;
@@ -106,9 +106,12 @@ import { I18n } from './i18n/i18n';
 })
 export class QuickAddComponent {
   protected readonly t = inject(I18n).t;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   /** What gets added, e.g. "food item" */
   readonly label = input.required<string>();
   readonly placeholder = input('');
+  /** Without its own button, it is opened by something else, see `open` */
+  readonly trigger = input(true);
   /** Creates the option; the form selects it afterwards */
   readonly create = input.required<(name: string) => Promise<void>>();
 
@@ -116,6 +119,14 @@ export class QuickAddComponent {
   protected readonly name = signal('');
   protected readonly isSaving = signal(false);
   protected readonly error = signal<string | null>(null);
+
+  /** @param name what the field starts with, e.g. what was searched for */
+  open(name = ''): void {
+    this.name.set(name);
+    this.isOpen.set(true);
+    // After the field has been rendered
+    setTimeout(() => this.host.nativeElement.querySelector('input')?.focus());
+  }
 
   protected close(): void {
     this.isOpen.set(false);

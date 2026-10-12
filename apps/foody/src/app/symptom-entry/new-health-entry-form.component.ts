@@ -94,14 +94,9 @@ const NESTED_FOLLOW_UP = 'follow-up';
             [options]="symptomOptions()"
             [(value)]="symptomId"
             [placeholder]="t().selectSymptom"
+            [createLabel]="t().newSymptom"
+            (create)="uiStore.openNested(nestedSymptom)"
           />
-          <button
-            type="button"
-            class="link"
-            (click)="uiStore.openNested(nestedSymptom)"
-          >
-            {{ t().createNewSymptom }}
-          </button>
         </div>
 
         <div class="field">

@@ -5,6 +5,7 @@ import {
   inject,
   input,
   model,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -48,6 +49,19 @@ let nextId = 0;
       (input)="search(field.value)"
       (keydown)="onKey($event)"
     />
+    @if (createLabel()) {
+      <!-- Not a stop for Tab: by keyboard the last option of the list does it -->
+      <button
+        type="button"
+        class="add"
+        tabindex="-1"
+        (click)="startCreating()"
+        [attr.aria-label]="createLabel()"
+        [title]="createLabel()"
+      >
+        <app-icon name="plus" />
+      </button>
+    }
     @if (value()) {
       <button
         type="button"
@@ -82,13 +96,30 @@ let nextId = 0;
           >
             {{ option.name }}
           </li>
-        } @empty {
+        }
+        @if (matches().length === 0) {
           <li class="none">{{ t().noMatches }}</li>
+        }
+        @if (createLabel()) {
+          <li
+            role="option"
+            class="create"
+            [class.active]="activeIndex() === matches().length"
+            aria-selected="false"
+            tabindex="-1"
+            (click)="startCreating()"
+            (keydown.enter)="startCreating()"
+          >
+            <app-icon name="plus" /> {{ createLabel() }}
+          </li>
         }
       </ul>
     }
   `,
-  host: { '(focusout)': 'onFocusOut($event)' },
+  host: {
+    '(focusout)': 'onFocusOut($event)',
+    '[class.creatable]': '!!createLabel()',
+  },
   styles: [
     `
       :host {
@@ -121,6 +152,32 @@ let nextId = 0;
         width: 18px;
         height: 18px;
         pointer-events: none;
+      }
+
+      /* Left of the search icon: creates what is missing */
+      .add {
+        position: absolute;
+        top: 6px;
+        right: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: none;
+        border-radius: 8px;
+        background: none;
+        color: var(--primary);
+        cursor: pointer;
+      }
+
+      .add:hover {
+        background: var(--primary-soft);
+      }
+
+      :host(.creatable) input {
+        padding-right: 76px;
       }
 
       .clear {
@@ -176,6 +233,19 @@ let nextId = 0;
         border-bottom: 1px solid var(--border);
       }
 
+      /* Creates what the list does not have */
+      li.create {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--primary);
+        font-weight: 600;
+      }
+
+      li.create:not(:first-child) {
+        margin-top: 4px;
+      }
+
       li.none {
         color: var(--text-muted);
         cursor: default;
@@ -196,6 +266,13 @@ export class SearchSelectComponent {
   readonly ariaLabel = input('');
   /** To connect a `<label for>` */
   readonly inputId = input<string>();
+  /**
+   * What can be created if it is missing, e.g. "New food". With it the field
+   * offers that: by a button in the field and as the last option of the list.
+   */
+  readonly createLabel = input('');
+  /** Creating was chosen; with what was typed into the search */
+  readonly create = output<string>();
 
   /** Connects the field with its list for screen readers */
   protected readonly listId = `search-select-${nextId++}`;
@@ -253,6 +330,16 @@ export class SearchSelectComponent {
     );
   }
 
+  /**
+   * Leaves it to the form to create what is missing; what was typed may
+   * serve as its name
+   */
+  protected startCreating(): void {
+    const typed = this.query()?.trim() ?? '';
+    this.close();
+    this.create.emit(typed);
+  }
+
   protected clear(): void {
     this.value.set('');
     this.reportChange();
@@ -274,7 +361,10 @@ export class SearchSelectComponent {
         event.preventDefault();
         if (!this.isOpen()) return this.open();
         const step = event.key === 'ArrowDown' ? 1 : -1;
-        const count = Math.max(matches.length, 1);
+        const count = Math.max(
+          matches.length + (this.createLabel() ? 1 : 0),
+          1,
+        );
         this.activeIndex.update((index) => (index + step + count) % count);
         this.scrollToActive();
         break;
@@ -286,6 +376,7 @@ export class SearchSelectComponent {
         event.preventDefault();
         const option = matches[this.activeIndex()];
         if (option) this.select(option);
+        else if (this.createLabel()) this.startCreating();
         break;
       }
       case 'Escape':

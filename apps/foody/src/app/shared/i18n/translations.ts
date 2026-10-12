@@ -104,15 +104,13 @@ const en = {
   // Log meal
   whatDidYouEat: 'What did you eat or drink?',
   whatElse: 'What else?',
-  partOfMeal: 'Part of this meal',
-  addAnother: '+ Add another food or dish',
+  alreadyAdded: 'Already added',
+  addAnother: 'Add another food or dish',
   removeNamed: (name: string) => `Remove ${name}`,
   singleFood: 'Single food',
   selectFood: 'Search food…',
   selectDish: 'Search dish…',
-  createNewFood: '+ Create new food',
-  createNewDish: '+ Create new dish',
-  createNewUnit: '+ Create new unit',
+  newUnit: 'New unit',
   unitPlaceholder: 'e.g. ml',
   add: 'Add',
   adding: 'Adding…',
@@ -120,7 +118,6 @@ const en = {
 
   // Log symptom
   selectSymptom: 'Search symptom…',
-  createNewSymptom: '+ Create new symptom',
   discomfortLevelRange: 'Discomfort level (1–10)',
 
   // Creating foods, dishes and symptoms
@@ -144,7 +141,6 @@ const en = {
   newMedication: 'New medication',
   newMedicationHint: 'Something you take, e.g. ibuprofen',
   editMedication: 'Edit medication',
-  createNewMedication: '+ Create new medication',
   selectMedication: 'Search medication…',
   medicationPlaceholder: 'e.g. ibuprofen',
   medicationExists: (name: string) =>
@@ -433,22 +429,19 @@ const de: Translations = {
 
   whatDidYouEat: 'Was hast du gegessen oder getrunken?',
   whatElse: 'Was noch?',
-  partOfMeal: 'Gehört zu dieser Mahlzeit',
-  addAnother: '+ Weiteres Lebensmittel oder Gericht',
+  alreadyAdded: 'Bereits hinzugefügt',
+  addAnother: 'Weiteres Lebensmittel oder Gericht',
   removeNamed: (name) => `${name} entfernen`,
   singleFood: 'Lebensmittel',
   selectFood: 'Lebensmittel suchen…',
   selectDish: 'Gericht suchen…',
-  createNewFood: '+ Neues Lebensmittel anlegen',
-  createNewDish: '+ Neues Gericht anlegen',
-  createNewUnit: '+ Neue Einheit anlegen',
+  newUnit: 'Neue Einheit',
   unitPlaceholder: 'z. B. ml',
   add: 'Anlegen',
   adding: 'Wird angelegt…',
   addingFailed: 'Anlegen fehlgeschlagen',
 
   selectSymptom: 'Symptom suchen…',
-  createNewSymptom: '+ Neues Symptom anlegen',
   discomfortLevelRange: 'Beschwerdegrad (1–10)',
 
   foodPlaceholder: 'z. B. Apfel',
@@ -470,7 +463,6 @@ const de: Translations = {
   newMedication: 'Neues Medikament',
   newMedicationHint: 'Etwas, das du einnimmst, z. B. Ibuprofen',
   editMedication: 'Medikament bearbeiten',
-  createNewMedication: '+ Neues Medikament anlegen',
   selectMedication: 'Medikament suchen…',
   medicationPlaceholder: 'z. B. Ibuprofen',
   medicationExists: (name) => `Ein Medikament namens „${name}“ gibt es schon.`,

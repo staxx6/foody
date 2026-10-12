@@ -73,14 +73,9 @@ const NESTED = 'medication';
             [value]="medicationId()"
             (valueChange)="select($event)"
             [placeholder]="t().selectMedication"
+            [createLabel]="t().newMedication"
+            (create)="uiStore.openNested(nested)"
           />
-          <button
-            type="button"
-            class="link"
-            (click)="uiStore.openNested(nested)"
-          >
-            {{ t().createNewMedication }}
-          </button>
         </div>
 
         <div class="field-row">

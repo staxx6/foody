@@ -107,7 +107,9 @@ const NESTED_FOOD = 'dish-food';
                 [options]="ingredientStore.foodItems()"
                 [value]="ingredient.foodItemId"
                 (valueChange)="selectFood($index, $event)"
-                [placeholder]="t().selectFood"
+                [ariaLabel]="t().food"
+                [createLabel]="t().newFood"
+                (create)="createFoodFor($index)"
                 [ariaLabel]="t().food"
               />
               <input
@@ -144,13 +146,6 @@ const NESTED_FOOD = 'dish-food';
           <div class="ingredient-actions">
             <button type="button" class="link" (click)="add()">
               {{ t().addIngredient }}
-            </button>
-            <button
-              type="button"
-              class="link"
-              (click)="uiStore.openNested(nestedFood)"
-            >
-              {{ t().createNewFood }}
             </button>
           </div>
         </div>
@@ -323,8 +318,22 @@ export class NewDishFormComponent implements OnInit {
     );
   }
 
+  /** The ingredient that gets the food that is being created */
+  private creatingFor: number | null = null;
+
+  protected createFoodFor(index: number): void {
+    this.creatingFor = index;
+    this.uiStore.openNested(NESTED_FOOD);
+  }
+
+  /** A food that was created from an ingredient becomes its food */
   protected foodCreated(foodItemId: string): void {
-    this.add(foodItemId);
+    if (this.creatingFor !== null && this.ingredients()[this.creatingFor]) {
+      this.selectFood(this.creatingFor, foodItemId);
+    } else {
+      this.add(foodItemId);
+    }
+    this.creatingFor = null;
     this.uiStore.closeNested();
   }
 

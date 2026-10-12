@@ -83,6 +83,11 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
 - Styles: design tokens and shared classes (`.card`, `.entry`, `.chip`, `.icon-btn`, forms) are
   in `apps/foody/src/styles.scss`. Global classes also apply inside components, so a local class
   with the same name inherits them (e.g. `.entry`).
+- Fields of forms are filled with `--field` and have no visible border, to keep forms from
+  being all lines. A panel that groups fields is tinted (`--bg`) and sets `--field` to
+  `--surface`, so its fields stand out from it (see the meal form). Do not outline fields.
+- A search select whose options can be created gets `[createLabel]` and `(create)`: a plus in
+  the field and a last option in its list. No link below the field for it.
 - The desktop layout starts at `min-width: 1024px`. The mobile layout must stay as it is unless
   the task is about it.
 - Icons are inline SVG paths in `shared/icon.component.ts` (Lucide); add a path to use a new one.

@@ -94,19 +94,109 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
       </div>
 
       <form class="card" (ngSubmit)="save()">
+        <span class="label" id="meal-label">
+          {{ items().length > 0 ? t().whatElse : t().whatDidYouEat }} *
+        </span>
+        <!-- Where the food or dish is chosen, set apart as a panel -->
+        <div class="meal" role="group" aria-labelledby="meal-label">
+          <div class="item">
+            <div class="field">
+              <div class="toggle" role="group">
+                <button
+                  type="button"
+                  [class.active]="sourceType === 'food-item'"
+                  (click)="sourceType = 'food-item'; selectedSourceId.set('')"
+                >
+                  {{ t().singleFood }}
+                </button>
+                <button
+                  type="button"
+                  [class.active]="sourceType === 'dish'"
+                  (click)="sourceType = 'dish'; selectedSourceId.set('')"
+                >
+                  {{ t().dish }}
+                </button>
+              </div>
+              <app-search-select
+                [appAutofocus]="!editId() && !copyId()"
+                [options]="
+                  sourceType === 'food-item' ? foodOptions() : dishOptions()
+                "
+                [value]="selectedSourceId()"
+                (valueChange)="select($event)"
+                [placeholder]="
+                  sourceType === 'food-item' ? t().selectFood : t().selectDish
+                "
+                [ariaLabel]="sourceType === 'food-item' ? t().food : t().dish"
+                [createLabel]="
+                  sourceType === 'food-item' ? t().newFood : t().newDish
+                "
+                (create)="uiStore.openNested(nestedName[sourceType])"
+              />
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="amount">{{ t().amount }} *</label
+                ><input
+                  id="amount"
+                  name="amount"
+                  [(ngModel)]="amount"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="unit">{{ t().unit }} *</label
+                ><app-search-select
+                  inputId="unit"
+                  [options]="unitOptions()"
+                  [(value)]="amountUnitId"
+                  [placeholder]="t().search"
+                  [createLabel]="t().newUnit"
+                  (create)="unitAdd.open($event)"
+                />
+              </div>
+            </div>
+            <!-- Opened by the field of the unit; asks for the name only -->
+            <app-quick-add
+              #unitAdd
+              [trigger]="false"
+              [label]="t().newUnit"
+              [placeholder]="t().unitPlaceholder"
+              [create]="addUnit"
+            />
+          </div>
+
+          <!-- Several things eaten together are logged in one go; an entry
+               that is changed stays the one thing it is -->
+          @if (!editId()) {
+            <button
+              type="button"
+              class="another"
+              [disabled]="!isItemValid()"
+              (click)="addItem()"
+            >
+              <app-icon name="plus" /> {{ t().addAnother }}
+            </button>
+          }
+        </div>
+
+        <!-- What was added before is settled: a list of its own below the
+             panel, where adding puts it -->
         @if (items().length > 0) {
-          <div class="field">
-            <span class="label">{{ t().partOfMeal }}</span>
+          <div class="field added">
+            <span class="label">
+              <app-icon name="check" /> {{ t().alreadyAdded }}
+            </span>
             <ul class="items">
               @for (item of items(); track $index) {
                 <li>
                   <span class="name">{{ item.name }}</span>
-                  <span class="chip"
-                    >{{ item.amount }} {{ item.unitName }}</span
-                  >
+                  <span class="amount">
+                    {{ item.amount }} {{ item.unitName }}
+                  </span>
                   <button
                     type="button"
-                    class="icon-btn danger"
                     (click)="removeItem($index)"
                     [attr.aria-label]="t().removeNamed(item.name)"
                   >
@@ -118,81 +208,6 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
           </div>
         }
 
-        <div class="field">
-          <span class="label">
-            {{ items().length > 0 ? t().whatElse : t().whatDidYouEat }} *
-          </span>
-          <div class="toggle" role="group">
-            <button
-              type="button"
-              [class.active]="sourceType === 'food-item'"
-              (click)="sourceType = 'food-item'; selectedSourceId.set('')"
-            >
-              {{ t().singleFood }}
-            </button>
-            <button
-              type="button"
-              [class.active]="sourceType === 'dish'"
-              (click)="sourceType = 'dish'; selectedSourceId.set('')"
-            >
-              {{ t().dish }}
-            </button>
-          </div>
-          <app-search-select
-            [appAutofocus]="!editId() && !copyId()"
-            [options]="
-              sourceType === 'food-item' ? foodOptions() : dishOptions()
-            "
-            [value]="selectedSourceId()"
-            (valueChange)="select($event)"
-            [placeholder]="
-              sourceType === 'food-item' ? t().selectFood : t().selectDish
-            "
-            [ariaLabel]="sourceType === 'food-item' ? t().food : t().dish"
-          />
-          <button
-            type="button"
-            class="link"
-            (click)="uiStore.openNested(nestedName[sourceType])"
-          >
-            {{
-              sourceType === 'food-item' ? t().createNewFood : t().createNewDish
-            }}
-          </button>
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="amount">{{ t().amount }} *</label
-            ><input id="amount" name="amount" [(ngModel)]="amount" required />
-          </div>
-          <div class="field">
-            <label for="unit">{{ t().unit }} *</label
-            ><app-search-select
-              inputId="unit"
-              [options]="unitOptions()"
-              [(value)]="amountUnitId"
-              [placeholder]="t().search"
-            />
-          </div>
-        </div>
-        <app-quick-add
-          [label]="t().createNewUnit"
-          [placeholder]="t().unitPlaceholder"
-          [create]="addUnit"
-        />
-        <!-- Several things eaten together are logged in one go; an entry
-             that is changed stays the one thing it is -->
-        @if (!editId()) {
-          <button
-            type="button"
-            class="link another"
-            [disabled]="!isItemValid()"
-            (click)="addItem()"
-          >
-            {{ t().addAnother }}
-          </button>
-        }
         <div class="field-row">
           <div class="field">
             <label for="date">{{ t().day }} *</label
@@ -236,38 +251,122 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
   `,
   styles: [
     `
-      .items {
+      /* The panel where a food or dish is chosen. It is tinted, so the white
+         fields in it read as fields and the panel as one thing. */
+      .meal {
+        --field: var(--surface);
         display: flex;
         flex-direction: column;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
+        gap: 12px;
+        margin: 6px 0 14px;
+        padding: 12px;
+        border-radius: var(--radius-lg);
+        background: var(--bg);
+      }
+
+      /* What was added before: settled, so tags instead of fields, in a
+         list of their own that is no part of the panel */
+      .added .label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .added .label app-icon {
+        color: var(--success);
+      }
+
+      .items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
       }
 
       .items li {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 8px 12px;
-      }
-
-      .items li + li {
-        border-top: 1px solid var(--border);
+        gap: 8px;
+        padding: 4px 4px 4px 12px;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-size: 0.9rem;
       }
 
       .items .name {
-        flex: 1;
-        min-width: 0;
-        font-weight: 500;
+        font-weight: 600;
         overflow-wrap: anywhere;
       }
 
+      .items .amount {
+        opacity: 0.8;
+      }
+
+      .items button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        background: none;
+        color: inherit;
+        font-size: 0.8rem;
+        cursor: pointer;
+      }
+
+      .items button:hover {
+        background: var(--surface);
+      }
+
+      /* On the tint, the track of the switch has to be darker than it */
+      .item .toggle {
+        background: color-mix(in srgb, var(--text) 8%, transparent);
+        /* A choice of its own, not a part of the field below */
+        margin-bottom: 6px;
+      }
+
+      .item .field,
+      .item .field-row {
+        margin-bottom: 10px;
+      }
+
+      .item .field-row .field {
+        margin-bottom: 0;
+      }
+
+      /* The panel sets the distances itself */
+      .item app-quick-add {
+        margin-bottom: 0;
+      }
+
+      /* An empty place for the next one, which pressing it fills */
       .another {
-        display: block;
-        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 44px;
+        border: 1.5px dashed color-mix(in srgb, var(--primary) 45%, transparent);
+        border-radius: var(--radius);
+        background: none;
+        color: var(--primary);
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .another:hover:not(:disabled) {
+        border-style: solid;
+        background: var(--primary-soft);
       }
 
       .another:disabled {
-        opacity: 0.45;
+        border-color: var(--border);
+        color: var(--text-muted);
         cursor: not-allowed;
       }
     `,

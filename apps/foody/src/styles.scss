@@ -80,6 +80,9 @@ $accents: (
 [data-accent] {
   --primary-hover: color-mix(in srgb, var(--primary) 85%, var(--text));
   --primary-soft: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  /* What a field of a form is filled with; a panel that groups fields
+     overrides it, so its fields stand out from the panel */
+  --field: color-mix(in srgb, var(--text) 6%, var(--surface));
 }
 
 *,
@@ -315,13 +318,16 @@ form textarea {
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  /* Filled instead of outlined: a form of white fields on white would be
+     nothing but lines */
+  border: 1px solid transparent;
   border-radius: var(--radius);
-  background: var(--surface);
+  background: var(--field);
   color: var(--text);
   font-size: 1rem;
   outline: none;
   transition:
+    background-color 150ms,
     border-color 150ms,
     box-shadow 150ms;
 }
@@ -330,10 +336,17 @@ form textarea {
   resize: vertical;
 }
 
+form input:hover,
+form select:hover,
+form textarea:hover {
+  border-color: var(--border);
+}
+
 form input:focus,
 form select:focus,
 form textarea:focus {
   border-color: var(--primary);
+  background: var(--surface);
   box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
