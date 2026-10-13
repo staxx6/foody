@@ -44,6 +44,7 @@ const NESTED = 'medication';
   template: `
     @if (isCreating()) {
       <app-new-medication-form
+        [initialName]="createName"
         (saved)="created($event.id)"
         (cancelled)="uiStore.closeNested()"
       />
@@ -74,7 +75,7 @@ const NESTED = 'medication';
             (valueChange)="select($event)"
             [placeholder]="t().selectMedication"
             [createLabel]="t().newMedication"
-            (create)="uiStore.openNested(nested)"
+            (create)="createMedication($event)"
           />
         </div>
 
@@ -197,7 +198,13 @@ export class LogMedicationFormComponent implements OnInit {
   time = toTimeInputValue(new Date());
 
   /** The form for a new medication shown in place of this one */
-  protected readonly nested = NESTED;
+  /** What the medication that is created is called to begin with */
+  protected createName = '';
+
+  protected createMedication(name: string): void {
+    this.createName = name;
+    this.uiStore.openNested(NESTED);
+  }
   protected readonly isCreating = computed(() => this.uiStore.isNested(NESTED));
   readonly isSaving = signal(false);
   readonly error = signal<string | null>(null);

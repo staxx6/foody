@@ -150,7 +150,10 @@ export class OfflineDataAccessService implements DataAccess {
   readonly lastSyncedAt = signal<Date | null>(null);
   /** The server rejected a record, e.g. because of invalid data */
   readonly syncError = signal<string | null>(null);
-  /** Increases whenever what the local copy shows changed without the app */
+  /**
+   * Increases whenever the local copy changed, by this device or by a
+   * synchronization. What shows the data reloads it then.
+   */
   readonly revision = signal(0);
 
   /** Records that are treated as deleted, see `hide` */
@@ -231,6 +234,7 @@ export class OfflineDataAccessService implements DataAccess {
     this.outbox.push(item);
     this.pendingCount.set(this.outbox.length);
 
+    this.changed();
     void this.sync();
     return map(record);
   }
@@ -299,6 +303,7 @@ export class OfflineDataAccessService implements DataAccess {
     this.records.set(id, record);
     this.pendingCount.set(this.outbox.length);
 
+    this.changed();
     void this.sync();
     return map(record);
   }
@@ -328,6 +333,7 @@ export class OfflineDataAccessService implements DataAccess {
     ];
     this.pendingCount.set(this.outbox.length);
 
+    this.changed();
     void this.sync();
   }
 
@@ -352,18 +358,22 @@ export class OfflineDataAccessService implements DataAccess {
     ).length;
   }
 
+  private changed(): void {
+    this.revision.update((revision) => revision + 1);
+  }
+
   /**
    * Treats records as deleted without deleting them yet, so deleting can be
    * undone for a moment: `unhide` brings them back, `delete` makes it final
    */
   hide(ids: string[]): void {
     ids.forEach((id) => this.hidden.add(id));
-    this.revision.update((revision) => revision + 1);
+    this.changed();
   }
 
   unhide(ids: string[]): void {
     ids.forEach((id) => this.hidden.delete(id));
-    this.revision.update((revision) => revision + 1);
+    this.changed();
   }
 
   getFileUrl(record: DataRecord, fileName: string): string {

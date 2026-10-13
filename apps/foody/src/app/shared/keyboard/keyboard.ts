@@ -1,4 +1,10 @@
-import { DestroyRef, inject, Injectable, signal } from '@angular/core';
+import {
+  DestroyRef,
+  ElementRef,
+  inject,
+  Injectable,
+  signal,
+} from '@angular/core';
 
 /**
  * What the keys do. A key is named as in `KeyboardEvent.key`, letters in
@@ -11,6 +17,8 @@ export type KeyBindings = Record<
 >;
 
 type Layer = {
+  /** The component that bound the keys */
+  host: HTMLElement | undefined;
   bindings: KeyBindings;
   when: () => boolean;
   exclusive: boolean;
@@ -53,6 +61,7 @@ export class Keyboard {
     options: { when?: () => boolean; exclusive?: boolean } = {},
   ): void {
     const layer: Layer = {
+      host: inject(ElementRef, { optional: true })?.nativeElement,
       bindings,
       when: options.when ?? (() => true),
       exclusive: options.exclusive ?? false,
@@ -76,7 +85,13 @@ export class Keyboard {
       return;
     }
 
-    const active = this.layers.filter((layer) => layer.when());
+    // A form at the side has the keys; the page behind it does not react
+    const panel = document.querySelector('.side-panel');
+    const active = this.layers.filter(
+      (layer) =>
+        layer.when() &&
+        !(panel && layer.host?.closest('main') && !panel.contains(layer.host)),
+    );
     const exclusive = active.filter((layer) => layer.exclusive);
     // The keys bound last win, as they belong to what was opened last
     const handler = (exclusive.length > 0 ? exclusive : active)

@@ -21,15 +21,7 @@ import { Keyboard } from '../shared/keyboard/keyboard';
 import { SearchSelectComponent } from '../shared/search/search-select.component';
 import { UiStore } from '../shared/ui-store';
 import { SymptomStore } from '../symptom-entry/symptom-store';
-import { MonthStore } from './month-store';
-
-/** An entry without a discomfort level counts as a medium one */
-const DEFAULT_LEVEL = 50;
-/**
- * Up to which discomfort of a day (the levels of its entries added up) it
- * gets the first, second and third step of the scale; above is the fourth
- */
-const STEP_LIMITS = [50, 100, 200];
+import { discomfortStep, levelOrDefault, MonthStore } from './month-store';
 
 /** Levels are stored as 1-100 and shown in steps of ten, also added up */
 const steps = (discomfort: number) => Math.round(discomfort / 10);
@@ -41,6 +33,8 @@ type DayCell = {
   complaints: number;
   /** The discomfort levels of the day added up */
   discomfort: number;
+  /** The names of the symptoms of the day */
+  symptoms: string[];
   /** 0: no complaints, 1-4: step of the scale */
   step: number;
   isToday: boolean;
@@ -169,7 +163,8 @@ type DayCell = {
                   <span class="medication"></span>
                 }
               </span>
-              <!-- Wide screens have room for the numbers -->
+              <!-- Wide screens have room for the names and the numbers -->
+              <span class="names">{{ cell.symptoms.join(', ') }}</span>
               <span class="facts">
                 @if (cell.meals > 0) {
                   <span><app-icon name="meal" /> {{ cell.meals }}</span>
@@ -236,18 +231,11 @@ type DayCell = {
         flex-direction: column;
         gap: 16px;
 
-        /* One color that gets stronger: little discomfort is faint, almost
-           transparent, a lot of it is the full color */
-        --discomfort: #d2401a;
-        --step-1: color-mix(in srgb, var(--discomfort) 22%, transparent);
-        --step-2: color-mix(in srgb, var(--discomfort) 45%, transparent);
-        --step-3: color-mix(in srgb, var(--discomfort) 72%, transparent);
+        /* The scale of the discomfort, see the global styles */
+        --step-1: var(--discomfort-1);
+        --step-2: var(--discomfort-2);
+        --step-3: var(--discomfort-3);
         --step-4: var(--discomfort);
-      }
-
-      /* Brighter, to be strong on the dark surface as well */
-      :host-context([data-theme='dark']) {
-        --discomfort: #ff6a3d;
       }
 
       .month {
@@ -558,6 +546,7 @@ type DayCell = {
         background: var(--step-3);
       }
 
+      .names,
       .facts {
         display: none;
       }
@@ -663,6 +652,20 @@ type DayCell = {
           display: none;
         }
 
+        /* What the day was about, as far as there is room */
+        .names {
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
+          overflow: hidden;
+          font-size: 0.75rem;
+          line-height: 1.25;
+          text-align: left;
+          /* Long names are split where a word may be, not anywhere */
+          hyphens: auto;
+          overflow-wrap: break-word;
+        }
+
         .facts {
           display: flex;
           flex-wrap: wrap;
@@ -732,8 +735,14 @@ export class MonthComponent implements OnInit {
       const day = complaints.get(key) ?? { count: 0, discomfort: 0 };
       complaints.set(key, {
         count: day.count + 1,
-        discomfort: day.discomfort + (entry.level ?? DEFAULT_LEVEL),
+        discomfort: day.discomfort + levelOrDefault(entry.level),
       });
+    }
+    // The names of the symptoms of a day, each once
+    const names = new Map<string, Set<string>>();
+    for (const entry of this.entries()) {
+      const key = dayKey(entry.date);
+      names.set(key, (names.get(key) ?? new Set()).add(entry.symptomName));
     }
     const meals = new Map<string, number>();
     for (const date of this.monthStore.meals()) {
@@ -762,10 +771,7 @@ export class MonthComponent implements OnInit {
       };
       const mealCount = meals.get(key) ?? 0;
       const medicationCount = medications.get(key) ?? 0;
-      const step =
-        count === 0
-          ? 0
-          : STEP_LIMITS.filter((limit) => discomfort > limit).length + 1;
+      const step = discomfortStep(count, discomfort);
 
       const facts = [
         ...(count > 0 ? [t.dayComplaints(count, steps(discomfort))] : []),
@@ -778,6 +784,7 @@ export class MonthComponent implements OnInit {
         medications: medicationCount,
         complaints: count,
         discomfort,
+        symptoms: [...(names.get(key) ?? [])],
         step,
         isToday: isSameDay(date, today),
         isSelected: isSameDay(date, selected),
@@ -803,7 +810,7 @@ export class MonthComponent implements OnInit {
       totals.set(entry.symptomId, {
         ...total,
         count: total.count + 1,
-        discomfort: total.discomfort + (entry.level ?? DEFAULT_LEVEL),
+        discomfort: total.discomfort + levelOrDefault(entry.level),
       });
     }
 

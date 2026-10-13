@@ -202,13 +202,6 @@ const TIME_SPANS = [6, 12, 24, 48];
         display: flex;
         flex-direction: column;
         gap: 16px;
-
-        /* The hue of the discomfort scale of the month view */
-        --discomfort: #d2401a;
-      }
-
-      :host-context([data-theme='dark']) {
-        --discomfort: #ff6a3d;
       }
 
       .page-title {

@@ -8,13 +8,22 @@ export type Accent = (typeof ACCENTS)[number];
 /** Language of the user interface; 'system' follows the browser */
 export type LanguageSetting = 'system' | 'en' | 'de';
 
-type Settings = { theme: Theme; accent: Accent; language: LanguageSetting };
+/** The entries of a day in the order they happened, or a list per kind */
+export type DayView = 'timeline' | 'separate';
+
+type Settings = {
+  theme: Theme;
+  accent: Accent;
+  language: LanguageSetting;
+  dayView: DayView;
+};
 
 const STORAGE_KEY = 'foody-settings';
 const DEFAULTS: Settings = {
   theme: 'system',
   accent: 'indigo',
   language: 'system',
+  dayView: 'separate',
 };
 
 function load(): Settings {
@@ -40,6 +49,7 @@ export class SettingsStore {
   readonly theme = signal(load().theme);
   readonly accent = signal(load().accent);
   readonly language = signal(load().language);
+  readonly dayView = signal(load().dayView);
 
   constructor() {
     this.prefersDark.addEventListener('change', (event) =>
@@ -50,6 +60,7 @@ export class SettingsStore {
       const theme = this.theme();
       const accent = this.accent();
       const language = this.language();
+      const dayView = this.dayView();
       const isDark =
         theme === 'dark' || (theme === 'system' && this.systemIsDark());
 
@@ -66,7 +77,7 @@ export class SettingsStore {
 
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ theme, accent, language }),
+        JSON.stringify({ theme, accent, language, dayView }),
       );
     });
   }

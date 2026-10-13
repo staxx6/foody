@@ -167,6 +167,8 @@ export class NewMedicationFormComponent implements OnInit {
 
   /** The record to change; without it a new one is created */
   readonly editId = input<string | null>(null);
+  /** What a new record is called to begin with, e.g. what was searched for */
+  readonly initialName = input('');
 
   /** The created or changed medication */
   readonly saved = output<{ id: string }>();
@@ -195,6 +197,7 @@ export class NewMedicationFormComponent implements OnInit {
   readonly error = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
+    this.name = this.initialName();
     this.medicationStore.loadMedications();
     await this.unitStore.loadUnits();
 

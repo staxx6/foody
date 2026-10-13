@@ -29,8 +29,8 @@ export type KeyHint = { keys: string[]; label: string };
           display: flex;
           flex-wrap: wrap;
           gap: 8px 20px;
-          padding-top: 16px;
-          border-top: 1px solid var(--border);
+          /* Quiet: a reminder, not a part of the page */
+          opacity: 0.75;
           font-size: 0.8rem;
           color: var(--text-muted);
         }

@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   computed,
@@ -10,7 +11,10 @@ import { addDays, isSameDay, toDateInputValue } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
 import { Keyboard } from '../shared/keyboard/keyboard';
 import { MedicationEntryListComponent } from '../medication/medication-entry-list.component';
-import { IconComponent } from '../shared/icon.component';
+import { IconComponent, IconName } from '../shared/icon.component';
+import { DayView, SettingsStore } from '../shared/settings-store';
+import { DayTimelineComponent } from './day-timeline.component';
+import { WeekStripComponent } from './week-strip.component';
 import { UiStore } from '../shared/ui-store';
 import { SymptomEntryListComponent } from '../symptom-entry/symptom-entry-list.component';
 
@@ -27,7 +31,10 @@ const SWIPE_MAX_DRIFT = 50;
     DishEntryListComponent,
     SymptomEntryListComponent,
     MedicationEntryListComponent,
+    DayTimelineComponent,
+    WeekStripComponent,
     IconComponent,
+    NgTemplateOutlet,
   ],
   host: {
     '(touchstart)': 'onTouchStart($event)',
@@ -70,7 +77,26 @@ const SWIPE_MAX_DRIFT = 50;
       >
         <app-icon name="chevron-right" />
       </button>
+      <ng-container [ngTemplateOutlet]="viewSwitch" />
     </div>
+
+    <!-- Wide screens have it next to the day, small ones in the first heading -->
+    <ng-template #viewSwitch>
+      <div class="views" role="group" [attr.aria-label]="t().dayView">
+        @for (view of views; track view.value) {
+          <button
+            type="button"
+            [class.active]="settings.dayView() === view.value"
+            [attr.aria-pressed]="settings.dayView() === view.value"
+            [title]="t()[view.value]"
+            [attr.aria-label]="t()[view.value]"
+            (click)="settings.dayView.set(view.value)"
+          >
+            <app-icon [name]="view.icon" />
+          </button>
+        }
+      </div>
+    </ng-template>
 
     @if (!isToday()) {
       <button type="button" class="back-to-today" (click)="uiStore.goHome()">
@@ -78,53 +104,95 @@ const SWIPE_MAX_DRIFT = 50;
       </button>
     }
 
-    <section>
-      <h2>
-        <app-icon name="meal" /> {{ t().meals }}
-        <button
-          type="button"
-          class="add"
-          (click)="uiStore.showForm('new-meal')"
-          [title]="t().logMeal"
-          [attr.aria-label]="t().logMeal"
-        >
-          <app-icon name="plus" /><kbd class="kbd">M</kbd>
-        </button>
-      </h2>
-      <app-dish-entry-list class="card" />
-    </section>
+    <app-week-strip />
 
-    <section>
-      <h2>
-        <app-icon name="symptom" /> {{ t().health }}
-        <button
-          type="button"
-          class="add"
-          (click)="uiStore.showForm('new-health-entry')"
-          [title]="t().logSymptom"
-          [attr.aria-label]="t().logSymptom"
-        >
-          <app-icon name="plus" /><kbd class="kbd">S</kbd>
-        </button>
-      </h2>
-      <app-symptom-entry-list class="card" />
-    </section>
+    @if (settings.dayView() === 'timeline') {
+      <section class="timeline">
+        <h2>
+          <app-icon name="list" /> {{ t().entries }}
+          <span class="adds">
+            <button
+              type="button"
+              class="add"
+              (click)="uiStore.showForm('new-meal')"
+              [title]="t().logMeal"
+              [attr.aria-label]="t().logMeal"
+            >
+              <app-icon name="meal" /><kbd class="kbd">M</kbd>
+            </button>
+            <button
+              type="button"
+              class="add"
+              (click)="uiStore.showForm('new-health-entry')"
+              [title]="t().logSymptom"
+              [attr.aria-label]="t().logSymptom"
+            >
+              <app-icon name="symptom" /><kbd class="kbd">S</kbd>
+            </button>
+            <button
+              type="button"
+              class="add"
+              (click)="uiStore.showForm('new-medication-entry')"
+              [title]="t().logMedication"
+              [attr.aria-label]="t().logMedication"
+            >
+              <app-icon name="pill" /><kbd class="kbd">P</kbd>
+            </button>
+          </span>
+          <ng-container [ngTemplateOutlet]="viewSwitch" />
+        </h2>
+        <app-day-timeline class="card" />
+      </section>
+    } @else {
+      <section>
+        <h2>
+          <app-icon name="meal" /> {{ t().meals }}
+          <button
+            type="button"
+            class="add"
+            (click)="uiStore.showForm('new-meal')"
+            [title]="t().logMeal"
+            [attr.aria-label]="t().logMeal"
+          >
+            <app-icon name="plus" /><kbd class="kbd">M</kbd>
+          </button>
+          <ng-container [ngTemplateOutlet]="viewSwitch" />
+        </h2>
+        <app-dish-entry-list class="card" />
+      </section>
 
-    <section>
-      <h2>
-        <app-icon name="pill" /> {{ t().medications }}
-        <button
-          type="button"
-          class="add"
-          (click)="uiStore.showForm('new-medication-entry')"
-          [title]="t().logMedication"
-          [attr.aria-label]="t().logMedication"
-        >
-          <app-icon name="plus" /><kbd class="kbd">P</kbd>
-        </button>
-      </h2>
-      <app-medication-entry-list class="card" />
-    </section>
+      <section>
+        <h2>
+          <app-icon name="symptom" /> {{ t().health }}
+          <button
+            type="button"
+            class="add"
+            (click)="uiStore.showForm('new-health-entry')"
+            [title]="t().logSymptom"
+            [attr.aria-label]="t().logSymptom"
+          >
+            <app-icon name="plus" /><kbd class="kbd">S</kbd>
+          </button>
+        </h2>
+        <app-symptom-entry-list class="card" />
+      </section>
+
+      <section>
+        <h2>
+          <app-icon name="pill" /> {{ t().medications }}
+          <button
+            type="button"
+            class="add"
+            (click)="uiStore.showForm('new-medication-entry')"
+            [title]="t().logMedication"
+            [attr.aria-label]="t().logMedication"
+          >
+            <app-icon name="plus" /><kbd class="kbd">P</kbd>
+          </button>
+        </h2>
+        <app-medication-entry-list class="card" />
+      </section>
+    }
   `,
   styles: [
     `
@@ -228,8 +296,36 @@ const SWIPE_MAX_DRIFT = 50;
       }
 
       /* Adds an entry to the list; small screens have the menu for it */
-      .add {
+      .add,
+      .adds,
+      .day .views {
         display: none;
+      }
+
+      /* The switch between the views, at the end of the line */
+      .views {
+        display: flex;
+        gap: 2px;
+        margin: -6px 0 -6px auto;
+        padding: 3px;
+        border-radius: 10px;
+        background: var(--field);
+      }
+
+      .views button {
+        display: flex;
+        padding: 6px 10px;
+        border: none;
+        border-radius: 8px;
+        background: none;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+
+      .views button.active {
+        background: var(--surface);
+        color: var(--primary);
+        box-shadow: var(--shadow);
       }
 
       /* Wide screens: meals, symptoms and medications side by side */
@@ -262,8 +358,34 @@ const SWIPE_MAX_DRIFT = 50;
         }
 
         .day,
-        .back-to-today {
+        .back-to-today,
+        app-week-strip,
+        .timeline {
           grid-column: 1 / -1;
+        }
+
+        /* One list is read from top to bottom, so it stays narrow */
+        .timeline {
+          max-width: 820px;
+        }
+
+        .adds {
+          display: flex;
+          gap: 6px;
+          margin-left: auto;
+        }
+
+        .adds .add {
+          margin-left: 0;
+        }
+
+        h2 .views {
+          display: none;
+        }
+
+        .day .views {
+          display: flex;
+          margin: 0 0 0 auto;
         }
 
         .day {
@@ -293,6 +415,11 @@ export class DayComponent {
   protected readonly i18n = inject(I18n);
   protected readonly t = this.i18n.t;
   protected readonly uiStore = inject(UiStore);
+  protected readonly settings = inject(SettingsStore);
+  protected readonly views: { value: DayView; icon: IconName }[] = [
+    { value: 'timeline', icon: 'list' },
+    { value: 'separate', icon: 'columns' },
+  ];
 
   protected readonly day = this.uiStore.selectedDay;
   protected readonly isToday = computed(() =>
@@ -329,7 +456,7 @@ export class DayComponent {
    * selection moves to the symptoms, so one can be chosen.
    */
   private followUp(): boolean {
-    const entry = 'app-symptom-entry-list li.entry';
+    const entry = 'li[data-kind="symptom"]';
     const selected = document.activeElement?.closest<HTMLElement>(entry);
     const id = selected?.dataset['rowId'];
     if (id) {

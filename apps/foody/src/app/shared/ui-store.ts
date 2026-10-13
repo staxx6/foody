@@ -77,6 +77,11 @@ function siteOf(
   );
 }
 
+/** Whether a page is a form, which input can get lost by leaving */
+function isForm(site: ActiveSite): boolean {
+  return /^(new|edit)-/.test(site);
+}
+
 /** The address without what follows the path */
 export function pathOf(url: string): string {
   return url.split(/[?#]/)[0];
@@ -184,6 +189,21 @@ export class UiStore {
    * that was just edited (see row.directive)
    */
   readonly focusRowId = signal<string | null>(null);
+  /** The row that gets the focus once the form that is open is left */
+  private pendingFocusId: string | null = null;
+
+  /**
+   * The page a form was opened from. Wide screens show the form at its side
+   * and the page behind it, which is the day view if the form was opened by
+   * its address.
+   */
+  readonly background = signal<{
+    key: string;
+    form: ActiveSite;
+    editId: string | null;
+    copyId: string | null;
+  }>({ key: 'today', form: 'today', editId: null, copyId: null });
+  private backgroundPath = '/';
 
   /**
    * The page that is shown. Its key changes whenever a page is opened, so a
@@ -197,7 +217,7 @@ export class UiStore {
   }));
 
   /** A form is open, which entered data would be lost by leaving */
-  readonly isEditing = computed(() => /^(new|edit)-/.test(this.activeForm()));
+  readonly isEditing = computed(() => isForm(this.activeForm()));
 
   constructor() {
     this.router.events.subscribe((event) => {
@@ -221,7 +241,7 @@ export class UiStore {
 
   /** Opens the form or the details of a record */
   edit(form: ActiveSite, id: string): void {
-    this.focusRowId.set(id);
+    this.pendingFocusId = id;
     this.open({ form, id });
   }
 
@@ -241,7 +261,7 @@ export class UiStore {
    */
   done(id?: string): void {
     this.isDirty.set(false);
-    if (id) this.focusRowId.set(id);
+    if (id) this.pendingFocusId = id;
     this.close();
   }
 
@@ -343,8 +363,24 @@ export class UiStore {
     this.isDirty.set(false);
     this.editId.set(page.id);
     this.copyId.set(page.copyId ?? null);
-    this.activeForm.set(page.form);
     // The day view stays while its day changes; anything else starts fresh
-    this.pageKey.set(page.form === 'today' ? 'today' : `${navigationId}`);
+    let key = page.form === 'today' ? 'today' : `${navigationId}`;
+    if (!isForm(page.form)) {
+      // Back from a form, the page it was opened from is still there
+      const isBack = this.isEditing() && this.path === this.backgroundPath;
+      if (isBack) key = this.background().key;
+      this.backgroundPath = this.path;
+      this.background.set({
+        key,
+        form: page.form,
+        editId: page.id,
+        copyId: null,
+      });
+      // Its row of the record that was edited or created gets the focus
+      this.focusRowId.set(this.pendingFocusId);
+      this.pendingFocusId = null;
+    }
+    this.activeForm.set(page.form);
+    this.pageKey.set(key);
   }
 }

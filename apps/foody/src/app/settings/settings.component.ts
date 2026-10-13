@@ -4,6 +4,7 @@ import { IconComponent, IconName } from '../shared/icon.component';
 import { I18n } from '../shared/i18n/i18n';
 import {
   ACCENTS,
+  DayView,
   LanguageSetting,
   SettingsStore,
   Theme,
@@ -29,6 +30,26 @@ import {
                 (click)="settings.language.set(language.value)"
               >
                 {{ language.label ?? t().system }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="setting">
+          <span class="label">{{ t().dayView }}</span>
+          <div
+            class="segments two"
+            role="group"
+            [attr.aria-label]="t().dayView"
+          >
+            @for (view of dayViews; track view) {
+              <button
+                type="button"
+                [class.active]="settings.dayView() === view"
+                [attr.aria-pressed]="settings.dayView() === view"
+                (click)="settings.dayView.set(view)"
+              >
+                {{ t()[view] }}
               </button>
             }
           </div>
@@ -157,6 +178,10 @@ import {
         background: var(--bg);
       }
 
+      .segments.two {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
       .segments button {
         display: flex;
         align-items: center;
@@ -278,6 +303,7 @@ export class SettingsComponent {
   protected readonly t = this.i18n.t;
 
   protected readonly accents = ACCENTS;
+  protected readonly dayViews: DayView[] = ['timeline', 'separate'];
   protected readonly themes: { value: Theme; icon: IconName }[] = [
     { value: 'system', icon: 'system' },
     { value: 'light', icon: 'sun' },

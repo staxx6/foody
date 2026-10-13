@@ -87,6 +87,8 @@ export class NewSymptomFormComponent implements OnInit {
 
   /** The record to change; without it a new one is created */
   readonly editId = input<string | null>(null);
+  /** What a new record is called to begin with, e.g. what was searched for */
+  readonly initialName = input('');
   private readonly changes = inject(ChangeDetectorRef);
 
   name = '';
@@ -95,6 +97,7 @@ export class NewSymptomFormComponent implements OnInit {
   readonly error = signal<string | null>(null);
 
   ngOnInit(): void {
+    this.name = this.initialName();
     this.symptomStore.loadSymptoms();
     void this.loadRecord();
   }

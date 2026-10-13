@@ -47,6 +47,10 @@ const en = {
   nextDay: 'Next day',
   backToToday: 'Back to today',
   chooseDay: 'Choose a day',
+  entries: 'Entries',
+  dayView: 'Day view',
+  timeline: 'In the order of the day',
+  separate: 'By kind',
 
   // Month
   previousMonth: 'Previous month',
@@ -377,6 +381,10 @@ const de: Translations = {
   nextDay: 'Nächster Tag',
   backToToday: 'Zurück zu heute',
   chooseDay: 'Tag wählen',
+  entries: 'Einträge',
+  dayView: 'Tagesansicht',
+  timeline: 'Im Tagesverlauf',
+  separate: 'Nach Art getrennt',
 
   previousMonth: 'Vorheriger Monat',
   nextMonth: 'Nächster Monat',

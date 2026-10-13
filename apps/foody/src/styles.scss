@@ -20,6 +20,15 @@
   --warning: #a85f00;
   --warning-soft: #fff3e0;
   --success: #2e7d32;
+  /* How bad it was: one color that gets stronger, from almost transparent
+     for little discomfort to the full color for a lot */
+  --discomfort: #d2401a;
+  --discomfort-1: color-mix(in srgb, var(--discomfort) 22%, transparent);
+  --discomfort-2: color-mix(in srgb, var(--discomfort) 45%, transparent);
+  --discomfort-3: color-mix(in srgb, var(--discomfort) 72%, transparent);
+  /* A panel that groups fields of a form, and the fields in it */
+  --panel: var(--bg);
+  --panel-field: var(--surface);
   --radius: 12px;
   --radius-lg: 16px;
   --shadow: 0 1px 2px rgba(20, 24, 31, 0.06), 0 4px 12px rgba(20, 24, 31, 0.05);
@@ -38,6 +47,13 @@
   --warning: #ffb74d;
   --warning-soft: #3a2a12;
   --success: #81c784;
+  /* Brighter, and less faint at the weak end, to show on the dark surface */
+  --discomfort: #ff6a3d;
+  --discomfort-1: color-mix(in srgb, var(--discomfort) 34%, transparent);
+  --discomfort-2: color-mix(in srgb, var(--discomfort) 55%, transparent);
+  --discomfort-3: color-mix(in srgb, var(--discomfort) 78%, transparent);
+  --panel: #14181d;
+  --panel-field: #262c35;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
@@ -549,4 +565,29 @@ form .warning {
 
 .entry.clickable:hover:not(:has(.clickable:hover)) {
   background: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+
+/* A panel that groups what belongs together in a form. It is tinted, so the
+   fields in it read as fields and the panel as one thing. */
+.panel {
+  --field: var(--panel-field);
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+}
+
+/* In a list of entries of all kinds: what the entry is */
+.entry .kind {
+  flex: none;
+  color: var(--text-muted);
+}
+
+/* Eaten together with the entry above, which shows the time for both */
+.entry.continues {
+  border-top: none;
+  padding-top: 0;
+}
+
+.entry.continues .time {
+  visibility: hidden;
 }

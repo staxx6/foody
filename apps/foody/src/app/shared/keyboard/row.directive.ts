@@ -1,5 +1,5 @@
 import {
-  afterNextRender,
+  effect,
   Directive,
   ElementRef,
   inject,
@@ -45,10 +45,12 @@ export class RowDirective {
   readonly rowClick = output<void>();
 
   constructor() {
-    afterNextRender(() => {
+    // Also a row that exists already, as its list can stay behind a form
+    effect(() => {
       if (!this.rowId() || this.rowId() !== this.uiStore.focusRowId()) return;
       this.uiStore.focusRowId.set(null);
-      this.host.nativeElement.focus();
+      // After the row has been rendered and the form is gone
+      setTimeout(() => this.host.nativeElement.focus());
     });
   }
 

@@ -17,9 +17,13 @@ export function levelStep(level: number): number {
   return Math.min(LEVEL_STEPS, Math.max(1, Math.round(level / STEP_SIZE)));
 }
 
-/** How bad a step is, which decides its color */
-function severity(step: number): 'low' | 'medium' | 'high' {
-  return step <= 3 ? 'low' : step <= 6 ? 'medium' : 'high';
+/**
+ * The color of a step: the color of the discomfort (see the global styles),
+ * the stronger the higher the step, like the scale of the month view
+ */
+export function levelColor(step: number): string {
+  const strength = 10 + step * 6;
+  return `color-mix(in srgb, var(--discomfort) ${strength}%, transparent)`;
 }
 
 /**
@@ -30,8 +34,8 @@ function severity(step: number): 'low' | 'medium' | 'high' {
   template: `{{ step() }}/10`,
   host: {
     class: 'chip',
-    '[class.medium]': "severity() === 'medium'",
-    '[class.high]': "severity() === 'high'",
+    '[style.background]': 'color()',
+    '[style.color]': "'var(--text)'",
   },
 })
 export class LevelChipComponent {
@@ -39,7 +43,7 @@ export class LevelChipComponent {
   readonly level = input.required<number>();
 
   protected readonly step = computed(() => levelStep(this.level()));
-  protected readonly severity = computed(() => severity(this.step()));
+  protected readonly color = computed(() => levelColor(this.step()));
 }
 
 /**
@@ -54,8 +58,8 @@ export class LevelChipComponent {
         <button
           type="button"
           role="radio"
-          [class]="severityOf(step)"
           [class.active]="step === selected()"
+          [style.background]="step === selected() ? colorOf(step) : null"
           [attr.aria-checked]="step === selected()"
           [attr.tabindex]="step === (selected() ?? 1) ? 0 : -1"
           [attr.data-step]="step"
@@ -94,23 +98,10 @@ export class LevelChipComponent {
         color: var(--text);
       }
 
-      /* The colors of the chips that show a level */
+      /* Filled with the color of its step, see levelColor */
       button.active {
-        border-color: var(--primary);
-        background: var(--primary-soft);
-        color: var(--primary);
-      }
-
-      button.active.medium {
-        border-color: var(--warning);
-        background: var(--warning-soft);
-        color: var(--warning);
-      }
-
-      button.active.high {
-        border-color: var(--danger);
-        background: var(--danger-soft);
-        color: var(--danger);
+        border-color: var(--discomfort);
+        color: var(--text);
       }
     `,
   ],
@@ -131,7 +122,7 @@ export class LevelPickerComponent {
     const value = this.value();
     return value ? levelStep(value) : null;
   });
-  protected readonly severityOf = severity;
+  protected readonly colorOf = levelColor;
 
   protected choose(step: number | null): void {
     this.value.set(step === null ? null : step * STEP_SIZE);

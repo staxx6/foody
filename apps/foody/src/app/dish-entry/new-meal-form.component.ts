@@ -67,12 +67,14 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
     @switch (creating()) {
       @case ('food-item') {
         <app-new-food-item-form
+          [initialName]="createName"
           (saved)="created($event.id)"
           (cancelled)="uiStore.closeNested()"
         />
       }
       @case ('dish') {
         <app-new-dish-form
+          [initialName]="createName"
           (saved)="created($event.id)"
           (cancelled)="uiStore.closeNested()"
         />
@@ -98,7 +100,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
           {{ items().length > 0 ? t().whatElse : t().whatDidYouEat }} *
         </span>
         <!-- Where the food or dish is chosen, set apart as a panel -->
-        <div class="meal" role="group" aria-labelledby="meal-label">
+        <div class="meal panel" role="group" aria-labelledby="meal-label">
           <div class="item">
             <div class="field">
               <div class="toggle" role="group">
@@ -131,7 +133,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
                 [createLabel]="
                   sourceType === 'food-item' ? t().newFood : t().newDish
                 "
-                (create)="uiStore.openNested(nestedName[sourceType])"
+                (create)="create($event)"
               />
             </div>
 
@@ -251,17 +253,12 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
   `,
   styles: [
     `
-      /* The panel where a food or dish is chosen. It is tinted, so the white
-         fields in it read as fields and the panel as one thing. */
+      /* The panel where a food or dish is chosen, see .panel */
       .meal {
-        --field: var(--surface);
         display: flex;
         flex-direction: column;
         gap: 12px;
         margin: 6px 0 14px;
-        padding: 12px;
-        border-radius: var(--radius-lg);
-        background: var(--bg);
       }
 
       /* What was added before: settled, so tags instead of fields, in a
@@ -412,7 +409,14 @@ export class NewMealFormComponent implements OnInit {
         ? 'food-item'
         : null,
   );
-  protected readonly nestedName = NESTED;
+  /** What the food or dish that is created is called to begin with */
+  protected createName = '';
+
+  /** Opens the form for a new food or dish in place of this one */
+  protected create(name: string): void {
+    this.createName = name;
+    this.uiStore.openNested(NESTED[this.sourceType]);
+  }
 
   /** What was eaten lately comes first in the search */
   private readonly recentFoods = signal<string[]>([]);

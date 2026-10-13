@@ -1,13 +1,15 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   computed,
   effect,
   ElementRef,
   inject,
+  signal,
   viewChild,
 } from '@angular/core';
 import { I18n } from '../shared/i18n/i18n';
-import { isField, Keyboard } from '../shared/keyboard/keyboard';
+import { isField, isWideScreen, Keyboard } from '../shared/keyboard/keyboard';
 import {
   KeyHint,
   KeyHintsComponent,
@@ -36,6 +38,7 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
 
 @Component({
   imports: [
+    NgTemplateOutlet,
     SettingsComponent,
     ManageListsComponent,
     ReportComponent,
@@ -74,104 +77,127 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
       <app-sync-status />
     </header>
 
+    <!-- What a page shows, by its name -->
+    <ng-template #pages let-page>
+      @switch (page.form) {
+        @case ('new-food-item') {
+          <app-new-food-item-form
+            [editId]="page.editId"
+            (saved)="uiStore.done($event.id)"
+            (cancelled)="uiStore.close()"
+          />
+        }
+        @case ('new-dish') {
+          <app-new-dish-form
+            [editId]="page.editId"
+            (saved)="uiStore.done($event.id)"
+            (cancelled)="uiStore.close()"
+          />
+        }
+        @case ('new-meal') {
+          <app-new-meal-form [editId]="page.editId" [copyId]="page.copyId" />
+        }
+        @case ('new-health-entry') {
+          <app-new-health-entry-form
+            [editId]="page.editId"
+            [copyId]="page.copyId"
+          />
+        }
+        @case ('new-symptom') {
+          <app-new-symptom-form
+            [editId]="page.editId"
+            (saved)="uiStore.done($event.id)"
+            (cancelled)="uiStore.close()"
+          />
+        }
+        @case ('new-medication') {
+          <app-new-medication-form
+            [editId]="page.editId"
+            (saved)="uiStore.done($event.id)"
+            (cancelled)="uiStore.close()"
+          />
+        }
+        @case ('new-medication-entry') {
+          <app-log-medication-form
+            [editId]="page.editId"
+            [copyId]="page.copyId"
+          />
+        }
+        @case ('view-food') {
+          <app-item-details kind="food" [id]="page.editId ?? ''" />
+        }
+        @case ('view-dish') {
+          <app-item-details kind="dish" [id]="page.editId ?? ''" />
+        }
+        @case ('view-symptom') {
+          <app-item-details kind="symptom" [id]="page.editId ?? ''" />
+        }
+        @case ('view-medication') {
+          <app-item-details kind="medication" [id]="page.editId ?? ''" />
+        }
+        @case ('new-follow-up') {
+          <app-symptom-follow-up-form
+            [entryId]="page.editId"
+            (saved)="uiStore.done(page.editId ?? undefined)"
+            (cancelled)="uiStore.close()"
+          />
+        }
+        @case ('edit-unit') {
+          <app-edit-unit-form
+            [editId]="page.editId"
+            (saved)="uiStore.done(page.editId ?? undefined)"
+            (cancelled)="uiStore.close()"
+          />
+        }
+        @case ('month') {
+          <app-month />
+        }
+        @case ('report') {
+          <app-report />
+        }
+        @case ('lists') {
+          <app-manage-lists />
+        }
+        @case ('settings') {
+          <app-settings />
+        }
+        @default {
+          <app-day />
+        }
+      }
+    </ng-template>
+
     <div class="scroll" #scroll>
       <main>
-        @for (page of [uiStore.page()]; track page.key) {
-          @switch (page.form) {
-            @case ('new-food-item') {
-              <app-new-food-item-form
-                [editId]="page.editId"
-                (saved)="uiStore.done($event.id)"
-                (cancelled)="uiStore.close()"
-              />
-            }
-            @case ('new-dish') {
-              <app-new-dish-form
-                [editId]="page.editId"
-                (saved)="uiStore.done($event.id)"
-                (cancelled)="uiStore.close()"
-              />
-            }
-            @case ('new-meal') {
-              <app-new-meal-form
-                [editId]="page.editId"
-                [copyId]="page.copyId"
-              />
-            }
-            @case ('new-health-entry') {
-              <app-new-health-entry-form
-                [editId]="page.editId"
-                [copyId]="page.copyId"
-              />
-            }
-            @case ('new-symptom') {
-              <app-new-symptom-form
-                [editId]="page.editId"
-                (saved)="uiStore.done($event.id)"
-                (cancelled)="uiStore.close()"
-              />
-            }
-            @case ('new-medication') {
-              <app-new-medication-form
-                [editId]="page.editId"
-                (saved)="uiStore.done($event.id)"
-                (cancelled)="uiStore.close()"
-              />
-            }
-            @case ('new-medication-entry') {
-              <app-log-medication-form
-                [editId]="page.editId"
-                [copyId]="page.copyId"
-              />
-            }
-            @case ('view-food') {
-              <app-item-details kind="food" [id]="page.editId ?? ''" />
-            }
-            @case ('view-dish') {
-              <app-item-details kind="dish" [id]="page.editId ?? ''" />
-            }
-            @case ('view-symptom') {
-              <app-item-details kind="symptom" [id]="page.editId ?? ''" />
-            }
-            @case ('view-medication') {
-              <app-item-details kind="medication" [id]="page.editId ?? ''" />
-            }
-            @case ('new-follow-up') {
-              <app-symptom-follow-up-form
-                [entryId]="page.editId"
-                (saved)="uiStore.done(page.editId ?? undefined)"
-                (cancelled)="uiStore.close()"
-              />
-            }
-            @case ('edit-unit') {
-              <app-edit-unit-form
-                [editId]="page.editId"
-                (saved)="uiStore.done(page.editId ?? undefined)"
-                (cancelled)="uiStore.close()"
-              />
-            }
-            @case ('month') {
-              <app-month />
-            }
-            @case ('report') {
-              <app-report />
-            }
-            @case ('lists') {
-              <app-manage-lists />
-            }
-            @case ('settings') {
-              <app-settings />
-            }
-            @default {
-              <app-day />
-            }
-          }
+        @for (page of [mainPage()]; track page.key) {
+          <ng-container
+            *ngTemplateOutlet="pages; context: { $implicit: page }"
+          />
         }
         @if (keyHints().length > 0) {
           <app-key-hints [hints]="keyHints()" />
         }
       </main>
     </div>
+
+    <!-- Wide screens: a form opens at the side of the page it was opened
+         from, which stays visible -->
+    @if (panelPage(); as page) {
+      <button
+        type="button"
+        class="panel-backdrop"
+        tabindex="-1"
+        (click)="uiStore.close()"
+        [attr.aria-label]="t().close"
+      ></button>
+      <aside class="side-panel">
+        @for (panel of [page]; track panel.key) {
+          <ng-container
+            *ngTemplateOutlet="pages; context: { $implicit: panel }"
+          />
+        }
+      </aside>
+    }
 
     <app-footer-nav />
     <app-undo-toast />
@@ -231,6 +257,24 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
         cursor: pointer;
       }
 
+      .panel-backdrop {
+        display: none;
+      }
+
+      /* Only opened on wide screens. Should the window get narrow while it
+         is open, it covers the page like a form on a small screen. */
+      .side-panel {
+        /* A column like the page, which also makes the form a block */
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        inset: 0;
+        z-index: 15;
+        padding: 20px 16px 40px;
+        overflow-y: auto;
+        background: var(--bg);
+      }
+
       main {
         padding: 20px 16px 40px;
         display: flex;
@@ -268,17 +312,27 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
           gap: 28px;
         }
 
-        /* Forms stay as narrow as they are comfortable to fill in */
-        app-new-meal-form,
-        app-new-health-entry-form,
-        app-log-medication-form,
-        app-new-food-item-form,
-        app-new-dish-form,
-        app-new-symptom-form,
-        app-new-medication-form,
-        app-symptom-follow-up-form,
-        app-edit-unit-form {
-          max-width: 680px;
+        /* A form opens at the side: the page behind it stays visible but is
+           out of reach until the form is closed */
+        .panel-backdrop {
+          display: block;
+          position: fixed;
+          inset: 0 0 0 248px;
+          z-index: 14;
+          padding: 0;
+          border: none;
+          background: rgba(0, 0, 0, 0.2);
+          cursor: default;
+        }
+
+        .side-panel {
+          left: auto;
+          width: min(620px, 50vw);
+          padding: 40px 32px;
+          overflow-y: auto;
+          border-left: 1px solid var(--border);
+          background: var(--bg);
+          box-shadow: -12px 0 32px rgba(0, 0, 0, 0.14);
         }
       }
     `,
@@ -287,7 +341,23 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
 export class HomeComponent {
   protected readonly t = inject(I18n).t;
   readonly uiStore = inject(UiStore);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly keyboard = inject(Keyboard);
+
+  /** Whether the layout of wide screens is shown */
+  private readonly isWide = signal(isWideScreen());
+
+  /**
+   * A form that is shown in a panel at the side of the page it was opened
+   * from, which wide screens have the room for
+   */
+  protected readonly panelPage = computed(() =>
+    this.isWide() && this.uiStore.isEditing() ? this.uiStore.page() : null,
+  );
+  /** The page itself: behind the panel, the one the form was opened from */
+  protected readonly mainPage = computed(() =>
+    this.panelPage() ? this.uiStore.background() : this.uiStore.page(),
+  );
 
   private readonly scroll =
     viewChild.required<ElementRef<HTMLElement>>('scroll');
@@ -296,50 +366,34 @@ export class HomeComponent {
   protected readonly keyHints = computed<KeyHint[]>(() => {
     const t = this.t();
     const keys = t.shortcuts;
-    const rows: KeyHint[] = [
-      { keys: ['↑', '↓'], label: keys.selectEntry },
-      { keys: ['E'], label: t.edit },
-      { keys: [t.keyDelete], label: t.delete },
-    ];
+    const select: KeyHint = { keys: ['↑', '↓'], label: keys.selectEntry };
+    const menu: KeyHint = { keys: ['Enter'], label: t.actions };
+    // Only what gets one started; the help window has all of them
     const help: KeyHint = { keys: ['?'], label: t.allShortcuts };
 
     switch (this.uiStore.activeForm()) {
       case 'today':
         return [
           { keys: ['←', '→'], label: keys.changeDay },
-          { keys: ['T'], label: t.today },
-          ...rows,
-          { keys: ['Enter'], label: t.actions },
-          { keys: ['D'], label: t.logAgain },
-          { keys: ['F'], label: t.followUp },
+          select,
+          menu,
           help,
         ];
       case 'month':
         return [
           { keys: ['←', '→'], label: keys.changeMonth },
-          { keys: ['T'], label: t.backToCurrentMonth },
           { keys: ['↑', '↓'], label: keys.calendar },
-          { keys: ['Enter'], label: keys.openDay },
           help,
         ];
       case 'lists':
-        return [
-          { keys: ['/'], label: keys.search },
-          ...rows,
-          { keys: ['Enter'], label: t.actions },
-          help,
-        ];
+        return [{ keys: ['/'], label: keys.search }, select, menu, help];
       case 'report':
         return [{ keys: ['X'], label: t.exportExcel }, help];
       case 'view-food':
       case 'view-dish':
       case 'view-symptom':
       case 'view-medication':
-        return [
-          { keys: ['E'], label: t.edit },
-          { keys: ['Esc'], label: t.back },
-          help,
-        ];
+        return [{ keys: ['E'], label: t.edit }, help];
       case 'settings':
         return [help];
       default:
@@ -348,11 +402,21 @@ export class HomeComponent {
   });
 
   constructor() {
-    // Every page starts at its top
+    // Every page starts at its top; a form at the side leaves the page alone
     effect(() => {
-      this.uiStore.page();
+      this.mainPage();
       this.scroll().nativeElement.scrollTop = 0;
       window.scrollTo(0, 0);
+    });
+
+    // The layout follows the width of the window, but a form stays where it
+    // was opened: moving it would lose its input
+    const wide = window.matchMedia('(min-width: 1024px)');
+    wide.addEventListener('change', () => {
+      if (!this.uiStore.isEditing()) this.isWide.set(wide.matches);
+    });
+    effect(() => {
+      if (!this.uiStore.isEditing()) this.isWide.set(wide.matches);
     });
 
     // The keys that work on every page
@@ -374,7 +438,7 @@ export class HomeComponent {
     const isLate =
       event.type === 'change' &&
       target.matches('input:not([type=file]), textarea');
-    if (isLate || !target.closest('main form')) return;
+    if (isLate || !target.closest('form')) return;
     if (this.uiStore.isEditing()) this.uiStore.isDirty.set(true);
   }
 
@@ -425,8 +489,11 @@ export class HomeComponent {
 
   /** The matching elements of the page that are not hidden */
   private allVisible<T extends HTMLElement>(selector: string): T[] {
-    return Array.from(
-      this.scroll().nativeElement.querySelectorAll<T>(selector),
-    ).filter((element) => element.offsetParent !== null);
+    const host = this.host.nativeElement;
+    // A form at the side is what is used, not the page behind it
+    const root = host.querySelector('.side-panel') ?? host;
+    return Array.from(root.querySelectorAll<T>(selector)).filter(
+      (element) => element.offsetParent !== null,
+    );
   }
 }

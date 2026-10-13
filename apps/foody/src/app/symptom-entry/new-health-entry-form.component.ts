@@ -57,6 +57,7 @@ const NESTED_FOLLOW_UP = 'follow-up';
   template: `
     @if (isCreatingSymptom()) {
       <app-new-symptom-form
+        [initialName]="createName"
         (saved)="symptomCreated($event.id)"
         (cancelled)="uiStore.closeNested()"
       />
@@ -95,7 +96,7 @@ const NESTED_FOLLOW_UP = 'follow-up';
             [(value)]="symptomId"
             [placeholder]="t().selectSymptom"
             [createLabel]="t().newSymptom"
-            (create)="uiStore.openNested(nestedSymptom)"
+            (create)="createSymptom($event)"
           />
         </div>
 
@@ -290,7 +291,13 @@ export class NewHealthEntryFormComponent implements OnInit {
   );
 
   /** The form for a new symptom shown in place of this one */
-  protected readonly nestedSymptom = NESTED_SYMPTOM;
+  /** What the symptom that is created is called to begin with */
+  protected createName = '';
+
+  protected createSymptom(name: string): void {
+    this.createName = name;
+    this.uiStore.openNested(NESTED_SYMPTOM);
+  }
   protected readonly isCreatingSymptom = computed(() =>
     this.uiStore.isNested(NESTED_SYMPTOM),
   );

@@ -41,6 +41,14 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
 - `close()` is the back button of the browser, so a form returns to where it was opened from.
   Paging through days replaces the address instead of adding steps to go back.
 - Every page change recreates the page component, except the day view when its day changes.
+- Wide screens show a form in a panel at the side (`.side-panel` in `HomeComponent`) and keep
+  the page it was opened from (`UiStore.background`) behind it; small screens show the form
+  instead of the page. The page behind is not recreated when the form closes, so whatever shows
+  data has to reload on `sync.revision()`, which also increases on every local change. Keys
+  bound by the page behind do not work while the panel is open.
+- The day view shows its entries as one timeline (`day-timeline.component.ts`) or as a list per
+  kind, chosen in `SettingsStore.dayView`. Both use the same rows: `li[appMealRow]`,
+  `li[appSymptomRow]`, `li[appMedicationRow]`, which own the menu and the actions of an entry.
 - Forms shown in place of another form (a new symptom while logging one, a follow-up while
   editing an entry) are part of the address as `?with=<name>`: `UiStore.openNested()`,
   `closeNested()`, `isNested()`. The outer form stays alive and keeps its input. A name must be
@@ -54,7 +62,8 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
   deletes it when the time to undo is over. Lists have to reload on `sync.revision()`, or they
   neither lose the record nor get it back on undo.
 - A discomfort level is stored as 1-100 but entered and shown in ten steps
-  (`shared/level.component.ts`); never show the stored number.
+  (`shared/level.component.ts`); never show the stored number. Its color is always the one
+  scale of `--discomfort` in the global styles, also in the month view and the week strip.
 - Stores are NgRx signal stores or services with signals, one per collection, next to their
   components. They use `DATA_ACCESS`, which is the offline copy (`OfflineDataAccessService`):
   `list` only filters by a date range, everything else is filtered in memory.

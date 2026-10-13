@@ -43,6 +43,7 @@ const NESTED_FOOD = 'dish-food';
   template: `
     @if (isCreatingFood()) {
       <app-new-food-item-form
+        [initialName]="createName"
         (saved)="foodCreated($event.id)"
         (cancelled)="uiStore.closeNested()"
       />
@@ -100,53 +101,55 @@ const NESTED_FOOD = 'dish-food';
 
         <div class="field">
           <span class="label">{{ t().ingredients }}</span>
-          @for (ingredient of ingredients(); track $index) {
-            <div class="ingredient">
-              <app-search-select
-                class="food"
-                [options]="ingredientStore.foodItems()"
-                [value]="ingredient.foodItemId"
-                (valueChange)="selectFood($index, $event)"
-                [ariaLabel]="t().food"
-                [createLabel]="t().newFood"
-                (create)="createFoodFor($index)"
-                [ariaLabel]="t().food"
-              />
-              <input
-                class="amount"
-                type="number"
-                min="0"
-                step="any"
-                [ngModel]="ingredient.amount"
-                (ngModelChange)="
-                  update($index, { amount: '' + ($event ?? '') })
-                "
-                [ngModelOptions]="{ standalone: true }"
-                [placeholder]="t().amount"
-                [attr.aria-label]="t().amount"
-              />
-              <app-search-select
-                class="unit"
-                [options]="unitOptions()"
-                [value]="ingredient.amountUnitId"
-                (valueChange)="update($index, { amountUnitId: $event })"
-                [placeholder]="t().unit"
-                [ariaLabel]="t().unit"
-              />
-              <button
-                type="button"
-                class="remove"
-                (click)="remove($index)"
-                [attr.aria-label]="t().removeIngredient"
-              >
-                <app-icon name="trash" />
+          <div class="ingredients panel">
+            @for (ingredient of ingredients(); track $index) {
+              <div class="ingredient">
+                <app-search-select
+                  class="food"
+                  [options]="ingredientStore.foodItems()"
+                  [value]="ingredient.foodItemId"
+                  (valueChange)="selectFood($index, $event)"
+                  [ariaLabel]="t().food"
+                  [createLabel]="t().newFood"
+                  (create)="createFoodFor($index, $event)"
+                  [ariaLabel]="t().food"
+                />
+                <input
+                  class="amount"
+                  type="number"
+                  min="0"
+                  step="any"
+                  [ngModel]="ingredient.amount"
+                  (ngModelChange)="
+                    update($index, { amount: '' + ($event ?? '') })
+                  "
+                  [ngModelOptions]="{ standalone: true }"
+                  [placeholder]="t().amount"
+                  [attr.aria-label]="t().amount"
+                />
+                <app-search-select
+                  class="unit"
+                  [options]="unitOptions()"
+                  [value]="ingredient.amountUnitId"
+                  (valueChange)="update($index, { amountUnitId: $event })"
+                  [placeholder]="t().unit"
+                  [ariaLabel]="t().unit"
+                />
+                <button
+                  type="button"
+                  class="remove"
+                  (click)="remove($index)"
+                  [attr.aria-label]="t().removeIngredient"
+                >
+                  <app-icon name="trash" />
+                </button>
+              </div>
+            }
+            <div class="ingredient-actions">
+              <button type="button" class="link" (click)="add()">
+                {{ t().addIngredient }}
               </button>
             </div>
-          }
-          <div class="ingredient-actions">
-            <button type="button" class="link" (click)="add()">
-              {{ t().addIngredient }}
-            </button>
           </div>
         </div>
 
@@ -174,6 +177,13 @@ const NESTED_FOOD = 'dish-food';
   `,
   styles: [
     `
+      /* The ingredients belong together, see .panel */
+      .ingredients {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
       .ingredient {
         display: grid;
         grid-template-columns: 1fr 5rem 5.5rem 44px;
@@ -240,6 +250,8 @@ export class NewDishFormComponent implements OnInit {
 
   /** The record to change; without it a new one is created */
   readonly editId = input<string | null>(null);
+  /** What a new record is called to begin with, e.g. what was searched for */
+  readonly initialName = input('');
   private readonly changes = inject(ChangeDetectorRef);
 
   name = '';
@@ -257,6 +269,7 @@ export class NewDishFormComponent implements OnInit {
   readonly error = signal<string | null>(null);
 
   ngOnInit(): void {
+    this.name = this.initialName();
     this.dishStore.loadDishes();
     this.ingredientStore.loadFoodItems();
     this.amountUnitStore.loadUnits();
@@ -321,7 +334,11 @@ export class NewDishFormComponent implements OnInit {
   /** The ingredient that gets the food that is being created */
   private creatingFor: number | null = null;
 
-  protected createFoodFor(index: number): void {
+  /** What the food that is created is called to begin with */
+  protected createName = '';
+
+  protected createFoodFor(index: number, name: string): void {
+    this.createName = name;
     this.creatingFor = index;
     this.uiStore.openNested(NESTED_FOOD);
   }

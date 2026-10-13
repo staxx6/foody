@@ -66,3 +66,24 @@ export class MonthStore {
     this.medications.set(medications);
   }
 }
+
+/** An entry without a discomfort level counts as a medium one */
+const DEFAULT_LEVEL = 50;
+/**
+ * Up to which discomfort of a day (the levels of its entries added up) it
+ * gets the first, second and third step of the scale; above is the fourth
+ */
+const STEP_LIMITS = [50, 100, 200];
+
+export function levelOrDefault(level: number | null): number {
+  return level ?? DEFAULT_LEVEL;
+}
+
+/**
+ * The step of the scale a day gets: 0 without complaints, otherwise 1-4
+ * @param discomfort the levels of the entries of the day added up
+ */
+export function discomfortStep(complaints: number, discomfort: number): number {
+  if (complaints === 0) return 0;
+  return STEP_LIMITS.filter((limit) => discomfort > limit).length + 1;
+}
