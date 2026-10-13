@@ -4,12 +4,14 @@ import { ConfirmService } from '../shared/confirm/confirm.service';
 import {
   entryActions,
   EntryMenuComponent,
+  MenuAction,
 } from '../shared/entry-menu.component';
 import { I18n } from '../shared/i18n/i18n';
 import { IconComponent } from '../shared/icon.component';
 import { RowDirective } from '../shared/keyboard/row.directive';
 import { UiStore } from '../shared/ui-store';
 import { DishEntry, DishEntryStore } from './dish-entry-store';
+import { MealSelection } from './meal-selection';
 
 /**
  * A meal in a list of entries: what was eaten when, and what can be done
@@ -25,6 +27,9 @@ import { DishEntry, DishEntryStore } from './dish-entry-store';
     class: 'entry clickable',
     'data-kind': 'meal',
     '[class.continues]': 'continues()',
+    '[class.selected]': 'isSelected()',
+    '[attr.aria-selected]': 'isSelected() || null',
+    '(keydown.space)': 'toggleByKey($event)',
   },
   template: `
     <span class="time">{{ entry().date | date: 'HH:mm' }}</span>
@@ -50,6 +55,7 @@ export class MealRowComponent {
   private readonly uiStore = inject(UiStore);
   private readonly confirm = inject(ConfirmService);
   private readonly store = inject(DishEntryStore);
+  private readonly selection = inject(MealSelection);
 
   readonly entry = input.required<DishEntry>();
   /** In a list of entries of all kinds, an icon says what the entry is */
@@ -59,11 +65,23 @@ export class MealRowComponent {
 
   private readonly menu = viewChild(EntryMenuComponent);
 
+  protected readonly isSelected = computed(() =>
+    this.selection.has(this.entry().id),
+  );
+
   /** What the menu of the entry offers */
-  protected readonly actions = computed(() => {
+  protected readonly actions = computed<MenuAction[]>(() => {
     const entry = this.entry();
     const id = entry.dishId || entry.foodItemId;
-    return entryActions(this.i18n.t(), {
+    const t = this.i18n.t();
+    const select: MenuAction = {
+      label: this.isSelected() ? t.deselect : t.select,
+      icon: 'check',
+      key: ' ',
+      keyLabel: t.keySpace,
+      run: () => this.selection.toggle(entry.id),
+    };
+    const [edit, ...others] = entryActions(t, {
       edit: () => this.edit(),
       copy: () => this.copy(),
       details: id
@@ -71,12 +89,21 @@ export class MealRowComponent {
         : null,
       remove: () => void this.remove(),
     });
+    return [edit, select, ...others];
   });
 
   constructor() {
     const row = inject(RowDirective, { self: true });
     row.rowOpen.subscribe(() => this.menu()?.open());
-    row.rowClick.subscribe(() => this.menu()?.toggle());
+    row.rowClick.subscribe((event) => {
+      // With Ctrl, or once something is selected, a click selects
+      if (event.ctrlKey || event.metaKey || this.selection.count() > 0) {
+        this.menu()?.close();
+        this.selection.toggle(this.entry().id);
+      } else {
+        this.menu()?.toggle();
+      }
+    });
     row.rowEdit.subscribe(() => this.edit());
     row.rowCopy.subscribe(() => this.copy());
     row.rowDelete.subscribe(() => void this.remove());
@@ -86,8 +113,20 @@ export class MealRowComponent {
     this.uiStore.edit('new-meal', this.entry().id);
   }
 
+  /** Logs the entry again, or all that is selected */
   private copy(): void {
-    this.uiStore.copy('new-meal', this.entry().id);
+    const ids = this.selection.ids();
+    this.uiStore.copy(
+      'new-meal',
+      ids.length > 0 ? ids.join(',') : this.entry().id,
+    );
+  }
+
+  protected toggleByKey(event: Event): void {
+    // Space on a button of the row belongs to the button
+    if (event.target !== event.currentTarget) return;
+    event.preventDefault();
+    this.selection.toggle(this.entry().id);
   }
 
   private remove(): Promise<void> {

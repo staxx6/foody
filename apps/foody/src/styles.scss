@@ -563,7 +563,7 @@ form .warning {
   cursor: pointer;
 }
 
-.entry.clickable:hover:not(:has(.clickable:hover)) {
+.entry.clickable:not(.selected):hover:not(:has(.clickable:hover)) {
   background: color-mix(in srgb, var(--primary) 4%, transparent);
 }
 
@@ -574,6 +574,12 @@ form .warning {
   padding: 12px;
   border-radius: var(--radius-lg);
   background: var(--panel);
+}
+
+/* Selected to do something with several entries at once */
+.entry.selected {
+  background: var(--primary-soft);
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 /* In a list of entries of all kinds: what the entry is */

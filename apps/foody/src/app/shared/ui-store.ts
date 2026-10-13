@@ -258,11 +258,17 @@ export class UiStore {
   /**
    * Leaves a form whose input was saved
    * @param id the record that was saved, whose row gets the focus
+   * @param day the day it was saved for. If another day is shown, that day
+   *   is shown instead of the form, or the record would not be seen.
    */
-  done(id?: string): void {
+  done(id?: string, day?: Date): void {
     this.isDirty.set(false);
     if (id) this.pendingFocusId = id;
-    this.close();
+    if (day && !isSameDay(day, this.selectedDay())) {
+      this.open({ form: 'today', id: null, day }, true);
+    } else {
+      this.close();
+    }
   }
 
   /** Whether the form is shown in place of the form it was opened from */

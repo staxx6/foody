@@ -41,10 +41,8 @@ const NESTED: Record<SourceType, string> = {
 type MealItem = {
   sourceType: SourceType;
   sourceId: string;
-  name: string;
   amount: string;
   amountUnitId: string;
-  unitName: string;
 };
 
 // Most entries are a single piece of something
@@ -193,14 +191,23 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
             <ul class="items">
               @for (item of items(); track $index) {
                 <li>
-                  <span class="name">{{ item.name }}</span>
-                  <span class="amount">
-                    {{ item.amount }} {{ item.unitName }}
-                  </span>
+                  <!-- Back into the fields above, to change it -->
                   <button
                     type="button"
+                    class="change"
+                    [title]="t().edit"
+                    (click)="changeItem($index)"
+                  >
+                    <span class="name">{{ nameOf(item) }}</span>
+                    <span class="amount">
+                      {{ item.amount }} {{ unitNameOf(item) }}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    class="remove"
                     (click)="removeItem($index)"
-                    [attr.aria-label]="t().removeNamed(item.name)"
+                    [attr.aria-label]="t().removeNamed(nameOf(item))"
                   >
                     <app-icon name="close" />
                   </button>
@@ -283,7 +290,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 4px 4px 4px 12px;
+        padding: 4px;
         border-radius: 999px;
         background: var(--primary-soft);
         color: var(--primary);
@@ -299,7 +306,23 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
         opacity: 0.8;
       }
 
-      .items button {
+      .items .change {
+        display: flex;
+        gap: 8px;
+        padding: 4px 0 4px 8px;
+        border: none;
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .items .change:hover .name {
+        text-decoration: underline;
+      }
+
+      .items .remove {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -314,7 +337,7 @@ import { SearchSelectComponent } from '../shared/search/search-select.component'
         cursor: pointer;
       }
 
-      .items button:hover {
+      .items .remove:hover {
         background: var(--surface);
       }
 
@@ -450,8 +473,32 @@ export class NewMealFormComponent implements OnInit {
 
   private async loadRecord(): Promise<void> {
     const id = this.editId();
+    // Several entries are logged again as one meal
+    const copyIds = this.copyId()?.split(',') ?? [];
+    if (!id && copyIds.length > 0) {
+      // A copy is eaten now, whatever day is shown
+      this.setNow();
+      this.changes.markForCheck();
+    }
+    if (copyIds.length > 1) {
+      const entries = await Promise.all(
+        copyIds.map((copyId) => this.dishEntryStore.getDishEntry(copyId)),
+      );
+      this.items.set(
+        entries
+          .filter((entry) => !!entry)
+          .map((entry) => ({
+            sourceType: entry.dishId ? 'dish' : 'food-item',
+            sourceId: entry.dishId ?? entry.foodItemId ?? '',
+            amount: entry.amount,
+            amountUnitId: entry.amountUnitId,
+          })),
+      );
+      return;
+    }
+
     const entry = await this.dishEntryStore.getDishEntry(
-      id ?? this.copyId() ?? '',
+      id ?? copyIds[0] ?? '',
     );
     if (!entry) return;
 
@@ -493,21 +540,27 @@ export class NewMealFormComponent implements OnInit {
 
   /** What is entered for the food or dish that is chosen */
   private currentItem(): MealItem {
-    const id = this.selectedSourceId();
-    const options =
-      this.sourceType === 'dish'
-        ? this.dishStore.dishes()
-        : this.ingredientStore.foodItems();
     return {
       sourceType: this.sourceType,
-      sourceId: id,
-      name: options.find((option) => option.id === id)?.name ?? '',
+      sourceId: this.selectedSourceId(),
       amount: this.amount.trim(),
       amountUnitId: this.amountUnitId(),
-      unitName:
-        this.unitOptions().find((unit) => unit.id === this.amountUnitId())
-          ?.name ?? '',
     };
+  }
+
+  protected nameOf(item: MealItem): string {
+    const options =
+      item.sourceType === 'dish'
+        ? this.dishStore.dishes()
+        : this.ingredientStore.foodItems();
+    return options.find((option) => option.id === item.sourceId)?.name ?? '';
+  }
+
+  protected unitNameOf(item: MealItem): string {
+    return (
+      this.unitOptions().find((unit) => unit.id === item.amountUnitId)?.name ??
+      ''
+    );
   }
 
   /** Keeps what is entered as part of the meal and starts the next one */
@@ -526,6 +579,22 @@ export class NewMealFormComponent implements OnInit {
     this.host.nativeElement
       .querySelector<HTMLElement>('form app-search-select input')
       ?.focus();
+  }
+
+  /**
+   * Takes an item back into the fields, to change it. What is in the fields
+   * is kept as a part of the meal.
+   */
+  protected changeItem(index: number): void {
+    const item = this.items()[index];
+    const rest = this.items().filter((_, i) => i !== index);
+    this.items.set(this.isItemValid() ? [...rest, this.currentItem()] : rest);
+
+    this.sourceType = item.sourceType;
+    this.selectedSourceId.set(item.sourceId);
+    this.amount = item.amount;
+    this.amountUnitId.set(item.amountUnitId);
+    this.host.nativeElement.querySelector<HTMLElement>('#amount')?.focus();
   }
 
   protected removeItem(index: number): void {
@@ -605,7 +674,11 @@ export class NewMealFormComponent implements OnInit {
           savedId = await this.dishEntryStore.createDishEntry(toEntry(item));
         }
       }
-      this.uiStore.done(savedId);
+      // Logged for another day than the one shown: on to that day
+      this.uiStore.done(
+        savedId,
+        id ? undefined : new Date(`${this.date}T00:00`),
+      );
     } catch (err) {
       this.error.set(
         err instanceof Error ? err.message : this.t().savingFailed,

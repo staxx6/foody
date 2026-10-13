@@ -2,10 +2,15 @@ import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   computed,
+  DestroyRef,
+  effect,
+  untracked,
   ElementRef,
   inject,
   viewChild,
 } from '@angular/core';
+import { MealSelection } from '../dish-entry/meal-selection';
+import { MealSelectionBarComponent } from '../dish-entry/meal-selection-bar.component';
 import { DishEntryListComponent } from '../dish-entry/dish-entry-list.component';
 import { addDays, isSameDay, toDateInputValue } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
@@ -35,6 +40,7 @@ const SWIPE_MAX_DRIFT = 50;
     DayTimelineComponent,
     WeekStripComponent,
     DaySummaryComponent,
+    MealSelectionBarComponent,
     IconComponent,
     NgTemplateOutlet,
   ],
@@ -44,6 +50,8 @@ const SWIPE_MAX_DRIFT = 50;
     '(touchend)': 'onTouchEnd($event)',
   },
   template: `
+    <app-meal-selection-bar />
+
     <!-- One line on wide screens; on small ones its parts are lines of the page -->
     <div class="head">
       <div class="day">
@@ -490,6 +498,14 @@ export class DayComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {
+    // A selection belongs to the day it was made on
+    const selection = inject(MealSelection);
+    effect(() => {
+      this.day();
+      untracked(() => selection.clear());
+    });
+    inject(DestroyRef).onDestroy(() => selection.clear());
+
     inject(Keyboard).bind({
       ArrowLeft: () => this.shift(-1),
       ArrowRight: () => this.shift(1),

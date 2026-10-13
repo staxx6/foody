@@ -42,7 +42,7 @@ export class RowDirective {
   /** Delete */
   readonly rowDelete = output<void>();
   /** A click on the row itself, not on a button or a row within it */
-  readonly rowClick = output<void>();
+  readonly rowClick = output<MouseEvent>();
 
   constructor() {
     // Also a row that exists already, as its list can stay behind a form
@@ -75,6 +75,6 @@ export class RowDirective {
     const closest = (event.target as HTMLElement).closest(
       'button, a, [role=menu], [data-row]',
     );
-    if (closest === this.host.nativeElement) this.rowClick.emit();
+    if (closest === this.host.nativeElement) this.rowClick.emit(event);
   }
 }

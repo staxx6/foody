@@ -266,6 +266,11 @@ const en = {
   discard: 'Discard',
   keepEditing: 'Keep editing',
   logAgain: 'Log again',
+  select: 'Select',
+  deselect: 'Deselect',
+  selection: 'Selection',
+  selectedCount: (count: number) => `${count} selected`,
+  keySpace: 'Space',
   cannotDeleteTitle: 'Cannot be deleted',
   stillUsed: (name: string, count: number) =>
     `“${name}” is still used by ${count} ${count === 1 ? 'entry' : 'entries'}. Delete ${count === 1 ? 'it' : 'them'} first.`,
@@ -331,6 +336,7 @@ const en = {
     changeDay: 'Previous / next day',
     changeMonth: 'Previous / next month',
     selectEntry: 'Select an entry',
+    selectMeals: 'Select several meals',
     openMenu: 'Open the menu of the entry',
     followUp:
       'Add a follow-up to the selected symptom; without a selection: go to the symptoms',
@@ -588,6 +594,11 @@ const de: Translations = {
   discard: 'Verwerfen',
   keepEditing: 'Weiter bearbeiten',
   logAgain: 'Nochmal eintragen',
+  select: 'Auswählen',
+  deselect: 'Abwählen',
+  selection: 'Auswahl',
+  selectedCount: (count) => `${count} ausgewählt`,
+  keySpace: 'Leer',
   cannotDeleteTitle: 'Löschen nicht möglich',
   stillUsed: (name, count) =>
     `„${name}“ wird noch von ${count} ${count === 1 ? 'Eintrag' : 'Einträgen'} verwendet. Lösche ${count === 1 ? 'ihn' : 'sie'} zuerst.`,
@@ -649,6 +660,7 @@ const de: Translations = {
     changeDay: 'Vorheriger / nächster Tag',
     changeMonth: 'Vorheriger / nächster Monat',
     selectEntry: 'Eintrag auswählen',
+    selectMeals: 'Mehrere Mahlzeiten auswählen',
     openMenu: 'Menü des Eintrags öffnen',
     followUp:
       'Verlauf zum ausgewählten Symptom eintragen; ohne Auswahl: zu den Symptomen springen',

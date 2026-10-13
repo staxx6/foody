@@ -210,6 +210,7 @@ export class EntryMenuComponent implements OnDestroy {
         e: runByKey,
         f: runByKey,
         d: runByKey,
+        ' ': runByKey,
         Delete: runByKey,
       },
       { when: () => this.isOpen(), exclusive: true },

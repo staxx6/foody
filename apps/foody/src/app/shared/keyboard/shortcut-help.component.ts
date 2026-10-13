@@ -206,6 +206,7 @@ export class ShortcutHelpComponent {
           ...rows,
           { keys: ['Enter'], label: keys.openMenu },
           { keys: ['D'], label: t.logAgain },
+          { keys: [t.keySpace], label: keys.selectMeals },
           { keys: ['F'], label: keys.followUp },
         ],
       },

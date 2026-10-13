@@ -117,6 +117,9 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
   (`shared/entry-menu.component.ts`),
   opened by a click on the row, its three dots or Enter. A new action of an entry goes into
   the `actions()` of its list, not into the row as another icon.
+- Meals of the day view can be selected (`dish-entry/meal-selection.ts`: Space, Ctrl+click, the
+  menu; then a click selects) to log them again as one meal: the meal form gets their ids as
+  `/meal/<id>,<id>/copy` and shows them as items that can be changed or removed.
 - A symptom entry and its follow-ups are one unit: the day view shows the follow-ups as part of
   the entry, they are changed in the form of the entry (`new-health-entry-form`), which shows
   the follow-up form in place of itself, like the forms that create a missing option.
