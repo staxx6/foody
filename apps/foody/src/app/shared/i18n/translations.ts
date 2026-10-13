@@ -51,6 +51,12 @@ const en = {
   dayView: 'Day view',
   timeline: 'In the order of the day',
   separate: 'By kind',
+  daySummary: 'The day at a glance',
+  symptomsAndBefore: 'Symptoms and what came before',
+  eatenBeforeSymptom: (hours: number) => `Eaten in the ${hours} hours before:`,
+  nothingEatenBefore: (hours: number) =>
+    `Nothing eaten in the ${hours} hours before`,
+  showInList: 'Show in the list',
 
   // Month
   previousMonth: 'Previous month',
@@ -385,6 +391,12 @@ const de: Translations = {
   dayView: 'Tagesansicht',
   timeline: 'Im Tagesverlauf',
   separate: 'Nach Art getrennt',
+  daySummary: 'Der Tag im Überblick',
+  symptomsAndBefore: 'Beschwerden und was davor war',
+  eatenBeforeSymptom: (hours) => `In den ${hours} Stunden davor gegessen:`,
+  nothingEatenBefore: (hours) =>
+    `In den ${hours} Stunden davor nichts gegessen`,
+  showInList: 'In der Liste zeigen',
 
   previousMonth: 'Vorheriger Monat',
   nextMonth: 'Nächster Monat',

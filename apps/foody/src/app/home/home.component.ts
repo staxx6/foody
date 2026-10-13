@@ -306,8 +306,9 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
 
         main {
           width: auto;
-          max-width: 1240px;
-          margin: 0 0 0 248px;
+          max-width: 1320px;
+          /* In the middle of the room next to the sidebar */
+          margin: 0 0 0 max(248px, calc((100vw + 248px - 1320px) / 2));
           padding: 40px 48px 48px;
           gap: 28px;
         }

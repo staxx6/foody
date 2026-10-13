@@ -49,6 +49,8 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
 - The day view shows its entries as one timeline (`day-timeline.component.ts`) or as a list per
   kind, chosen in `SettingsStore.dayView`. Both use the same rows: `li[appMealRow]`,
   `li[appSymptomRow]`, `li[appMedicationRow]`, which own the menu and the actions of an entry.
+  From 1280px on, the timeline has a column next to it that sums up the day
+  (`day-summary.component.ts`).
 - Forms shown in place of another form (a new symptom while logging one, a follow-up while
   editing an entry) are part of the address as `?with=<name>`: `UiStore.openNested()`,
   `closeNested()`, `isNested()`. The outer form stays alive and keeps its input. A name must be

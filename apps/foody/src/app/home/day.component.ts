@@ -13,6 +13,7 @@ import { Keyboard } from '../shared/keyboard/keyboard';
 import { MedicationEntryListComponent } from '../medication/medication-entry-list.component';
 import { IconComponent, IconName } from '../shared/icon.component';
 import { DayView, SettingsStore } from '../shared/settings-store';
+import { DaySummaryComponent } from './day-summary.component';
 import { DayTimelineComponent } from './day-timeline.component';
 import { WeekStripComponent } from './week-strip.component';
 import { UiStore } from '../shared/ui-store';
@@ -33,50 +34,63 @@ const SWIPE_MAX_DRIFT = 50;
     MedicationEntryListComponent,
     DayTimelineComponent,
     WeekStripComponent,
+    DaySummaryComponent,
     IconComponent,
     NgTemplateOutlet,
   ],
   host: {
+    '[class.timeline-view]': "settings.dayView() === 'timeline'",
     '(touchstart)': 'onTouchStart($event)',
     '(touchend)': 'onTouchEnd($event)',
   },
   template: `
-    <div class="day">
-      <button
-        type="button"
-        class="nav"
-        (click)="shift(-1)"
-        [attr.aria-label]="t().previousDay"
-      >
-        <app-icon name="chevron-left" />
-      </button>
-      <button
-        type="button"
-        class="title"
-        (click)="openPicker()"
-        [title]="t().chooseDay"
-      >
-        <span class="day-label">{{ label() }}</span>
-        <span class="day-date">{{ i18n.formatFullDate(day()) }}</span>
-      </button>
-      <!-- The date picker of the browser, opened by the title -->
-      <input
-        #picker
-        class="picker"
-        type="date"
-        tabindex="-1"
-        aria-hidden="true"
-        [value]="dayValue()"
-        (change)="pick(picker.value)"
-      />
-      <button
-        type="button"
-        class="nav"
-        (click)="shift(1)"
-        [attr.aria-label]="t().nextDay"
-      >
-        <app-icon name="chevron-right" />
-      </button>
+    <!-- One line on wide screens; on small ones its parts are lines of the page -->
+    <div class="head">
+      <div class="day">
+        <button
+          type="button"
+          class="nav"
+          (click)="shift(-1)"
+          [attr.aria-label]="t().previousDay"
+        >
+          <app-icon name="chevron-left" />
+        </button>
+        <button
+          type="button"
+          class="title"
+          (click)="openPicker()"
+          [title]="t().chooseDay"
+        >
+          <span class="day-label">{{ label() }}</span>
+          <span class="day-date">{{ i18n.formatFullDate(day()) }}</span>
+        </button>
+        <!-- The date picker of the browser, opened by the title -->
+        <input
+          #picker
+          class="picker"
+          type="date"
+          tabindex="-1"
+          aria-hidden="true"
+          [value]="dayValue()"
+          (change)="pick(picker.value)"
+        />
+        <button
+          type="button"
+          class="nav"
+          (click)="shift(1)"
+          [attr.aria-label]="t().nextDay"
+        >
+          <app-icon name="chevron-right" />
+        </button>
+      </div>
+
+      @if (!isToday()) {
+        <button type="button" class="back-to-today" (click)="uiStore.goHome()">
+          <app-icon name="today" /> {{ t().backToToday }}
+        </button>
+      }
+
+      <app-week-strip />
       <ng-container [ngTemplateOutlet]="viewSwitch" />
     </div>
 
@@ -97,14 +111,6 @@ const SWIPE_MAX_DRIFT = 50;
         }
       </div>
     </ng-template>
-
-    @if (!isToday()) {
-      <button type="button" class="back-to-today" (click)="uiStore.goHome()">
-        <app-icon name="today" /> {{ t().backToToday }}
-      </button>
-    }
-
-    <app-week-strip />
 
     @if (settings.dayView() === 'timeline') {
       <section class="timeline">
@@ -143,6 +149,7 @@ const SWIPE_MAX_DRIFT = 50;
         </h2>
         <app-day-timeline class="card" />
       </section>
+      <app-day-summary />
     } @else {
       <section>
         <h2>
@@ -202,6 +209,11 @@ const SWIPE_MAX_DRIFT = 50;
         gap: 24px;
         /* Vertical scrolling stays with the browser, swipes come to us */
         touch-action: pan-y;
+      }
+
+      /* Its parts are lines of the page */
+      .head {
+        display: contents;
       }
 
       .day {
@@ -298,7 +310,8 @@ const SWIPE_MAX_DRIFT = 50;
       /* Adds an entry to the list; small screens have the menu for it */
       .add,
       .adds,
-      .day .views {
+      .head > .views,
+      app-day-summary {
         display: none;
       }
 
@@ -357,16 +370,29 @@ const SWIPE_MAX_DRIFT = 50;
           gap: 28px 24px;
         }
 
-        .day,
-        .back-to-today,
-        app-week-strip,
-        .timeline {
+        /* The day, the days around it and the switch of the view in a line */
+        .head {
           grid-column: 1 / -1;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 12px 20px;
         }
 
-        /* One list is read from top to bottom, so it stays narrow */
+        /* A line of its own, as long as there is no room in the first one */
+        app-week-strip {
+          order: 1;
+          flex: 1 1 100%;
+          max-width: 460px;
+        }
+
+        .head > .views {
+          display: flex;
+          margin: 0 0 0 auto;
+        }
+
         .timeline {
-          max-width: 820px;
+          grid-column: 1 / -1;
         }
 
         .adds {
@@ -381,11 +407,6 @@ const SWIPE_MAX_DRIFT = 50;
 
         h2 .views {
           display: none;
-        }
-
-        .day .views {
-          display: flex;
-          margin: 0 0 0 auto;
         }
 
         .day {
@@ -404,8 +425,34 @@ const SWIPE_MAX_DRIFT = 50;
         }
 
         .back-to-today {
-          justify-self: start;
-          margin-top: -16px;
+          margin-top: 0;
+        }
+      }
+
+      /* Room for a column next to the timeline that sums up the day */
+      @media (min-width: 1280px) {
+        :host(.timeline-view) {
+          grid-template-columns: minmax(0, 1fr) 340px;
+        }
+
+        app-week-strip {
+          order: 0;
+          flex: 1 1 320px;
+          margin-left: auto;
+        }
+
+        .head > .views {
+          margin: 0;
+        }
+
+        .timeline {
+          grid-column: 1;
+        }
+
+        app-day-summary {
+          display: flex;
+          position: sticky;
+          top: 40px;
         }
       }
     `,
