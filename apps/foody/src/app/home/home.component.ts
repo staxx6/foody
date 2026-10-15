@@ -35,6 +35,7 @@ import { NewHealthEntryFormComponent } from '../symptom-entry/new-health-entry-f
 import { NewSymptomFormComponent } from '../symptom-entry/new-symptom-form.component';
 import { NewMedicationFormComponent } from '../medication/new-medication-form.component';
 import { LogMedicationFormComponent } from '../medication/log-medication-form.component';
+import { NoteFormComponent } from '../note/note-form.component';
 
 @Component({
   imports: [
@@ -57,6 +58,7 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
     NewSymptomFormComponent,
     NewMedicationFormComponent,
     LogMedicationFormComponent,
+    NoteFormComponent,
     SymptomFollowUpFormComponent,
     KeyHintsComponent,
     ShortcutHelpComponent,
@@ -122,6 +124,9 @@ import { LogMedicationFormComponent } from '../medication/log-medication-form.co
             [editId]="page.editId"
             [copyId]="page.copyId"
           />
+        }
+        @case ('new-note') {
+          <app-note-form [editId]="page.editId" />
         }
         @case ('view-food') {
           <app-item-details kind="food" [id]="page.editId ?? ''" />

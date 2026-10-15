@@ -41,6 +41,12 @@ import { SyncStatusComponent } from '../sync-status.component';
               <small>{{ t().logMedicationHint }}</small>
               <kbd class="kbd">P</kbd>
             </button>
+            <button class="tile" (click)="selectForm('new-note')">
+              <app-icon class="icon" name="note" />
+              <span class="title">{{ t().writeNote }}</span>
+              <small>{{ t().writeNoteHint }}</small>
+              <kbd class="kbd">W</kbd>
+            </button>
           </div>
         </section>
 
@@ -235,7 +241,7 @@ import { SyncStatusComponent } from '../sync-status.component';
 
       .tiles {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 8px;
       }
 
@@ -469,6 +475,7 @@ export class FooterNavComponent {
         m: () => this.selectForm('new-meal'),
         s: () => this.selectForm('new-health-entry'),
         p: () => this.selectForm('new-medication-entry'),
+        w: () => this.selectForm('new-note'),
       },
       { when: () => !this.uiStore.isEditing() },
     );
@@ -480,6 +487,7 @@ export class FooterNavComponent {
         m: () => this.selectForm('new-meal'),
         s: () => this.selectForm('new-health-entry'),
         p: () => this.selectForm('new-medication-entry'),
+        w: () => this.selectForm('new-note'),
         f: () => this.selectForm('new-food-item'),
         d: () => this.selectForm('new-dish'),
         y: () => this.selectForm('new-symptom'),

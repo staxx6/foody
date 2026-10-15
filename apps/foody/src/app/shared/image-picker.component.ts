@@ -1,6 +1,7 @@
 import { inject, Component, computed, model } from '@angular/core';
 import { I18n } from './i18n/i18n';
 import { IconComponent } from './icon.component';
+import { shrinkImage } from './shrink-image';
 
 /** A photo that is already stored for a record */
 export type ExistingImage = { name: string; url: string };
@@ -136,8 +137,12 @@ export class ImagePickerComponent {
     this.files().map((file) => ({ file, url: URL.createObjectURL(file) })),
   );
 
-  protected add(selected: FileList | null): void {
-    this.files.update((files) => [...files, ...Array.from(selected ?? [])]);
+  protected async add(selected: FileList | null): Promise<void> {
+    // Photos of a phone are too large to be stored and sent as they are
+    const added = await Promise.all(
+      Array.from(selected ?? []).map(shrinkImage),
+    );
+    this.files.update((files) => [...files, ...added]);
   }
 
   protected removeExisting(image: ExistingImage): void {

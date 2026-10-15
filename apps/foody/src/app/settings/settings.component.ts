@@ -112,8 +112,8 @@ import {
             <dd>{{ sync.pendingCount() }}</dd>
           </div>
         </dl>
-        @if (sync.syncError()) {
-          <p class="error">{{ sync.syncError() }}</p>
+        @if (sync.syncError() ?? sync.connectionError(); as problem) {
+          <p class="error">{{ problem }}</p>
         }
         <button
           type="button"

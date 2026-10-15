@@ -98,8 +98,42 @@ function toDate(value: unknown): Date {
 
 type RequestError = {
   status?: number;
-  response?: { data?: Record<string, { code?: string }> };
+  url?: string;
+  message?: string;
+  response?: {
+    message?: string;
+    data?: Record<string, { code?: string; message?: string }>;
+  };
+  /** What made the request fail before an answer came, e.g. the network */
+  originalError?: unknown;
 };
+
+/**
+ * What went wrong, with all that helps to find the reason: the answer of the
+ * server, its status, the fields it complains about and the address
+ */
+function describe(error: unknown): string {
+  const { status, url, message, response, originalError } = (error ??
+    {}) as RequestError;
+  const fields = Object.entries(response?.data ?? {})
+    .map(([field, problem]) => `${field}: ${problem.message ?? problem.code}`)
+    .join(', ');
+  const cause =
+    originalError instanceof Error &&
+    !String(message).includes(originalError.message)
+      ? originalError.message
+      : '';
+
+  return [
+    response?.message || message || 'No answer',
+    cause,
+    fields ? `(${fields})` : '',
+    status ? `[HTTP ${status}]` : '',
+    url ? `- ${url}` : '',
+  ]
+    .filter((part) => !!part)
+    .join(' ');
+}
 
 /**
  * The server was not reached (offline, timeout, other network) or the proxy
@@ -135,7 +169,11 @@ function isAlreadyCreated(error: unknown): boolean {
 export class OfflineDataAccessService implements DataAccess {
   private readonly remote = inject(PocketbaseAccessService);
   private readonly storage = inject(OFFLINE_STORAGE);
-  private readonly collections = inject(DATA_ACCESS_CONFIG).collections ?? [];
+  private readonly config = inject(DATA_ACCESS_CONFIG);
+  private readonly collections = this.config.collections ?? [];
+
+  /** The address of the server, to see what the device tries to reach */
+  readonly serverUrl = this.config.url;
 
   private readonly records = new Map<string, DataRecord>();
   private outbox: OutboxItem[] = [];
@@ -150,6 +188,8 @@ export class OfflineDataAccessService implements DataAccess {
   readonly lastSyncedAt = signal<Date | null>(null);
   /** The server rejected a record, e.g. because of invalid data */
   readonly syncError = signal<string | null>(null);
+  /** Why the server was not reached, while `isOnline` is false */
+  readonly connectionError = signal<string | null>(null);
   /**
    * Increases whenever the local copy changed, by this device or by a
    * synchronization. What shows the data reloads it then.
@@ -416,15 +456,15 @@ export class OfflineDataAccessService implements DataAccess {
       await this.storage.setLastSyncedAt(now.toISOString());
       this.lastSyncedAt.set(now);
       this.isOnline.set(true);
+      this.connectionError.set(null);
       if (allSent) this.syncError.set(null);
       if (changed) this.revision.update((revision) => revision + 1);
     } catch (error) {
       if (isNetworkError(error)) {
         this.isOnline.set(false);
+        this.connectionError.set(describe(error));
       } else {
-        this.syncError.set(
-          error instanceof Error ? error.message : 'Synchronization failed',
-        );
+        this.syncError.set(describe(error));
       }
     } finally {
       this.isSyncing.set(false);
@@ -468,14 +508,13 @@ export class OfflineDataAccessService implements DataAccess {
             ? isNotFound(error)
             : isAlreadyCreated(error);
         if (!isDone) {
-          const reason = error instanceof Error ? error.message : 'rejected';
           const action = item.delete
             ? 'delete'
             : item.update
               ? 'change'
               : 'send';
           this.syncError.set(
-            `Could not ${action} a record of "${item.collectionName}": ${reason}`,
+            `Could not ${action} the record ${item.data.id} of "${item.collectionName}": ${describe(error)}`,
           );
           return false;
         }
@@ -498,10 +537,18 @@ export class OfflineDataAccessService implements DataAccess {
     let changed = false;
 
     for (const collectionName of this.collections) {
-      const fetched = await this.remote.list<DataRecord>({
-        collectionName,
-        map: (record) => ({ ...record, collectionName }),
-      });
+      const fetched = await this.remote
+        .list<DataRecord>({
+          collectionName,
+          map: (record) => ({ ...record, collectionName }),
+        })
+        .catch((error: unknown) => {
+          if (isNetworkError(error)) throw error;
+          // Says which collection, e.g. one the server does not know yet
+          throw new Error(
+            `Could not load "${collectionName}": ${describe(error)}`,
+          );
+        });
 
       const pendingIds = new Set(this.outbox.map((item) => item.data.id));
       const fetchedIds = new Set(fetched.map((record) => record.id));

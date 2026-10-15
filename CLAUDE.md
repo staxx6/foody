@@ -23,11 +23,14 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
   over: it then reports errors that the production build does not have, or serves old code.
   After such changes, check `http://localhost:4200/main.js` for something new and restart the
   dev server if it is missing.
-- Do not stop, restart or migrate the user's PocketBase (port 8090, `apps/pocketbase/pb_data`)
-  without being asked. For testing, start a second instance with its own data folder:
+- The user's PocketBase (port 8090, `apps/pocketbase/pb_data`) may be restarted when needed,
+  e.g. to apply a migration; say that it was. Do not change or delete its data. For testing, start a second instance with its own data folder:
   `pocketbase serve --http=127.0.0.1:8191 --dir=<temp> --migrationsDir=apps/pocketbase/pb_migrations`
   and serve `dist/apps/foody/browser` with a proxy for `/api/` (the built app uses its own
   origin as API, the dev build uses port 8090).
+- Why the server rejected a request (e.g. a sync problem of a phone) is in the table `_logs` of
+  `apps/pocketbase/pb_data/auxiliary.db`, column `data` (JSON with `details`). Read it with
+  `node:sqlite`, opened read-only. The app shows the same in the window of the sync status.
 - Commit only when asked. Commit messages are short titles, e.g. "Medication feature".
 - The user writes German; code, comments, README and commit messages are English.
 

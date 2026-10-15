@@ -13,6 +13,7 @@ export type ActiveSite =
   | 'new-medication'
   | 'new-medication-entry'
   | 'new-follow-up'
+  | 'new-note'
   | 'edit-unit'
   | 'view-food'
   | 'view-dish'
@@ -54,6 +55,7 @@ const FORMS: Partial<Record<ActiveSite, string>> = {
   'new-symptom': 'symptom',
   'new-medication': 'medication',
   'edit-unit': 'unit',
+  'new-note': 'note',
 };
 /** The details of a record: `<name>/<id>` */
 const VIEWS: Partial<Record<ActiveSite, string>> = {

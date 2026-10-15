@@ -44,6 +44,7 @@ export const appConfig: ApplicationConfig = {
           'symptomFollowUps',
           'medications',
           'medicationEntries',
+          'notes',
         ],
       },
     },

@@ -168,6 +168,14 @@ const en = {
   dayMedications: (count: number) =>
     `${count} ${count === 1 ? 'medication' : 'medications'}`,
 
+  // Notes on a day
+  note: 'Note',
+  notes: 'Notes',
+  writeNote: 'Write a note',
+  writeNoteHint: 'Something about the day, e.g. stress or a test',
+  editNote: 'Edit note',
+  notePlaceholder: 'e.g. Felt bad today because I was stressed',
+
   // Details of a food, dish, symptom or medication
   edit: 'Edit',
   showDetails: 'Show details',
@@ -251,7 +259,15 @@ const en = {
   toSend: (count: number) => `${count} to send`,
   tapToSend: 'Tap to send',
   offlineHint:
-    'Server not reachable. Entries are kept on this device. Tap to retry.',
+    'Server not reachable. Entries are kept on this device and sent later.',
+  syncedHint: 'All entries of this device are on the server.',
+  pendingHint: 'Entries of this device are not on the server yet.',
+  syncProblemHint:
+    'The server did not accept something. What follows it in the queue waits until that is solved.',
+  errorDetails: 'What the server says',
+  copyDetails: 'Copy details',
+  copied: 'Copied',
+  appVersion: 'App loaded',
 
   // Deleting
   ok: 'OK',
@@ -506,6 +522,13 @@ const de: Translations = {
   dayMedications: (count) =>
     `${count} ${count === 1 ? 'Medikament' : 'Medikamente'}`,
 
+  note: 'Notiz',
+  notes: 'Notizen',
+  writeNote: 'Notiz schreiben',
+  writeNoteHint: 'Etwas zum Tag, z. B. Stress oder ein Test',
+  editNote: 'Notiz bearbeiten',
+  notePlaceholder: 'z. B. Mir ging es heute nicht gut, weil ich gestresst war',
+
   edit: 'Bearbeiten',
   showDetails: 'Details anzeigen',
   logged: 'Eingetragen',
@@ -580,7 +603,15 @@ const de: Translations = {
   toSend: (count) => `${count} zu senden`,
   tapToSend: 'Tippen zum Senden',
   offlineHint:
-    'Server nicht erreichbar. Einträge bleiben auf diesem Gerät. Tippen zum Wiederholen.',
+    'Server nicht erreichbar. Einträge bleiben auf diesem Gerät und werden später gesendet.',
+  syncedHint: 'Alle Einträge dieses Geräts sind auf dem Server.',
+  pendingHint: 'Einträge dieses Geräts sind noch nicht auf dem Server.',
+  syncProblemHint:
+    'Der Server hat etwas nicht angenommen. Was danach in der Warteschlange steht, wartet, bis das gelöst ist.',
+  errorDetails: 'Was der Server meldet',
+  copyDetails: 'Details kopieren',
+  copied: 'Kopiert',
+  appVersion: 'App geladen',
 
   ok: 'OK',
   delete: 'Löschen',

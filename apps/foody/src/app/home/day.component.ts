@@ -1,4 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
+import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import {
   Component,
   computed,
@@ -16,6 +17,8 @@ import { addDays, isSameDay, toDateInputValue } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
 import { Keyboard } from '../shared/keyboard/keyboard';
 import { MedicationEntryListComponent } from '../medication/medication-entry-list.component';
+import { NoteRowComponent } from '../note/note-row.component';
+import { NoteStore } from '../note/note-store';
 import { IconComponent, IconName } from '../shared/icon.component';
 import { DayView, SettingsStore } from '../shared/settings-store';
 import { DaySummaryComponent } from './day-summary.component';
@@ -41,6 +44,7 @@ const SWIPE_MAX_DRIFT = 50;
     WeekStripComponent,
     DaySummaryComponent,
     MealSelectionBarComponent,
+    NoteRowComponent,
     IconComponent,
     NgTemplateOutlet,
   ],
@@ -120,6 +124,29 @@ const SWIPE_MAX_DRIFT = 50;
       </div>
     </ng-template>
 
+    <!-- About the day as a whole, so above its entries; only if there are any -->
+    @if (notes.notes().length > 0) {
+      <section class="notes">
+        <h2>
+          <app-icon name="note" /> {{ t().notes }}
+          <button
+            type="button"
+            class="add"
+            (click)="uiStore.showForm('new-note')"
+            [title]="t().writeNote"
+            [attr.aria-label]="t().writeNote"
+          >
+            <app-icon name="plus" /><kbd class="kbd">W</kbd>
+          </button>
+        </h2>
+        <ul class="card entry-list">
+          @for (note of notes.notes(); track note.id) {
+            <li appNoteRow [note]="note" [rowId]="note.id"></li>
+          }
+        </ul>
+      </section>
+    }
+
     @if (settings.dayView() === 'timeline') {
       <section class="timeline">
         <h2>
@@ -151,6 +178,15 @@ const SWIPE_MAX_DRIFT = 50;
               [attr.aria-label]="t().logMedication"
             >
               <app-icon name="pill" /><kbd class="kbd">P</kbd>
+            </button>
+            <button
+              type="button"
+              class="add"
+              (click)="uiStore.showForm('new-note')"
+              [title]="t().writeNote"
+              [attr.aria-label]="t().writeNote"
+            >
+              <app-icon name="note" /><kbd class="kbd">W</kbd>
             </button>
           </span>
           <ng-container [ngTemplateOutlet]="viewSwitch" />
@@ -399,7 +435,8 @@ const SWIPE_MAX_DRIFT = 50;
           margin: 0 0 0 auto;
         }
 
-        .timeline {
+        .timeline,
+        .notes {
           grid-column: 1 / -1;
         }
 
@@ -453,11 +490,15 @@ const SWIPE_MAX_DRIFT = 50;
           margin: 0;
         }
 
-        .timeline {
+        .timeline,
+        .notes {
           grid-column: 1;
         }
 
+        /* Next to the notes as well, which are above the timeline */
         app-day-summary {
+          grid-column: 2;
+          grid-row: 2 / span 2;
           display: flex;
           position: sticky;
           top: 40px;
@@ -471,6 +512,7 @@ export class DayComponent {
   protected readonly t = this.i18n.t;
   protected readonly uiStore = inject(UiStore);
   protected readonly settings = inject(SettingsStore);
+  protected readonly notes = inject(NoteStore);
   protected readonly views: { value: DayView; icon: IconName }[] = [
     { value: 'timeline', icon: 'list' },
     { value: 'separate', icon: 'columns' },
@@ -505,6 +547,14 @@ export class DayComponent {
       untracked(() => selection.clear());
     });
     inject(DestroyRef).onDestroy(() => selection.clear());
+
+    // Loads initially, for another day and when the data changed
+    const sync = inject(OfflineDataAccessService);
+    effect(() => {
+      sync.revision();
+      const day = this.day();
+      untracked(() => void this.notes.loadNotes(day));
+    });
 
     inject(Keyboard).bind({
       ArrowLeft: () => this.shift(-1),
