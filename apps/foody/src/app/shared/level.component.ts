@@ -48,20 +48,28 @@ export class LevelChipComponent {
 
 /**
  * Chooses a discomfort level in ten steps. Choosing the chosen step again
- * removes the level, as it is optional.
+ * removes the level, as it is optional. With `withZero`, a step 0 before them
+ * says that there is no discomfort (any more), as the value 0.
  */
 @Component({
   selector: 'app-level-picker',
   template: `
-    <div class="steps" role="radiogroup" [attr.aria-labelledby]="labelledBy()">
-      @for (step of steps; track step) {
+    <div
+      class="steps"
+      role="radiogroup"
+      [attr.aria-labelledby]="labelledBy()"
+      [style.grid-template-columns]="'repeat(' + steps().length + ', 1fr)'"
+    >
+      @for (step of steps(); track step) {
         <button
           type="button"
           role="radio"
           [class.active]="step === selected()"
-          [style.background]="step === selected() ? colorOf(step) : null"
+          [style.background]="
+            step === selected() && step > 0 ? colorOf(step) : null
+          "
           [attr.aria-checked]="step === selected()"
-          [attr.tabindex]="step === (selected() ?? 1) ? 0 : -1"
+          [attr.tabindex]="step === (selected() ?? lowest()) ? 0 : -1"
           [attr.data-step]="step"
           (click)="choose(step === selected() ? null : step)"
           (keydown)="onKey($event)"
@@ -75,7 +83,6 @@ export class LevelChipComponent {
     `
       .steps {
         display: grid;
-        grid-template-columns: repeat(10, 1fr);
         gap: 4px;
       }
 
@@ -113,15 +120,20 @@ export class LevelPickerComponent {
   readonly value = model<number | null>(null);
   /** The id of the element that names the field */
   readonly labelledBy = input<string>();
+  /** Offers a step 0 for no discomfort, e.g. a symptom that is gone */
+  readonly withZero = input(false);
 
-  protected readonly steps = Array.from(
-    { length: LEVEL_STEPS },
-    (_, index) => index + 1,
+  protected readonly steps = computed(() =>
+    Array.from({ length: LEVEL_STEPS + 1 }, (_, index) => index).filter(
+      (step) => step > 0 || this.withZero(),
+    ),
   );
   protected readonly selected = computed(() => {
     const value = this.value();
+    if (value === 0 && this.withZero()) return 0;
     return value ? levelStep(value) : null;
   });
+  protected readonly lowest = computed(() => (this.withZero() ? 0 : 1));
   protected readonly colorOf = levelColor;
 
   protected choose(step: number | null): void {
@@ -141,7 +153,7 @@ export class LevelPickerComponent {
       event.key === 'ArrowRight' || event.key === 'ArrowUp'
         ? Math.min((current ?? 0) + 1, LEVEL_STEPS)
         : event.key === 'ArrowLeft' || event.key === 'ArrowDown'
-          ? Math.max((current ?? 2) - 1, 1)
+          ? Math.max((current ?? 2) - 1, this.lowest())
           : event.key === 'Backspace' || event.key === 'Delete'
             ? null
             : /^\d$/.test(event.key)
@@ -153,7 +165,7 @@ export class LevelPickerComponent {
     event.preventDefault();
     this.choose(step);
     this.host.nativeElement
-      .querySelector<HTMLElement>(`[data-step="${step ?? 1}"]`)
+      .querySelector<HTMLElement>(`[data-step="${step ?? this.lowest()}"]`)
       ?.focus();
   }
 }

@@ -25,10 +25,12 @@ export class AutofocusDirective {
     afterNextRender(() => {
       if (!this.enabled() || !isWideScreen()) return;
       const host = this.host.nativeElement;
-      // On a component, e.g. the search select, its field is meant
+      // On a component, e.g. the search select, its field is meant; in a
+      // group of buttons like the level picker, the one that is reached first
       const field = host.matches('input, textarea, button')
         ? host
-        : host.querySelector<HTMLElement>('input');
+        : (host.querySelector<HTMLElement>('input') ??
+          host.querySelector<HTMLElement>('button[tabindex="0"]'));
       field?.focus();
     });
   }

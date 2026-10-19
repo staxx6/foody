@@ -1,7 +1,6 @@
 import {
   ChangeDetectorRef,
   Component,
-  ElementRef,
   inject,
   input,
   OnInit,
@@ -26,9 +25,9 @@ import {
 } from '../shared/level.component';
 import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
 import {
-  FOLLOW_UP_COURSES,
   FollowUpCourse,
   SymptomEntryStore,
+  SymptomFollowUp,
 } from './symptom-entry-store';
 
 /**
@@ -70,42 +69,26 @@ import {
       }
 
       <div class="field">
-        <span class="label" id="course-label"
-          >{{ t().followUpQuestion }} *</span
-        >
-        <div class="toggle" role="radiogroup" aria-labelledby="course-label">
-          @for (option of courses; track option) {
-            <button
-              type="button"
-              role="radio"
-              [class.active]="course() === option"
-              [attr.aria-checked]="course() === option"
-              [attr.tabindex]="course() === option ? 0 : -1"
-              [attr.data-course]="option"
-              [appAutofocus]="course() === option"
-              (click)="course.set(option)"
-              (keydown)="onCourseKey($event)"
-            >
-              {{ t().courses[option] }}
-            </button>
+        <span class="label" id="follow-up-level-label">
+          {{ t().discomfortLevelNow }} *
+        </span>
+        <app-level-picker
+          appAutofocus
+          labelledBy="follow-up-level-label"
+          [withZero]="true"
+          [(value)]="discomfortLevel"
+        />
+        <span class="note">
+          @if (before(); as before) {
+            {{ t().levelBefore(before.step) }}
+            @if (course(); as course) {
+              · {{ t().courses[course] }}
+            }
+          } @else if (course() === 'gone') {
+            {{ t().courses.gone }}
           }
-        </div>
+        </span>
       </div>
-
-      @if (course() !== 'gone') {
-        <div class="field">
-          <span class="label" id="follow-up-level-label">
-            {{ t().discomfortLevelRange }}
-          </span>
-          <app-level-picker
-            labelledBy="follow-up-level-label"
-            [(value)]="discomfortLevel"
-          />
-          @if (entry()?.level; as level) {
-            <span class="note">{{ t().levelAtStart(step(level)) }}</span>
-          }
-        </div>
-      }
 
       <div class="field-row">
         <div class="field">
@@ -188,10 +171,6 @@ import {
         color: var(--text);
       }
 
-      .toggle {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
       .when {
         display: flex;
         align-items: center;
@@ -211,7 +190,6 @@ export class SymptomFollowUpFormComponent implements OnInit {
   protected readonly t = this.i18n.t;
   private readonly store = inject(SymptomEntryStore);
   private readonly changes = inject(ChangeDetectorRef);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** The symptom entry a new follow-up is for */
   readonly entryId = input<string | null>(null);
@@ -221,9 +199,6 @@ export class SymptomFollowUpFormComponent implements OnInit {
   readonly saved = output<void>();
   readonly cancelled = output<void>();
 
-  protected readonly courses = FOLLOW_UP_COURSES;
-  protected readonly step = levelStep;
-
   /** The symptom entry the follow-up belongs to */
   protected readonly entry = signal<{
     id: string;
@@ -232,8 +207,10 @@ export class SymptomFollowUpFormComponent implements OnInit {
     level: number | null;
   } | null>(null);
 
-  protected readonly course = signal<FollowUpCourse>('better');
-  discomfortLevel: number | null = null;
+  /** The other follow-ups of the entry, which the course is measured by */
+  private readonly others = signal<SymptomFollowUp[]>([]);
+  /** The level now; 0 if the symptom is gone */
+  protected readonly discomfortLevel = signal<number | null>(null);
   comment = '';
   // A follow-up is usually entered when it is noticed
   date = toDateInputValue(new Date());
@@ -247,8 +224,9 @@ export class SymptomFollowUpFormComponent implements OnInit {
     const followUp = editId ? await this.store.getFollowUp(editId) : null;
     if (followUp) {
       const date = fromPocketBaseDate(followUp.date);
-      this.course.set(followUp.course);
-      this.discomfortLevel = followUp.discomfortLevel;
+      this.discomfortLevel.set(
+        followUp.course === 'gone' ? 0 : followUp.discomfortLevel,
+      );
       this.comment = followUp.comment;
       this.date = toDateInputValue(date);
       this.time = toTimeInputValue(date);
@@ -259,6 +237,11 @@ export class SymptomFollowUpFormComponent implements OnInit {
     // Deleted in the meantime, e.g. on another device
     if (!entryId || !entry) return this.cancelled.emit();
 
+    this.others.set(
+      (await this.store.getFollowUps(entryId)).filter(
+        (other) => other.id !== editId,
+      ),
+    );
     this.entry.set({
       id: entryId,
       name: entry.symptomName,
@@ -268,21 +251,39 @@ export class SymptomFollowUpFormComponent implements OnInit {
     this.changes.markForCheck();
   }
 
-  /** The arrow keys choose like in a group of radio buttons */
-  protected onCourseKey(event: KeyboardEvent): void {
-    const step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[
-      event.key
-    ];
-    if (!step) return;
+  /**
+   * The step of the level before this follow-up: of the follow-up before it,
+   * or of the entry. Null if neither has one.
+   */
+  protected before(): { step: number } | null {
+    const entry = this.entry();
+    const moment = this.moment()?.getTime() ?? Infinity;
+    const earlier = this.others()
+      .filter((other) => fromPocketBaseDate(other.date).getTime() <= moment)
+      // Follow-ups without a level say nothing about it
+      .filter((other) => other.course === 'gone' || other.discomfortLevel)
+      .pop();
+    if (earlier) {
+      return {
+        step:
+          earlier.course === 'gone' || !earlier.discomfortLevel
+            ? 0
+            : levelStep(earlier.discomfortLevel),
+      };
+    }
+    return entry?.level ? { step: levelStep(entry.level) } : null;
+  }
 
-    event.preventDefault();
-    const count = this.courses.length;
-    const index = this.courses.indexOf(this.course());
-    const course = this.courses[(index + step + count) % count];
-    this.course.set(course);
-    this.host.nativeElement
-      .querySelector<HTMLElement>(`[data-course="${course}"]`)
-      ?.focus();
+  /** How it developed, which follows from the level now and the one before */
+  protected course(): FollowUpCourse | null {
+    const level = this.discomfortLevel();
+    if (level === null) return null;
+    if (level === 0) return 'gone';
+
+    const before = this.before();
+    const now = levelStep(level);
+    if (!before || now === before.step) return 'same';
+    return now < before.step ? 'better' : 'worse';
   }
 
   /** Sets day and time to the current moment */
@@ -313,13 +314,21 @@ export class SymptomFollowUpFormComponent implements OnInit {
   }
 
   protected isValid(): boolean {
-    return !!this.entry() && !!this.moment() && !this.isTooEarly();
+    return (
+      !!this.entry() &&
+      this.discomfortLevel() !== null &&
+      !!this.moment() &&
+      !this.isTooEarly()
+    );
   }
 
   async save(): Promise<void> {
     const entry = this.entry();
     const moment = this.moment();
-    if (!entry || !moment || !this.isValid() || this.isSaving()) return;
+    const course = this.course();
+    if (!entry || !moment || !course || !this.isValid() || this.isSaving()) {
+      return;
+    }
 
     this.isSaving.set(true);
     this.error.set(null);
@@ -328,9 +337,9 @@ export class SymptomFollowUpFormComponent implements OnInit {
       const followUp = {
         entryId: entry.id,
         date: toPocketBaseDate(moment),
-        course: this.course(),
+        course,
         // A symptom that is gone has no level
-        discomfortLevel: this.course() === 'gone' ? null : this.discomfortLevel,
+        discomfortLevel: course === 'gone' ? null : this.discomfortLevel(),
         comment: this.comment.trim(),
       };
       await (id

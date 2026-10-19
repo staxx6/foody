@@ -323,14 +323,14 @@ const en = {
   addFollowUpFor: (name: string) => `Add follow-up for ${name}`,
   editFollowUp: 'Edit follow-up',
   noFollowUps: 'No follow-up yet.',
-  followUpQuestion: 'How is it now?',
+  discomfortLevelNow: 'Discomfort level now (0 = gone)',
   courses: {
     better: 'Better',
     same: 'Unchanged',
     worse: 'Worse',
     gone: 'Gone',
   },
-  levelAtStart: (level: number) => `At the start: ${level}`,
+  levelBefore: (level: number) => `Before: ${level}`,
   afterDuration: (hours: number, minutes: number) =>
     `after ${[hours ? `${hours} h` : '', minutes || !hours ? `${minutes} min` : ''].filter(Boolean).join(' ')}`,
   followUpTooEarly: 'A follow-up cannot be before the symptom itself.',
@@ -663,14 +663,14 @@ const de: Translations = {
   addFollowUpFor: (name) => `Verlauf für ${name} eintragen`,
   editFollowUp: 'Verlauf bearbeiten',
   noFollowUps: 'Noch kein Verlauf eingetragen.',
-  followUpQuestion: 'Wie ist es jetzt?',
+  discomfortLevelNow: 'Beschwerdegrad jetzt (0 = weg)',
   courses: {
     better: 'Besser',
     same: 'Unverändert',
     worse: 'Schlechter',
     gone: 'Weg',
   },
-  levelAtStart: (level) => `Zu Beginn: ${level}`,
+  levelBefore: (level) => `Davor: ${level}`,
   afterDuration: (hours, minutes) =>
     `nach ${[hours ? `${hours} Std.` : '', minutes || !hours ? `${minutes} Min.` : ''].filter(Boolean).join(' ')}`,
   followUpTooEarly: 'Ein Verlauf kann nicht vor dem Symptom selbst liegen.',
