@@ -9,6 +9,7 @@ import { fromPocketBaseDate } from '../shared/date-utils';
 import { I18n, toLocalizedName } from '../shared/i18n/i18n';
 import { IconComponent, IconName } from '../shared/icon.component';
 import { Keyboard } from '../shared/keyboard/keyboard';
+import { PhotoViewerComponent } from '../shared/photo-viewer.component';
 import { ActiveSite, UiStore } from '../shared/ui-store';
 
 export type ItemKind = 'food' | 'dish' | 'symptom' | 'medication';
@@ -79,7 +80,7 @@ type Details = {
  */
 @Component({
   selector: 'app-item-details',
-  imports: [DatePipe, IconComponent],
+  imports: [DatePipe, IconComponent, PhotoViewerComponent],
   template: `
     <div class="form-header">
       <button
@@ -108,10 +109,17 @@ type Details = {
     @if (details(); as item) {
       @if (item.images.length > 0) {
         <div class="photos">
-          @for (url of item.images; track url) {
-            <img [src]="url" alt="" />
+          @for (url of item.images; track url; let index = $index) {
+            <button
+              type="button"
+              (click)="viewer.open(index)"
+              [attr.aria-label]="t().enlargePhoto"
+            >
+              <img [src]="url" alt="" />
+            </button>
           }
         </div>
+        <app-photo-viewer #viewer [photos]="item.images" />
       }
 
       @if (item.text || item.facts.length > 0) {
@@ -207,8 +215,18 @@ type Details = {
         overflow-x: auto;
       }
 
-      .photos img {
+      /* A click shows the photo large */
+      .photos button {
         flex: none;
+        display: flex;
+        padding: 0;
+        border: none;
+        border-radius: var(--radius-lg);
+        background: none;
+        cursor: zoom-in;
+      }
+
+      .photos img {
         width: 160px;
         height: 160px;
         object-fit: cover;
@@ -216,7 +234,11 @@ type Details = {
       }
 
       /* A single photo may be larger */
-      .photos img:only-child {
+      .photos button:only-child {
+        flex: 1;
+      }
+
+      .photos button:only-child img {
         width: 100%;
         height: auto;
         max-height: 280px;

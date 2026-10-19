@@ -168,6 +168,11 @@ const en = {
   dayMedications: (count: number) =>
     `${count} ${count === 1 ? 'medication' : 'medications'}`,
 
+  // Photos
+  enlargePhoto: 'Show photo large',
+  previousPhoto: 'Previous photo',
+  nextPhoto: 'Next photo',
+
   // Notes on a day
   note: 'Note',
   notes: 'Notes',
@@ -521,6 +526,10 @@ const de: Translations = {
   medicationTaken: 'Medikament genommen',
   dayMedications: (count) =>
     `${count} ${count === 1 ? 'Medikament' : 'Medikamente'}`,
+
+  enlargePhoto: 'Foto groß anzeigen',
+  previousPhoto: 'Vorheriges Foto',
+  nextPhoto: 'Nächstes Foto',
 
   note: 'Notiz',
   notes: 'Notizen',

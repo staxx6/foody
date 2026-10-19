@@ -1,4 +1,5 @@
-// Keeps the app itself on the device, so it starts without the server.
+// Keeps the app itself on the device, so it starts without the server, and
+// the photos that were shown once, so they are there without it as well.
 // The data is handled by the offline data access, not by this worker.
 // Count up when a file in STATIC_FILES changes, as those are only fetched once
 const CACHE = 'foody-shell-v2';
@@ -11,6 +12,10 @@ const STATIC_FILES = [
 ];
 // PocketBase API and dashboard are never answered from the cache
 const NOT_APP = /^\/(api|_)\//;
+// Except the files of records: a new file gets a new name, so a stored one
+// never gets outdated. Kept across versions of the app.
+const FILES = /^\/api\/files\//;
+const FILE_CACHE = 'foody-files';
 
 /**
  * Stores the current index.html with the scripts and styles it refers to
@@ -37,6 +42,17 @@ async function refreshShell() {
   }
 }
 
+/** A file of a record from the cache, or from the server, which is stored */
+async function cachedFile(request) {
+  const cache = await caches.open(FILE_CACHE);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  const response = await fetch(request);
+  if (response.ok) await cache.put(request, response.clone());
+  return response;
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(refreshShell().then(() => self.skipWaiting()));
 });
@@ -48,7 +64,7 @@ self.addEventListener('activate', (event) => {
       .then((names) =>
         Promise.all(
           names
-            .filter((name) => name !== CACHE)
+            .filter((name) => name !== CACHE && name !== FILE_CACHE)
             .map((name) => caches.delete(name)),
         ),
       )
@@ -59,13 +75,13 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  if (
-    request.method !== 'GET' ||
-    url.origin !== location.origin ||
-    NOT_APP.test(url.pathname)
-  ) {
+  if (request.method !== 'GET' || url.origin !== location.origin) return;
+
+  if (FILES.test(url.pathname)) {
+    event.respondWith(cachedFile(request));
     return;
   }
+  if (NOT_APP.test(url.pathname)) return;
 
   if (request.mode === 'navigate') {
     // Start from the cache at once; a new version is used on the next start
