@@ -6,23 +6,25 @@ HTTPS and backup are described in `README.md`; do not repeat them here.
 
 ## Commands
 
-| What                    | Command                                                                |
-| ----------------------- | ---------------------------------------------------------------------- |
-| Build, lint, test (all) | `pnpm nx run-many -t build lint test`                                  |
-| Format changed files    | `pnpm exec prettier --write "apps/foody/src/**/*.{ts,scss}" README.md` |
-| App + PocketBase        | `pnpm run serve` (app on 4200, PocketBase on 8090)                     |
+| What                       | Command                                                                |
+| -------------------------- | ---------------------------------------------------------------------- |
+| Build, lint, test (all)    | `pnpm nx run-many -t build lint test`                                  |
+| Format changed files       | `pnpm exec prettier --write "apps/foody/src/**/*.{ts,scss}" README.md` |
+| App + PocketBase           | `pnpm run serve:https` (app on 8443, PocketBase on 8090)               |
+| Dev server (only if asked) | `pnpm run serve` (app on 4200, hot reload)                             |
 
 - Only the library has unit tests (Vitest). The app has none; verify UI changes in a browser.
 - There is no Python on this machine; use Node or the shell for scripts.
 
 ## Working here
 
-- The user usually has `pnpm run serve` running. The dev server hot-reloads every edit, so a
-  half-finished change is visible to them at once.
-- The dev server can get stuck on an old state after files were changed by `sed -i` or copied
-  over: it then reports errors that the production build does not have, or serves old code.
-  After such changes, check `http://localhost:4200/main.js` for something new and restart the
-  dev server if it is missing.
+- The server always runs on port 8443: start it with `pnpm run serve:https` (also when asked to
+  "start the server"), never the dev server on 4200 unless the user asks for it. It is used from
+  the phone (`https://<address of the PC>:8443`). Before starting, check whether 8443 is
+  already listening.
+- `serve:https` serves the production build in `dist/apps/foody/browser` without hot reload. After
+  a change, `pnpm nx run-many -t build lint -p foody` updates what it serves; check that
+  `https://localhost:8443/` refers to the new `main-*.js`. Restart it only when `tools/` changed.
 - The user's PocketBase (port 8090, `apps/pocketbase/pb_data`) may be restarted when needed,
   e.g. to apply a migration; say that it was. Do not change or delete its data. For testing, start a second instance with its own data folder:
   `pocketbase serve --http=127.0.0.1:8191 --dir=<temp> --migrationsDir=apps/pocketbase/pb_migrations`

@@ -147,6 +147,13 @@ import { NoteFormComponent } from '../note/note-form.component';
             (cancelled)="uiStore.close()"
           />
         }
+        @case ('edit-follow-up') {
+          <app-symptom-follow-up-form
+            [editId]="page.editId"
+            (saved)="uiStore.done(page.editId ?? undefined)"
+            (cancelled)="uiStore.close()"
+          />
+        }
         @case ('edit-unit') {
           <app-edit-unit-form
             [editId]="page.editId"

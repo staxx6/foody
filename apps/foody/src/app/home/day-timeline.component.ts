@@ -10,19 +10,22 @@ import { MedicationRowComponent } from '../medication/medication-row.component';
 import { fromPocketBaseDate } from '../shared/date-utils';
 import { I18n } from '../shared/i18n/i18n';
 import { UiStore } from '../shared/ui-store';
+import { FollowUpRowComponent } from '../symptom-entry/follow-up-row.component';
 import {
   SymptomEntry,
   SymptomEntryStore,
+  SymptomFollowUp,
 } from '../symptom-entry/symptom-entry-store';
 import { SymptomRowComponent } from '../symptom-entry/symptom-row.component';
 
 type Item =
   | { kind: 'meal'; entry: DishEntry }
   | { kind: 'symptom'; entry: SymptomEntry }
-  | { kind: 'medication'; entry: MedicationEntry };
+  | { kind: 'medication'; entry: MedicationEntry }
+  | { kind: 'follow-up'; entry: SymptomFollowUp; symptom: SymptomEntry };
 
 /** Entries at the same time: what was eaten comes before what it caused */
-const ORDER = { meal: 0, medication: 1, symptom: 2 };
+const ORDER = { meal: 0, medication: 1, symptom: 2, 'follow-up': 3 };
 
 /** The time of an entry to the minute, which is as exact as it is entered */
 function minute(entry: { date: string }): number {
@@ -35,7 +38,12 @@ function minute(entry: { date: string }): number {
  */
 @Component({
   selector: 'app-day-timeline',
-  imports: [MealRowComponent, SymptomRowComponent, MedicationRowComponent],
+  imports: [
+    MealRowComponent,
+    SymptomRowComponent,
+    FollowUpRowComponent,
+    MedicationRowComponent,
+  ],
   template: `
     @if (error(); as message) {
       <p class="list-message error">{{ message }}</p>
@@ -58,6 +66,15 @@ function minute(entry: { date: string }): number {
                 [entry]="item.entry"
                 [rowId]="item.entry.id"
                 [showKind]="true"
+                [showFollowUps]="false"
+              ></li>
+            }
+            @case ('follow-up') {
+              <li
+                appFollowUpRow
+                [followUp]="item.entry"
+                [entry]="item.symptom"
+                [rowId]="item.entry.id"
               ></li>
             }
             @case ('medication') {
@@ -105,6 +122,14 @@ export class DayTimelineComponent {
       ...this.symptoms
         .entries()
         .map((entry) => ({ kind: 'symptom' as const, entry })),
+      // At their own time, so the day reads in the order it happened
+      ...this.symptoms.entries().flatMap((symptom) =>
+        symptom.followUps.map((entry) => ({
+          kind: 'follow-up' as const,
+          entry,
+          symptom,
+        })),
+      ),
       ...this.medications
         .entries()
         .map((entry) => ({ kind: 'medication' as const, entry })),

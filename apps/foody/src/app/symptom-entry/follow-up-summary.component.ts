@@ -83,12 +83,15 @@ export class FollowUpSummaryComponent {
   readonly followUp = input.required<SymptomFollowUp>();
   /** The time of the symptom entry, as PocketBase stores it */
   readonly start = input.required<string>();
+  /** Without the time, where it is shown next to the line, e.g. "after 3 h" */
+  readonly withTime = input(true);
 
-  protected readonly when = computed(() =>
-    followUpTime(
-      this.i18n,
-      fromPocketBaseDate(this.start()),
-      fromPocketBaseDate(this.followUp().date),
-    ),
-  );
+  protected readonly when = computed(() => {
+    const start = fromPocketBaseDate(this.start());
+    const date = fromPocketBaseDate(this.followUp().date);
+    if (this.withTime()) return followUpTime(this.i18n, start, date);
+
+    const { hours, minutes } = elapsed(start, date);
+    return this.t().afterDuration(hours, minutes);
+  });
 }

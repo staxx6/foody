@@ -56,7 +56,7 @@ import {
 
     <!-- How the symptom went on: part of the entry, changed where the entry
          is edited -->
-    @for (followUp of entry().followUps; track followUp.id) {
+    @for (followUp of followUps(); track followUp.id) {
       <app-follow-up-summary
         class="follow-up"
         [followUp]="followUp"
@@ -90,6 +90,15 @@ export class SymptomRowComponent {
   readonly entry = input.required<SymptomEntry>();
   /** In a list of entries of all kinds, an icon says what the entry is */
   readonly showKind = input(false);
+  /**
+   * The follow-ups below the entry. The timeline shows them at their own
+   * time instead.
+   */
+  readonly showFollowUps = input(true);
+
+  protected readonly followUps = computed(() =>
+    this.showFollowUps() ? this.entry().followUps : [],
+  );
 
   private readonly menu = viewChild(EntryMenuComponent);
 

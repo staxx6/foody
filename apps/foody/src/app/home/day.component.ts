@@ -414,6 +414,12 @@ const SWIPE_MAX_DRIFT = 50;
           gap: 28px 24px;
         }
 
+        /* Its bar is fixed at the bottom; the empty element would take the
+           first cell of the grid and push the head below the summary */
+        app-meal-selection-bar {
+          display: contents;
+        }
+
         /* The day, the days around it and the switch of the view in a line */
         .head {
           grid-column: 1 / -1;
@@ -565,13 +571,16 @@ export class DayComponent {
   }
 
   /**
-   * Adds a follow-up to the selected symptom entry. Without one, the
-   * selection moves to the symptoms, so one can be chosen.
+   * Adds a follow-up to the selected symptom entry, or to the entry of the
+   * selected follow-up. Without one, the selection moves to the symptoms, so
+   * one can be chosen.
    */
   private followUp(): boolean {
     const entry = 'li[data-kind="symptom"]';
-    const selected = document.activeElement?.closest<HTMLElement>(entry);
-    const id = selected?.dataset['rowId'];
+    const selected = document.activeElement?.closest<HTMLElement>(
+      `${entry}, li[data-kind="follow-up"]`,
+    );
+    const id = selected?.dataset['entryId'] ?? selected?.dataset['rowId'];
     if (id) {
       this.uiStore.edit('new-follow-up', id);
       return true;
