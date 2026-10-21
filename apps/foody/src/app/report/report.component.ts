@@ -2,10 +2,12 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   OnInit,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { OfflineDataAccessService } from '@foody/pocketbase-access';
 import { addDays, dayKey, toDateInputValue } from '../shared/date-utils';
@@ -98,7 +100,12 @@ const TIME_SPANS = [6, 12, 24, 48];
     </section>
 
     <section>
-      <h3>{{ t().possibleTriggers }}</h3>
+      <div class="section-head">
+        <h3>{{ t().possibleTriggers }}</h3>
+        <button type="button" class="help-btn" (click)="openHelp()">
+          <app-icon name="info" /> {{ t().reportHelpButton }}
+        </button>
+      </div>
       @if (analysis().meals === 0 || analysis().complaints === 0) {
         <p class="card list-message">{{ t().notEnoughData }}</p>
       } @else {
@@ -106,7 +113,8 @@ const TIME_SPANS = [6, 12, 24, 48];
           {{
             t().reportSummary(
               analysis().meals,
-              analysis().complaints,
+              complaints().entries.length,
+              complaints().worsenings.length,
               percent(analysis().baseline),
               hours()
             )
@@ -195,6 +203,34 @@ const TIME_SPANS = [6, 12, 24, 48];
         </button>
       </div>
     </section>
+
+    <!-- How the analysis works, in plain words -->
+    <dialog #help class="help" [attr.aria-label]="t().reportHelp.title">
+      <div class="help-head">
+        <h2>{{ t().reportHelp.title }}</h2>
+        <button
+          type="button"
+          class="icon-btn"
+          (click)="help.close()"
+          [attr.aria-label]="t().close"
+        >
+          <app-icon name="close" />
+        </button>
+      </div>
+      <p>{{ t().reportHelp.intro }}</p>
+      <dl>
+        @for (point of t().reportHelp.points; track point.title) {
+          <dt>{{ point.title }}</dt>
+          <dd>{{ point.text }}</dd>
+        }
+      </dl>
+      <p class="tip">{{ t().reportHelp.tip }}</p>
+      <div class="help-actions">
+        <button type="button" (click)="help.close()">
+          {{ t().understood }}
+        </button>
+      </div>
+    </dialog>
   `,
   styles: [
     `
@@ -227,6 +263,87 @@ const TIME_SPANS = [6, 12, 24, 48];
 
       section h3 {
         margin-bottom: 0;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .help-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border: none;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      dialog.help {
+        width: min(560px, calc(100vw - 32px));
+        max-height: calc(100dvh - 48px);
+        padding: 20px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        color: var(--text);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      }
+
+      dialog.help::backdrop {
+        background: rgba(0, 0, 0, 0.45);
+      }
+
+      .help-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .help h2 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+
+      .help p,
+      .help dd {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        line-height: 1.45;
+      }
+
+      .help dl {
+        margin: 0;
+      }
+
+      .help dt {
+        margin-top: 14px;
+        font-weight: 600;
+      }
+
+      .help dd {
+        margin: 4px 0 0;
+      }
+
+      .help .tip {
+        margin-top: 18px;
+        padding: 10px 12px;
+        border-radius: var(--radius);
+        background: var(--bg);
+      }
+
+      .help-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 16px;
       }
 
       .settings {
@@ -538,10 +655,11 @@ export class ReportComponent implements OnInit {
   protected readonly hours = this.reportStore.hours;
 
   protected readonly data = signal<ReportData | null>(null);
+  private readonly help =
+    viewChild.required<ElementRef<HTMLDialogElement>>('help');
 
   protected readonly analysis = computed(() => {
     const data = this.data();
-    const symptomId = this.symptomId();
     if (!data) return analyze([], [], this.hours());
 
     // A dish counts itself and as each of the foods it consists of
@@ -561,10 +679,27 @@ export class ReportComponent implements OnInit {
         time: meal.time,
       })),
     ]);
-    const complaints = data.symptoms.filter(
-      (symptom) => !symptomId || symptom.symptomId === symptomId,
-    );
-    return analyze(exposures, complaints, this.hours());
+    const { entries, worsenings } = this.complaints();
+    return analyze(exposures, [...entries, ...worsenings], this.hours());
+  });
+
+  /**
+   * What counts as a complaint: every symptom entry and every follow-up in
+   * which it got worse, as that can be caused by a meal in between. Several
+   * of them after a meal still count for it once (see analyze).
+   */
+  protected readonly complaints = computed(() => {
+    const data = this.data();
+    const symptomId = this.symptomId();
+    const counts = (other: { symptomId: string }) =>
+      !symptomId || other.symptomId === symptomId;
+    return {
+      entries: data?.symptoms.filter(counts) ?? [],
+      worsenings:
+        data?.followUps.filter(
+          (followUp) => followUp.course === 'worse' && counts(followUp),
+        ) ?? [],
+    };
   });
 
   protected readonly conspicuous = computed(() =>
@@ -629,6 +764,10 @@ export class ReportComponent implements OnInit {
       this.from() === daysAgo(days) &&
       this.to() === toDateInputValue(new Date())
     );
+  }
+
+  protected openHelp(): void {
+    this.help().nativeElement.showModal();
   }
 
   protected percent(share: number): number {

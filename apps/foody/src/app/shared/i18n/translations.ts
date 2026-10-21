@@ -199,22 +199,57 @@ const en = {
   timeSpan: 'Symptoms within',
   hours: (hours: number) => `${hours} h`,
   timeSpanHint:
-    'Symptoms count for a meal if they start within this time after it.',
+    'Symptoms count for a meal if they start or get worse within this time after it.',
   possibleTriggers: 'Possible triggers',
   notEnoughData:
     'There are no meals or no symptoms in this period, so there is nothing to compare.',
   reportSummary: (
     meals: number,
-    complaints: number,
+    entries: number,
+    worsenings: number,
     percent: number,
     hours: number,
   ) =>
-    `${meals} meals and ${complaints} symptom entries. Symptoms followed ${percent} % of all meals within ${hours} hours.`,
+    `${meals} meals, ${entries} symptom entries and ${worsenings} ${worsenings === 1 ? 'worsening' : 'worsenings'}. Symptoms followed ${percent} % of all meals within ${hours} hours.`,
   followedBy: (followed: number, eaten: number) =>
     `Symptoms followed ${followed} of ${eaten} times:`,
   followedShort: (followed: number, eaten: number) => `${followed} of ${eaten}`,
   eatenBefore: (preceded: number, complaints: number) =>
-    `Eaten before ${preceded} of ${complaints} symptom entries.`,
+    `Eaten before ${preceded} of ${complaints} complaints.`,
+  reportHelpButton: 'How it works',
+  understood: 'Got it',
+  reportHelp: {
+    title: 'How the report works',
+    intro:
+      'The report looks for foods after which you have complaints more often than after your meals in general. It only knows what you logged.',
+    points: [
+      {
+        title: 'What counts as a complaint',
+        text: 'Every symptom you log, and every follow-up in which it got worse. Better, unchanged or gone do not count. If a symptom is chosen above, only that one counts.',
+      },
+      {
+        title: 'Which meals a complaint counts for',
+        text: 'For every meal in the chosen time before it, e.g. the 6 hours before. Several complaints after a meal count for it once. A dish also counts as each of its foods.',
+      },
+      {
+        title: 'What is usual',
+        text: 'First it works out how often complaints follow any of your meals. That is the mark in the bars: a food is compared with it.',
+      },
+      {
+        title: 'When a food is conspicuous',
+        text: 'If complaints follow it clearly more often than usual, and at least twice. Few entries are counted with caution, so 2 out of 2 times does not weigh more than 8 out of 10.',
+      },
+      {
+        title: 'Too few data',
+        text: 'A food that was eaten fewer than 3 times in the period cannot be judged yet.',
+      },
+      {
+        title: 'What it cannot tell',
+        text: 'Foods that are mostly eaten together cannot be told apart. Stress, sleep or medication are not taken into account. It shows what coincides, not what causes it, and does not replace medical advice.',
+      },
+    ],
+    tip: 'Tip: the more completely you log meals, symptoms and their follow-ups, the more meaningful the result.',
+  },
   usualShare: (percent: number) => `Usual for all meals: ${percent} %`,
   nothingConspicuous:
     'Nothing stands out: no food is followed by symptoms clearly more often than meals in general.',
@@ -553,17 +588,51 @@ const de: Translations = {
   timeSpan: 'Beschwerden innerhalb von',
   hours: (hours) => `${hours} Std.`,
   timeSpanHint:
-    'Beschwerden zählen zu einer Mahlzeit, wenn sie in dieser Zeit danach beginnen.',
+    'Beschwerden zählen zu einer Mahlzeit, wenn sie in dieser Zeit danach beginnen oder schlimmer werden.',
   possibleTriggers: 'Mögliche Auslöser',
   notEnoughData:
     'In diesem Zeitraum gibt es keine Mahlzeiten oder keine Symptome, es lässt sich also nichts vergleichen.',
-  reportSummary: (meals, complaints, percent, hours) =>
-    `${meals} Mahlzeiten und ${complaints} Symptom-Einträge. Nach ${percent} % aller Mahlzeiten folgten innerhalb von ${hours} Stunden Beschwerden.`,
+  reportSummary: (meals, entries, worsenings, percent, hours) =>
+    `${meals} Mahlzeiten, ${entries} Symptom-Einträge und ${worsenings} ${worsenings === 1 ? 'Verschlechterung' : 'Verschlechterungen'}. Nach ${percent} % aller Mahlzeiten folgten innerhalb von ${hours} Stunden Beschwerden.`,
   followedBy: (followed, eaten) =>
     `Nach ${followed} von ${eaten} Mal folgten Beschwerden:`,
   followedShort: (followed, eaten) => `${followed} von ${eaten}`,
   eatenBefore: (preceded, complaints) =>
-    `Vor ${preceded} von ${complaints} Symptom-Einträgen gegessen.`,
+    `Vor ${preceded} von ${complaints} Beschwerden gegessen.`,
+  reportHelpButton: "So funktioniert's",
+  understood: 'Verstanden',
+  reportHelp: {
+    title: 'So funktioniert die Auswertung',
+    intro:
+      'Die Auswertung sucht Lebensmittel, nach denen du öfter Beschwerden hast als nach deinen Mahlzeiten im Allgemeinen. Sie kennt nur, was du eingetragen hast.',
+    points: [
+      {
+        title: 'Was als Beschwerde zählt',
+        text: 'Jedes Symptom, das du einträgst, und jedes Follow-up, bei dem es schlechter wurde. Besser, gleich oder weg zählt nicht. Ist oben ein Symptom gewählt, zählt nur dieses.',
+      },
+      {
+        title: 'Zu welchen Mahlzeiten eine Beschwerde zählt',
+        text: 'Zu jeder Mahlzeit in der gewählten Zeit davor, z. B. den 6 Stunden davor. Mehrere Beschwerden nach einer Mahlzeit zählen für sie einmal. Ein Gericht zählt auch als jedes seiner Lebensmittel.',
+      },
+      {
+        title: 'Was üblich ist',
+        text: 'Zuerst wird ermittelt, wie oft auf irgendeine deiner Mahlzeiten Beschwerden folgen. Das ist die Markierung in den Balken: Damit wird jedes Lebensmittel verglichen.',
+      },
+      {
+        title: 'Wann ein Lebensmittel auffällig ist',
+        text: 'Wenn danach deutlich öfter Beschwerden folgen als üblich, und mindestens zweimal. Wenige Einträge werden vorsichtig gewertet, damit 2 von 2 Mal nicht mehr zählt als 8 von 10.',
+      },
+      {
+        title: 'Zu wenige Daten',
+        text: 'Ein Lebensmittel, das im Zeitraum weniger als 3-mal gegessen wurde, lässt sich noch nicht beurteilen.',
+      },
+      {
+        title: 'Was sie nicht kann',
+        text: 'Lebensmittel, die meist zusammen gegessen werden, lassen sich nicht unterscheiden. Stress, Schlaf oder Medikamente werden nicht berücksichtigt. Sie zeigt, was zusammen auftritt, nicht was die Ursache ist, und ersetzt keinen ärztlichen Rat.',
+      },
+    ],
+    tip: 'Tipp: Je vollständiger du Mahlzeiten, Symptome und ihre Follow-ups einträgst, desto aussagekräftiger wird das Ergebnis.',
+  },
   usualShare: (percent) => `Üblich bei allen Mahlzeiten: ${percent} %`,
   nothingConspicuous:
     'Nichts fällt auf: Auf kein Lebensmittel folgen deutlich öfter Beschwerden als auf Mahlzeiten allgemein.',

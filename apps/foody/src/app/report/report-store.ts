@@ -36,6 +36,8 @@ export type ReportSymptom = {
 /** How a symptom was some time after it was logged */
 export type ReportFollowUp = {
   time: Date;
+  /** The symptom of the entry it belongs to */
+  symptomId: string;
   /** The name of the symptom */
   name: string;
   course: FollowUpCourse;
@@ -55,7 +57,7 @@ export type ReportMedication = {
 export type ReportData = {
   meals: ReportMeal[];
   symptoms: ReportSymptom[];
-  /** Only exported: a follow-up is not a new complaint */
+  /** The ones that got worse also count as complaints of their own */
   followUps: ReportFollowUp[];
   medications: ReportMedication[];
 };
@@ -160,6 +162,7 @@ export class ReportStore {
           const [symptom] = entry ? expanded(entry, 'to_symptom') : [];
           return {
             time: timeOf(record),
+            symptomId: String(entry?.['to_symptom'] ?? ''),
             name: String(symptom?.['name'] ?? '–'),
             course: String(record['course'] ?? 'same') as FollowUpCourse,
             level: Number(record['discomfortLevel']) || null,
