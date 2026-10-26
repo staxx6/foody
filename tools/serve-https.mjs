@@ -111,6 +111,16 @@ const httpsServer = createHttpsServer(
   },
 );
 
+// A device that does not trust the certificate only sees a network error;
+// the reason is only visible here
+httpsServer.on('tlsClientError', (error, socket) => {
+  const address = socket.remoteAddress?.replace(/^::ffff:/, '') ?? '?';
+  if (address === '127.0.0.1' || address === '::1') return;
+  console.error(
+    `${new Date().toLocaleString()} TLS refused by ${address}: ${error.message}`,
+  );
+});
+
 const httpServer = createHttpServer((req, res) => {
   if (req.url === `/${CA_FILE}`) {
     res.writeHead(200, {

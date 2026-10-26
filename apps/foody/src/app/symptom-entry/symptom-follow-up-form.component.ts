@@ -24,6 +24,7 @@ import {
   levelStep,
 } from '../shared/level.component';
 import { AutofocusDirective } from '../shared/keyboard/autofocus.directive';
+import { followUpTime } from './follow-up-summary.component';
 import {
   FollowUpCourse,
   SymptomEntryStore,
@@ -58,14 +59,31 @@ import {
 
     <form class="card" (ngSubmit)="save()">
       @if (entry(); as entry) {
-        <p class="about">
-          <app-icon name="symptom" />
-          <strong>{{ entry.name }}</strong>
-          <span>{{ i18n.formatDateTime(entry.date) }}</span>
-          @if (entry.level; as level) {
-            <app-level-chip [level]="level" />
+        <div class="about">
+          <p>
+            <app-icon name="symptom" />
+            <strong>{{ entry.name }}</strong>
+            <span>{{ i18n.formatDateTime(entry.date) }}</span>
+            @if (entry.level; as level) {
+              <app-level-chip [level]="level" />
+            }
+          </p>
+          <!-- Where it stands, which the new level is compared with -->
+          @if (before(); as before) {
+            @if (before.date) {
+              <p class="last">
+                <app-icon name="history" />
+                <span>{{ t().lastStatus }}</span>
+                <span>{{ when(before.date) }}</span>
+                @if (before.level) {
+                  <app-level-chip [level]="before.level" />
+                } @else {
+                  <span class="chip gone">{{ t().courses.gone }}</span>
+                }
+              </p>
+            }
           }
-        </p>
+        </div>
       }
 
       <div class="field">
@@ -153,12 +171,11 @@ import {
   `,
   styles: [
     `
-      /* The symptom entry the follow-up belongs to */
+      /* The symptom entry the follow-up belongs to, and its last status */
       .about {
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 4px 10px;
+        flex-direction: column;
+        gap: 8px;
         margin: 0 0 18px;
         padding: 10px 12px;
         border-radius: var(--radius);
@@ -167,8 +184,21 @@ import {
         color: var(--text-muted);
       }
 
+      .about p {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 10px;
+        margin: 0;
+      }
+
       .about strong {
         color: var(--text);
+      }
+
+      .chip.gone {
+        background: var(--surface);
+        color: var(--success);
       }
 
       .when {
@@ -248,14 +278,22 @@ export class SymptomFollowUpFormComponent implements OnInit {
       date: fromPocketBaseDate(entry.date),
       level: entry.discomfortLevel ?? null,
     });
+    // A new follow-up starts where it stands, so only a change is entered
+    if (!followUp) this.discomfortLevel.set(this.before()?.level ?? null);
     this.changes.markForCheck();
   }
 
   /**
-   * The step of the level before this follow-up: of the follow-up before it,
-   * or of the entry. Null if neither has one.
+   * The level before this follow-up: of the follow-up before it, or of the
+   * entry. Null if neither has one.
+   * @returns the level as stored, 0 if it was gone; the step of it; the time
+   *   of the follow-up, null if it is the level of the entry
    */
-  protected before(): { step: number } | null {
+  protected before(): {
+    level: number;
+    step: number;
+    date: Date | null;
+  } | null {
     const entry = this.entry();
     const moment = this.moment()?.getTime() ?? Infinity;
     const earlier = this.others()
@@ -264,14 +302,23 @@ export class SymptomFollowUpFormComponent implements OnInit {
       .filter((other) => other.course === 'gone' || other.discomfortLevel)
       .pop();
     if (earlier) {
+      const level =
+        earlier.course === 'gone' ? 0 : (earlier.discomfortLevel ?? 0);
       return {
-        step:
-          earlier.course === 'gone' || !earlier.discomfortLevel
-            ? 0
-            : levelStep(earlier.discomfortLevel),
+        level,
+        step: level ? levelStep(level) : 0,
+        date: fromPocketBaseDate(earlier.date),
       };
     }
-    return entry?.level ? { step: levelStep(entry.level) } : null;
+    return entry?.level
+      ? { level: entry.level, step: levelStep(entry.level), date: null }
+      : null;
+  }
+
+  /** When an earlier follow-up was, e.g. "14:30 · after 3 h" */
+  protected when(date: Date): string {
+    const entry = this.entry();
+    return entry ? followUpTime(this.i18n, entry.date, date) : '';
   }
 
   /** How it developed, which follows from the level now and the one before */

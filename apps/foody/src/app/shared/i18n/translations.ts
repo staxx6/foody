@@ -371,6 +371,7 @@ const en = {
     gone: 'Gone',
   },
   levelBefore: (level: number) => `Before: ${level}`,
+  lastStatus: 'Last status',
   afterDuration: (hours: number, minutes: number) =>
     `after ${[hours ? `${hours} h` : '', minutes || !hours ? `${minutes} min` : ''].filter(Boolean).join(' ')}`,
   followUpTooEarly: 'A follow-up cannot be before the symptom itself.',
@@ -749,6 +750,7 @@ const de: Translations = {
     gone: 'Weg',
   },
   levelBefore: (level) => `Davor: ${level}`,
+  lastStatus: 'Zuletzt',
   afterDuration: (hours, minutes) =>
     `nach ${[hours ? `${hours} Std.` : '', minutes || !hours ? `${minutes} Min.` : ''].filter(Boolean).join(' ')}`,
   followUpTooEarly: 'Ein Verlauf kann nicht vor dem Symptom selbst liegen.',
