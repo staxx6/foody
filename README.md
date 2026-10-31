@@ -123,16 +123,21 @@ The ports can be changed with the environment variables `FOODY_HTTPS_PORT` and `
 
 ## Backup
 
-`pnpm run backup` saves the database and the uploaded files to `backups/foody-<date>_<time>`. It
-works while PocketBase is running and checks that the saved database can be read.
+`pnpm run backup` saves the database and the uploaded files in one file,
+`backups/foody-<date>_<time>.zip`. It works while PocketBase is running, checks that the saved
+database can be read and reads the ZIP file back before keeping it.
 
 - Another folder: `pnpm run backup D:\some\folder` or the environment variable `FOODY_BACKUP_DIR`.
   Use a folder on another disk or in a cloud folder; `backups/` is on the same disk as the data.
 - The newest 14 backups are kept, older ones are removed (`FOODY_BACKUP_KEEP`, `0` keeps all).
+  Backups from before the ZIP files are folders; they are counted and removed the same way.
+- Photos are stored as they are (they are compressed already), so the ZIP file is about as large
+  as the data.
 - Entries that a phone has not synchronized yet are not on the server and so not in the backup.
 
-To restore, stop PocketBase and replace `data.db` and `storage` in `apps/pocketbase/pb_data` with
-the ones of the backup (delete `data.db-shm` and `data.db-wal` there if they exist).
+To restore, stop PocketBase, unpack the ZIP file (e.g. Explorer > Extract all) and replace
+`data.db` and `storage` in `apps/pocketbase/pb_data` with the ones from it (delete
+`data.db-shm` and `data.db-wal` there if they exist).
 
 PocketBase can also create backups itself: dashboard > Settings > Backups.
 
