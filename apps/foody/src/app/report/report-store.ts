@@ -54,12 +54,24 @@ export type ReportMedication = {
   comment: string;
 };
 
+export type ReportNote = {
+  time: Date;
+  text: string;
+};
+
+export type ReportWeight = {
+  time: Date;
+  kilograms: number;
+};
+
 export type ReportData = {
   meals: ReportMeal[];
   symptoms: ReportSymptom[];
   /** The ones that got worse also count as complaints of their own */
   followUps: ReportFollowUp[];
   medications: ReportMedication[];
+  notes: ReportNote[];
+  weights: ReportWeight[];
 };
 
 /** The day that many days before today, as value of a date input */
@@ -99,104 +111,125 @@ export class ReportStore {
   async load(from: Date, to: Date): Promise<ReportData> {
     const dateRange: DateRange = { field: 'date', from, to };
 
-    const [meals, symptoms, followUps, medications] = await Promise.all([
-      this.dataAccess.list<ReportMeal | null>({
-        collectionName: 'dishEntries',
-        options: {
-          dateRange,
-          sort: 'date',
-          expand:
-            'to_foodItem,to_amountUnit,to_dish,to_dish.to_ingredients.to_foodItem',
-        },
-        map: (record) => {
-          const [food] = expanded(record, 'to_foodItem');
-          const [dish] = expanded(record, 'to_dish');
-          const item = food ?? dish;
-          // The food or dish was deleted: nothing to say about the entry
-          if (!item) return null;
+    const [meals, symptoms, followUps, medications, notes, weights] =
+      await Promise.all([
+        this.dataAccess.list<ReportMeal | null>({
+          collectionName: 'dishEntries',
+          options: {
+            dateRange,
+            sort: 'date',
+            expand:
+              'to_foodItem,to_amountUnit,to_dish,to_dish.to_ingredients.to_foodItem',
+          },
+          map: (record) => {
+            const [food] = expanded(record, 'to_foodItem');
+            const [dish] = expanded(record, 'to_dish');
+            const item = food ?? dish;
+            // The food or dish was deleted: nothing to say about the entry
+            if (!item) return null;
 
-          const [unit] = expanded(record, 'to_amountUnit');
-          return {
-            id: record.id,
+            const [unit] = expanded(record, 'to_amountUnit');
+            return {
+              id: record.id,
+              time: timeOf(record),
+              kind: food ? 'food' : 'dish',
+              itemId: item.id,
+              name: String(item['name'] ?? ''),
+              amount: String(record['amount'] ?? ''),
+              unit: unit ? toLocalizedName(unit) : null,
+              ingredients: dish
+                ? expanded(dish, 'to_ingredients')
+                    .flatMap((ingredient) =>
+                      expanded(ingredient, 'to_foodItem'),
+                    )
+                    .map((ingredient) => ({
+                      id: ingredient.id,
+                      name: String(ingredient['name'] ?? ''),
+                    }))
+                : [],
+            };
+          },
+        }),
+        this.dataAccess.list<ReportSymptom>({
+          collectionName: 'symptomEntries',
+          options: { dateRange, sort: 'date', expand: 'to_symptom' },
+          map: (record) => {
+            const [symptom] = expanded(record, 'to_symptom');
+            return {
+              time: timeOf(record),
+              symptomId: String(record['to_symptom'] ?? ''),
+              name: String(symptom?.['name'] ?? '–'),
+              // PocketBase stores "no value" of a number as 0
+              level: Number(record['discomfortLevel']) || null,
+              comment: String(record['comment'] ?? ''),
+            };
+          },
+        }),
+        this.dataAccess.list<ReportFollowUp>({
+          collectionName: FOLLOW_UP_COLLECTION,
+          options: {
+            dateRange,
+            sort: 'date',
+            expand: 'to_symptomEntry.to_symptom',
+          },
+          map: (record) => {
+            const [entry] = expanded(record, 'to_symptomEntry');
+            const [symptom] = entry ? expanded(entry, 'to_symptom') : [];
+            return {
+              time: timeOf(record),
+              symptomId: String(entry?.['to_symptom'] ?? ''),
+              name: String(symptom?.['name'] ?? '–'),
+              course: String(record['course'] ?? 'same') as FollowUpCourse,
+              level: Number(record['discomfortLevel']) || null,
+              comment: String(record['comment'] ?? ''),
+            };
+          },
+        }),
+        this.dataAccess.list<ReportMedication>({
+          collectionName: 'medicationEntries',
+          options: {
+            dateRange,
+            sort: 'date',
+            expand: 'to_medication,to_amountUnit',
+          },
+          map: (record) => {
+            const [medication] = expanded(record, 'to_medication');
+            const [unit] = expanded(record, 'to_amountUnit');
+            return {
+              time: timeOf(record),
+              name: String(medication?.['name'] ?? '–'),
+              strength: String(medication?.['strength'] ?? ''),
+              amount: String(record['amount'] ?? ''),
+              unit: unit ? toLocalizedName(unit) : null,
+              comment: String(record['comment'] ?? ''),
+            };
+          },
+        }),
+        this.dataAccess.list<ReportNote>({
+          collectionName: 'notes',
+          options: { dateRange, sort: 'date' },
+          map: (record) => ({
             time: timeOf(record),
-            kind: food ? 'food' : 'dish',
-            itemId: item.id,
-            name: String(item['name'] ?? ''),
-            amount: String(record['amount'] ?? ''),
-            unit: unit ? toLocalizedName(unit) : null,
-            ingredients: dish
-              ? expanded(dish, 'to_ingredients')
-                  .flatMap((ingredient) => expanded(ingredient, 'to_foodItem'))
-                  .map((ingredient) => ({
-                    id: ingredient.id,
-                    name: String(ingredient['name'] ?? ''),
-                  }))
-              : [],
-          };
-        },
-      }),
-      this.dataAccess.list<ReportSymptom>({
-        collectionName: 'symptomEntries',
-        options: { dateRange, sort: 'date', expand: 'to_symptom' },
-        map: (record) => {
-          const [symptom] = expanded(record, 'to_symptom');
-          return {
+            text: String(record['text'] ?? ''),
+          }),
+        }),
+        this.dataAccess.list<ReportWeight>({
+          collectionName: 'weights',
+          options: { dateRange, sort: 'date' },
+          map: (record) => ({
             time: timeOf(record),
-            symptomId: String(record['to_symptom'] ?? ''),
-            name: String(symptom?.['name'] ?? '–'),
-            // PocketBase stores "no value" of a number as 0
-            level: Number(record['discomfortLevel']) || null,
-            comment: String(record['comment'] ?? ''),
-          };
-        },
-      }),
-      this.dataAccess.list<ReportFollowUp>({
-        collectionName: FOLLOW_UP_COLLECTION,
-        options: {
-          dateRange,
-          sort: 'date',
-          expand: 'to_symptomEntry.to_symptom',
-        },
-        map: (record) => {
-          const [entry] = expanded(record, 'to_symptomEntry');
-          const [symptom] = entry ? expanded(entry, 'to_symptom') : [];
-          return {
-            time: timeOf(record),
-            symptomId: String(entry?.['to_symptom'] ?? ''),
-            name: String(symptom?.['name'] ?? '–'),
-            course: String(record['course'] ?? 'same') as FollowUpCourse,
-            level: Number(record['discomfortLevel']) || null,
-            comment: String(record['comment'] ?? ''),
-          };
-        },
-      }),
-      this.dataAccess.list<ReportMedication>({
-        collectionName: 'medicationEntries',
-        options: {
-          dateRange,
-          sort: 'date',
-          expand: 'to_medication,to_amountUnit',
-        },
-        map: (record) => {
-          const [medication] = expanded(record, 'to_medication');
-          const [unit] = expanded(record, 'to_amountUnit');
-          return {
-            time: timeOf(record),
-            name: String(medication?.['name'] ?? '–'),
-            strength: String(medication?.['strength'] ?? ''),
-            amount: String(record['amount'] ?? ''),
-            unit: unit ? toLocalizedName(unit) : null,
-            comment: String(record['comment'] ?? ''),
-          };
-        },
-      }),
-    ]);
+            kilograms: Number(record['kilograms']) || 0,
+          }),
+        }),
+      ]);
 
     return {
       meals: meals.filter((meal): meal is ReportMeal => meal !== null),
       symptoms,
       followUps,
       medications,
+      notes,
+      weights,
     };
   }
 }

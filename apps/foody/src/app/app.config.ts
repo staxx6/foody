@@ -45,6 +45,7 @@ export const appConfig: ApplicationConfig = {
           'medications',
           'medicationEntries',
           'notes',
+          'weights',
         ],
       },
     },

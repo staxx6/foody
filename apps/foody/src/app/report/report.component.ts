@@ -193,6 +193,27 @@ const TIME_SPANS = [6, 12, 24, 48];
       }
     </section>
 
+    @if (weight(); as weight) {
+      <section>
+        <h3>{{ t().weight }}</h3>
+        <div class="card weight">
+          <div>
+            <span class="label">{{ t().weightLatest }}</span>
+            <strong>{{ i18n.formatKilograms(weight.latest) }}</strong>
+          </div>
+          <div>
+            <span class="label">{{ t().weightChange }}</span>
+            <strong>{{ weight.change }}</strong>
+          </div>
+          <div>
+            <span class="label">{{ t().weightRange }}</span>
+            <strong>{{ weight.range }}</strong>
+          </div>
+          <p class="muted">{{ t().weightCount(weight.count) }}</p>
+        </div>
+      </section>
+    }
+
     <section>
       <h3>{{ t().export }}</h3>
       <div class="card export">
@@ -558,6 +579,34 @@ const TIME_SPANS = [6, 12, 24, 48];
         padding: 4px;
       }
 
+      .weight {
+        display: grid;
+        /* The range is the longest value and stays in one line */
+        grid-template-columns: 1fr 1fr auto;
+        gap: 12px;
+        padding: 16px;
+      }
+
+      .weight > div {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .weight .label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .weight strong {
+        font-size: 1.1rem;
+        white-space: nowrap;
+      }
+
+      .weight .muted {
+        grid-column: 1 / -1;
+      }
+
       .export {
         display: flex;
         flex-direction: column;
@@ -688,6 +737,23 @@ export class ReportComponent implements OnInit {
    * which it got worse, as that can be caused by a meal in between. Several
    * of them after a meal still count for it once (see analyze).
    */
+  /** The weight in the period: the latest, how it changed and its range */
+  protected readonly weight = computed(() => {
+    const weights = this.data()?.weights ?? [];
+    if (weights.length === 0) return null;
+
+    const kilograms = weights.map((weight) => weight.kilograms);
+    const latest = kilograms[kilograms.length - 1];
+    const change = Math.round((latest - kilograms[0]) * 10) / 10;
+    const format = (value: number) => this.i18n.formatKilograms(value);
+    return {
+      latest,
+      count: weights.length,
+      change: `${change > 0 ? '+' : change < 0 ? '−' : '±'}${format(Math.abs(change))}`,
+      range: `${this.i18n.formatNumber(Math.min(...kilograms))}–${format(Math.max(...kilograms))}`,
+    };
+  });
+
   protected readonly complaints = computed(() => {
     const data = this.data();
     const symptomId = this.symptomId();
@@ -795,8 +861,8 @@ export class ReportComponent implements OnInit {
   }
 
   /**
-   * One table with a block of rows per day: its meals, symptoms and
-   * medications side by side, each in the order of the time, and an empty row
+   * One table with a block of rows per day: its meals, symptoms, medications,
+   * notes and weights side by side, each in the order of the time, and an empty row
    * after it
    */
   private sheets(data: ReportData): Sheet[] {
@@ -845,10 +911,24 @@ export class ReportComponent implements OnInit {
         ] as Cell[],
       })),
     ].sort((a, b) => a.time.getTime() - b.time.getTime());
+    const notes = data.notes.map((note) => ({
+      time: note.time,
+      cells: [
+        time(note.time),
+        // A cell shows line breaks only if it wraps, else words run together
+        note.text.replace(/\s*\n\s*/g, ' '),
+      ] as Cell[],
+    }));
+    const weights = data.weights.map((weight) => ({
+      time: weight.time,
+      cells: [time(weight.time), weight.kilograms] as Cell[],
+    }));
     const groups = [
       { title: t.meals, width: 3, entries: meals },
       { title: t.symptoms, width: 4, entries: symptoms },
       { title: t.medications, width: 4, entries: medications },
+      { title: t.notes, width: 2, entries: notes },
+      { title: t.weight, width: 2, entries: weights },
     ];
 
     const days = [
@@ -911,6 +991,10 @@ export class ReportComponent implements OnInit {
           t.medication,
           t.amount,
           t.comment,
+          t.time,
+          t.note,
+          t.time,
+          t.weightInKilograms,
         ],
         rows,
         bands,

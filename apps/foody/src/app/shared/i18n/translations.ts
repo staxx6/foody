@@ -181,6 +181,19 @@ const en = {
   editNote: 'Edit note',
   notePlaceholder: 'e.g. Felt bad today because I was stressed',
 
+  // Body weight
+  weight: 'Weight',
+  logWeight: 'Log weight',
+  logWeightHint: 'Your body weight, e.g. in the morning',
+  editWeight: 'Edit weight',
+  weightInKilograms: 'Weight in kg',
+  weightPlaceholder: 'e.g. 72.4',
+  weightLatest: 'Latest',
+  weightChange: 'Change in the period',
+  weightRange: 'Lowest – highest',
+  weightCount: (count: number) =>
+    `From ${count} ${count === 1 ? 'entry' : 'entries'} in the period.`,
+
   // Details of a food, dish, symptom or medication
   edit: 'Edit',
   showDetails: 'Show details',
@@ -262,7 +275,7 @@ const en = {
     'This shows what coincides, not what causes it. Foods eaten together cannot be told apart, and a few entries can be a coincidence. It does not replace medical advice.',
   export: 'Export',
   exportHint:
-    'All meals, medications and symptoms of the period as one Excel table, day by day.',
+    'All meals, medications, symptoms, notes and weights of the period as one Excel table, day by day.',
   weekday: 'Weekday',
   mealName: 'Food',
   exportExcel: 'Export to Excel',
@@ -574,6 +587,19 @@ const de: Translations = {
   editNote: 'Notiz bearbeiten',
   notePlaceholder: 'z. B. Mir ging es heute nicht gut, weil ich gestresst war',
 
+  // Body weight
+  weight: 'Gewicht',
+  logWeight: 'Gewicht eintragen',
+  logWeightHint: 'Dein Körpergewicht, z. B. am Morgen',
+  editWeight: 'Gewicht bearbeiten',
+  weightInKilograms: 'Gewicht in kg',
+  weightPlaceholder: 'z. B. 72,4',
+  weightLatest: 'Zuletzt',
+  weightChange: 'Veränderung im Zeitraum',
+  weightRange: 'Niedrigstes – höchstes',
+  weightCount: (count: number) =>
+    `Aus ${count} ${count === 1 ? 'Eintrag' : 'Einträgen'} im Zeitraum.`,
+
   edit: 'Bearbeiten',
   showDetails: 'Details anzeigen',
   logged: 'Eingetragen',
@@ -647,7 +673,7 @@ const de: Translations = {
     'Das zeigt, was zusammen auftritt, nicht was die Ursache ist. Lebensmittel, die zusammen gegessen werden, lassen sich nicht unterscheiden, und wenige Einträge können Zufall sein. Es ersetzt keinen ärztlichen Rat.',
   export: 'Export',
   exportHint:
-    'Alle Mahlzeiten, Medikamente und Symptome des Zeitraums als eine Excel-Tabelle, Tag für Tag.',
+    'Alle Mahlzeiten, Medikamente, Symptome, Notizen und Gewichte des Zeitraums als eine Excel-Tabelle, Tag für Tag.',
   weekday: 'Wochentag',
   mealName: 'Essen',
   exportExcel: 'Als Excel exportieren',

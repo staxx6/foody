@@ -19,6 +19,8 @@ import { Keyboard } from '../shared/keyboard/keyboard';
 import { MedicationEntryListComponent } from '../medication/medication-entry-list.component';
 import { NoteRowComponent } from '../note/note-row.component';
 import { NoteStore } from '../note/note-store';
+import { WeightRowComponent } from '../weight/weight-row.component';
+import { WeightStore } from '../weight/weight-store';
 import { IconComponent, IconName } from '../shared/icon.component';
 import { DayView, SettingsStore } from '../shared/settings-store';
 import { DaySummaryComponent } from './day-summary.component';
@@ -45,6 +47,7 @@ const SWIPE_MAX_DRIFT = 50;
     DaySummaryComponent,
     MealSelectionBarComponent,
     NoteRowComponent,
+    WeightRowComponent,
     IconComponent,
     NgTemplateOutlet,
   ],
@@ -125,26 +128,51 @@ const SWIPE_MAX_DRIFT = 50;
     </ng-template>
 
     <!-- About the day as a whole, so above its entries; only if there are any -->
-    @if (notes.notes().length > 0) {
-      <section class="notes">
-        <h2>
-          <app-icon name="note" /> {{ t().notes }}
-          <button
-            type="button"
-            class="add"
-            (click)="uiStore.showForm('new-note')"
-            [title]="t().writeNote"
-            [attr.aria-label]="t().writeNote"
-          >
-            <app-icon name="plus" /><kbd class="kbd">W</kbd>
-          </button>
-        </h2>
-        <ul class="card entry-list">
-          @for (note of notes.notes(); track note.id) {
-            <li appNoteRow [note]="note" [rowId]="note.id"></li>
-          }
-        </ul>
-      </section>
+    @if (notes.notes().length > 0 || weights.weights().length > 0) {
+      <div class="about-day">
+        @if (notes.notes().length > 0) {
+          <section>
+            <h2>
+              <app-icon name="note" /> {{ t().notes }}
+              <button
+                type="button"
+                class="add"
+                (click)="uiStore.showForm('new-note')"
+                [title]="t().writeNote"
+                [attr.aria-label]="t().writeNote"
+              >
+                <app-icon name="plus" /><kbd class="kbd">W</kbd>
+              </button>
+            </h2>
+            <ul class="card entry-list">
+              @for (note of notes.notes(); track note.id) {
+                <li appNoteRow [note]="note" [rowId]="note.id"></li>
+              }
+            </ul>
+          </section>
+        }
+        @if (weights.weights().length > 0) {
+          <section>
+            <h2>
+              <app-icon name="weight" /> {{ t().weight }}
+              <button
+                type="button"
+                class="add"
+                (click)="uiStore.showForm('new-weight')"
+                [title]="t().logWeight"
+                [attr.aria-label]="t().logWeight"
+              >
+                <app-icon name="plus" /><kbd class="kbd">G</kbd>
+              </button>
+            </h2>
+            <ul class="card entry-list">
+              @for (weight of weights.weights(); track weight.id) {
+                <li appWeightRow [weight]="weight" [rowId]="weight.id"></li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
     }
 
     @if (settings.dayView() === 'timeline') {
@@ -187,6 +215,15 @@ const SWIPE_MAX_DRIFT = 50;
               [attr.aria-label]="t().writeNote"
             >
               <app-icon name="note" /><kbd class="kbd">W</kbd>
+            </button>
+            <button
+              type="button"
+              class="add"
+              (click)="uiStore.showForm('new-weight')"
+              [title]="t().logWeight"
+              [attr.aria-label]="t().logWeight"
+            >
+              <app-icon name="weight" /><kbd class="kbd">G</kbd>
             </button>
           </span>
           <ng-container [ngTemplateOutlet]="viewSwitch" />
@@ -253,6 +290,12 @@ const SWIPE_MAX_DRIFT = 50;
         gap: 24px;
         /* Vertical scrolling stays with the browser, swipes come to us */
         touch-action: pan-y;
+      }
+
+      .about-day {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
       }
 
       /* Its parts are lines of the page */
@@ -442,7 +485,7 @@ const SWIPE_MAX_DRIFT = 50;
         }
 
         .timeline,
-        .notes {
+        .about-day {
           grid-column: 1 / -1;
         }
 
@@ -497,11 +540,11 @@ const SWIPE_MAX_DRIFT = 50;
         }
 
         .timeline,
-        .notes {
+        .about-day {
           grid-column: 1;
         }
 
-        /* Next to the notes as well, which are above the timeline */
+        /* Next to the notes and weights as well, which are above the timeline */
         app-day-summary {
           grid-column: 2;
           grid-row: 2 / span 2;
@@ -519,6 +562,7 @@ export class DayComponent {
   protected readonly uiStore = inject(UiStore);
   protected readonly settings = inject(SettingsStore);
   protected readonly notes = inject(NoteStore);
+  protected readonly weights = inject(WeightStore);
   protected readonly views: { value: DayView; icon: IconName }[] = [
     { value: 'timeline', icon: 'list' },
     { value: 'separate', icon: 'columns' },
@@ -559,7 +603,10 @@ export class DayComponent {
     effect(() => {
       sync.revision();
       const day = this.day();
-      untracked(() => void this.notes.loadNotes(day));
+      untracked(() => {
+        void this.notes.loadNotes(day);
+        void this.weights.loadWeights(day);
+      });
     });
 
     inject(Keyboard).bind({

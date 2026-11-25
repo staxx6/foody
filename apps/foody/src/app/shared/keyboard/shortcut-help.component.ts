@@ -193,6 +193,7 @@ export class ShortcutHelpComponent {
           { keys: ['S'], label: t.logSymptom },
           { keys: ['P'], label: t.logMedication },
           { keys: ['W'], label: t.writeNote },
+          { keys: ['G'], label: t.logWeight },
           create('F', t.newFood),
           create('D', t.newDish),
           create('Y', t.newSymptom),

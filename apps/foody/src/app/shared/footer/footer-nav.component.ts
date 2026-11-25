@@ -47,6 +47,12 @@ import { SyncStatusComponent } from '../sync-status.component';
               <small>{{ t().writeNoteHint }}</small>
               <kbd class="kbd">W</kbd>
             </button>
+            <button class="tile" (click)="selectForm('new-weight')">
+              <app-icon class="icon" name="weight" />
+              <span class="title">{{ t().logWeight }}</span>
+              <small>{{ t().logWeightHint }}</small>
+              <kbd class="kbd">G</kbd>
+            </button>
           </div>
         </section>
 
@@ -243,6 +249,11 @@ import { SyncStatusComponent } from '../sync-status.component';
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 8px;
+      }
+
+      /* A tile left alone in the last line takes all of it */
+      .tile:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
       }
 
       .tile {
@@ -476,6 +487,7 @@ export class FooterNavComponent {
         s: () => this.selectForm('new-health-entry'),
         p: () => this.selectForm('new-medication-entry'),
         w: () => this.selectForm('new-note'),
+        g: () => this.selectForm('new-weight'),
       },
       { when: () => !this.uiStore.isEditing() },
     );
@@ -488,6 +500,7 @@ export class FooterNavComponent {
         s: () => this.selectForm('new-health-entry'),
         p: () => this.selectForm('new-medication-entry'),
         w: () => this.selectForm('new-note'),
+        g: () => this.selectForm('new-weight'),
         f: () => this.selectForm('new-food-item'),
         d: () => this.selectForm('new-dish'),
         y: () => this.selectForm('new-symptom'),

@@ -95,6 +95,19 @@ export class I18n {
     );
   }
 
+  /** e.g. "72.4", without separators of thousands, so it can be entered again */
+  formatNumber(value: number): string {
+    return new Intl.NumberFormat(this.language(), {
+      maximumFractionDigits: 2,
+      useGrouping: false,
+    }).format(value);
+  }
+
+  /** e.g. "72.4 kg" */
+  formatKilograms(value: number): string {
+    return `${this.formatNumber(value)} kg`;
+  }
+
   formatDateTime(date: Date): string {
     return new Intl.DateTimeFormat(this.language(), {
       dateStyle: 'medium',
